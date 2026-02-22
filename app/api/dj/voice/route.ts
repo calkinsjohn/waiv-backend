@@ -26,6 +26,16 @@ function isDjId(value: unknown): value is DjId {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const expectedAppToken = process.env.WAIV_API_APP_TOKEN?.trim();
+  if (!expectedAppToken) {
+    return NextResponse.json({ error: "Missing WAIV_API_APP_TOKEN." }, { status: 503 });
+  }
+
+  const providedAppToken = request.headers.get("x-waiv-app-token")?.trim();
+  if (!providedAppToken || providedAppToken !== expectedAppToken) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   let input: VoiceRequest;
   try {
     input = (await request.json()) as VoiceRequest;
