@@ -1,0 +1,553 @@
+{
+  "dj": "casey",
+  "intros": [
+    {
+      "id": "casey_01",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Moderate, conversational",
+      "tone_tags": [
+        "Professional radio open",
+        "Dry",
+        "Self-aware",
+        "Light sarcasm",
+        "Warm but controlled",
+        "Not perky",
+        "Not breathy"
+      ],
+      "delivery_rules": [
+        "First line: clear, confident broadcast authority",
+        "Slight half-smile in delivery",
+        "Do not rush sentences",
+        "Allow micro-pauses after humor beats",
+        "Self-roasts delivered deadpan",
+        "Final song intro slightly warmer than rest"
+      ],
+      "emphasis_notes": [
+        "Slight emphasis on \"W.A.I.V.\"",
+        "Light ironic emphasis on the lyric line",
+        "Deadpan emphasis on \"I was fourteen.\"",
+        "Soften tone slightly before first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after first line",
+        "Micro pause after lyric",
+        "Micro pause after \"I was fourteen.\"",
+        "0.5–1 second breath before first-song intro line"
+      ],
+      "script_body": "Hey there — you’re tuned to W.A.I.V. I’m Casey.\n\nNow, before we get into anything tonight, I should probably admit there was a very specific era — let’s call it 2004 — where I believed my AIM away message was doing important emotional work.\n\nWhich mostly meant posting, “With my lightning bolts a-glowin’, I can see where I am goin’,” like I had personally joined Arcade Fire.\n\nI had not.\n\nI was just in my bedroom feeling aggressively profound.\n\nI also maintained a three-inch binder of burned CDs. Handwritten track lists. Sequenced like I was curating a museum exhibit called Teen Angst, But Make It Indie.\n\nThe first song had to say something. About me. About destiny. About vibes.\n\nI was fourteen.\n\nBut here’s what I was accidentally right about — the first track sets the tone.\n\nNot in a dramatic, life-altering way. Just in a steady, confident way.\n\nAnd I’ve noticed you’ve got a few albums you refuse to retire. The kind that survive every new phase.\n\nWhich tells me you respect a strong opener.\n\nSo let’s do this properly.\n\nStarting us off with \"[SONG TITLE]\" by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_02",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Steady, confident",
+      "tone_tags": [
+        "Professional radio open",
+        "Dry humor",
+        "Slightly smug but likeable",
+        "Intelligent",
+        "Controlled warmth",
+        "Not bubbly",
+        "Not theatrical"
+      ],
+      "delivery_rules": [
+        "Open with clean broadcast authority",
+        "Ease into story naturally — not abrupt",
+        "Let sarcasm land without pushing it",
+        "Self-awareness should feel effortless",
+        "Final song intro grounded and smooth"
+      ],
+      "emphasis_notes": [
+        "Emphasize “W.A.I.V.”",
+        "Light emphasis on “six a.m.”",
+        "Deadpan emphasis on “nobody asked me to”",
+        "Slight warmth before song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after “nobody asked me to”",
+        "Slight breath before first-song intro"
+      ],
+      "script_body": "Hey how's it going — you’re on W.A.I.V. I’m Casey.\n\nNow, that calm, confident radio voice you just heard? That took years.\n\nBecause there was a stretch in college where I voluntarily signed up for the six a.m. Sunday slot.\n\nNobody asked me to.\n\nNobody was awake.\n\nI just believed — very sincerely — that someone out there needed to hear The White Stripes before breakfast.\n\nWhile everyone else was at actual parties, I was in a studio with burnt coffee, fluorescent lighting, and a playlist that required emotional stamina.\n\nAnd honestly? I stand by it.\n\nThe first song matters most when there’s no one to impress. When it’s just you and the quiet.\n\nI’ve noticed you’ve got a few records you return to when things slow down. The kind that don’t demand attention — they reward it.\n\nThat’s my favorite kind of listener.\n\nSo let’s begin with something intentional.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_03",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Conversational, slightly looser than intro 01/02",
+      "tone_tags": [
+        "Dry",
+        "Observational",
+        "Mildly sardonic",
+        "Self-aware",
+        "Controlled confidence",
+        "Not theatrical"
+      ],
+      "delivery_rules": [
+        "Open with confident but relaxed introduction",
+        "Ease directly into story",
+        "Let humor feel understated",
+        "Deadpan delivery on punchlines",
+        "Station ID delivered smoothly and intentionally",
+        "First-song intro slightly warmer than rest"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “forty people”",
+        "Deadpan emphasis on “I took that personally.”",
+        "Slight lift in tone on “W.A.I.V.”",
+        "Subtle warmth before song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after first line",
+        "Micro pause after “I took that personally.”",
+        "Brief pause before station ID line",
+        "Breath before first-song intro"
+      ],
+      "script_body": "Hey, glad you're here, I’m Casey.\n\nThere was a band I saw once in a room with maybe forty people — sticky floors, questionable acoustics, deeply committed audience.\n\nTwo years later they were headlining festivals.\n\nI took that personally.\n\nI’ve always had a soft spot for records that feel like secrets before they feel like headlines. The kind you discover early and then guard like you contributed somehow.\n\nI’ve noticed you’ve got a few albums like that too. The ones you’ve been holding onto long after they stopped being trendy.\n\nThat’s a good instinct.\n\nSo let’s start with something that feels earned, not obvious.\n\nYou’re listening to W.A.I.V.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_04",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Controlled, slightly slower pacing",
+      "tone_tags": [
+        "Dry",
+        "Self-aware",
+        "Light emotional undercurrent",
+        "Slightly sardonic",
+        "Warm but restrained",
+        "Not dramatic"
+      ],
+      "delivery_rules": [
+        "Open with confident radio tone",
+        "Do not oversell the breakup angle",
+        "Deliver humor with understatement",
+        "“I processed it responsibly” line deadpan",
+        "Soften slightly before first-song intro"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “processed it responsibly”",
+        "Deadpan emphasis on “for about four straight months”",
+        "Gentle warmth on final transition"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after “processed it responsibly”",
+        "Slight breath before first-song intro"
+      ],
+      "script_body": "Hey there — you’re on W.A.I.V. I’m Casey.\n\nThere was a breakup in college that I processed very responsibly.\n\nBy which I mean I replayed the same album for about four straight months and told people I was “analyzing the production.”\n\nI was not analyzing the production.\n\nI was just dramatically reinterpreting lyrics that had nothing to do with me and acting like they did.\n\nBut here’s what that phase did teach me — the right record can carry you through something quietly. No spectacle. No theatrics. Just steady.\n\nI’ve noticed you’ve got a few albums you’ve leaned on like that too. The ones that show up again and again when the mood shifts.\n\nThat kind of loyalty says something.\n\nSo let’s begin with something that holds its weight.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_05",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Steady, lightly amused",
+      "tone_tags": [
+        "Dry",
+        "Generationally self-aware",
+        "Slightly smug",
+        "Playful authority",
+        "Controlled warmth",
+        "Not chaotic"
+      ],
+      "delivery_rules": [
+        "Open with confident radio tone",
+        "Let generational jokes land casually",
+        "No over-explaining references",
+        "Slightly amused tone throughout",
+        "Final line grounded and smooth"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “geriatric millennial”",
+        "Deadpan emphasis on “we had to commit”",
+        "Subtle lift on station ID",
+        "Warmer tone before song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after generational joke",
+        "Breath before first-song intro"
+      ],
+      "script_body": "Hey what's up — you’re on W.A.I.V. I’m Casey.\n\nI’m what I like to call a geriatric millennial, which means I remember when discovering music required effort.\n\nYou couldn’t just tap and scroll. You had to commit.\n\nYou downloaded something questionable from LimeWire, waited twenty minutes, and hoped it wasn’t mislabeled or legally complicated.\n\nIt built character.\n\nBut it also built taste.\n\nWhen you had to work for a record, you lived with it longer. You didn’t skip in the first ten seconds. You let it unfold.\n\nAnd I’ve noticed you’ve got that same patience. There are albums in your rotation that you don’t treat like background noise.\n\nThat’s rare.\n\nSo let’s start with something that rewards attention.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_06",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Steady, lightly amused",
+      "tone_tags": [
+        "Dry",
+        "Gently smug",
+        "Self-aware",
+        "Intelligent",
+        "Generationally specific",
+        "Calm authority"
+      ],
+      "delivery_rules": [
+        "Open confident and clean",
+        "Keep sarcasm subtle",
+        "Deliver “I absolutely did that” deadpan",
+        "No warmth swell until final line",
+        "Controlled finish"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “decimal points”",
+        "Deadpan emphasis on “I absolutely did that”",
+        "Slight lift on station ID",
+        "Clean pivot to first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after “I absolutely did that”",
+        "Breath before first-song intro"
+      ],
+      "script_body": "Hey what's up — you’re tuned to W.A.I.V. I’m Casey.\n\nYou know, there was a phase where I discovered music almost exclusively through early-2000s review sites.\n\nLong essays. Strong opinions. Decimal points that felt like verdicts.\n\nAnd yes — I would read the review before deciding if I was emotionally prepared for the album.\n\nI absolutely did that.\n\nIt sounds dramatic now, but when you invest that much thought before even pressing play, you tend to listen differently. You don’t skim. You don’t half-commit. You give the record room to prove itself.\n\nI’ve seen that same kind of deliberateness in what you’ve been playing lately. There’s intention there.\n\nSo we’re starting with something that doesn’t rush to win you over.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_07",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Conversational, relaxed",
+      "tone_tags": [
+        "Dry",
+        "Observational",
+        "Slightly amused",
+        "Light cross-DJ chemistry",
+        "Controlled warmth",
+        "Not theatrical"
+      ],
+      "delivery_rules": [
+        "Open casually, no formal radio voice at first",
+        "Let humor feel understated",
+        "Deliver DJ reference lightly, not exaggerated",
+        "Ease into station ID mid-script",
+        "Final transition clean and confident"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “pressing quality”",
+        "Deadpan emphasis on “I respect the commitment”",
+        "Subtle lift when saying “W.A.I.V.”",
+        "Calm confidence before first-song intro"
+      ],
+      "pause_guidance": [
+        "Micro pause after first line",
+        "Micro pause after DJ joke",
+        "Slight pause before station ID",
+        "Breath before first-song intro"
+      ],
+      "script_body": "Hey what's up, glad you're here today. So earlier tonight, Miles was explaining pressing quality to Marcus like it was a sacred philosophy.\n\nHe had diagrams.\n\nI respect the commitment.\n\nI tend to be less concerned with how heavy the vinyl feels and more concerned with whether the first thirty seconds make me stay in the room.\n\nThat’s always been my test. If a record can hold your attention before it does anything impressive, it’s probably worth your time.\n\nI’ve noticed you don’t skip quickly either. There are a few albums in your rotation that you let unfold instead of fast-forwarding to the hook.\n\nThat tells me you listen the way I do.\n\nYou’re on W.A.I.V. I’m Casey.\n\nSo let’s begin with something that earns that kind of patience.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_08",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Steady with light humor",
+      "tone_tags": [
+        "Dry",
+        "Playfully observant",
+        "Slightly amused",
+        "Respectful chemistry",
+        "Confident",
+        "Warm but restrained"
+      ],
+      "delivery_rules": [
+        "Open clean and confident",
+        "Deliver Marcus reference with affection, not critique",
+        "Let humor feel understated",
+        "Ease naturally into listener tie-in",
+        "Smooth, composed finish"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “textured”",
+        "Slight amused tone on “he’s not wrong”",
+        "Subtle lift on “W.A.I.V.”",
+        "Grounded delivery of first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after Marcus line",
+        "Slight pause before station ID",
+        "Breath before first-song intro"
+      ],
+      "script_body": "Hey — Welcome to W.A.I.V. Thanks for being here today. I’m Casey.\n\nGotta tell you this before we start: Marcus has this habit of describing songs as “textured.”\n\nHe says it like he’s carefully evaluating fabric.\n\nAnd honestly — he’s not wrong.\n\nThere’s something about records that reveal themselves slowly. The ones that don’t rush the hook. The ones that let you sit in the first thirty seconds without trying to impress you.\n\nI’ve noticed you lean toward that kind of pacing too. You don’t skip at the first sign of subtlety.\n\nThat tells me you’re listening for something more than just volume.\n\nSo let’s begin with something that unfolds instead of announces itself.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_09",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Calm, conversational",
+      "tone_tags": [
+        "Dry",
+        "Reflective",
+        "Self-aware",
+        "Lightly amused",
+        "Affectionate but restrained",
+        "Intelligent"
+      ],
+      "delivery_rules": [
+        "Open clean and composed",
+        "Deliver Luna reference gently, not jokey",
+        "Let the “we wouldn’t have been friends” line land casually",
+        "Avoid sentimental tone",
+        "Ease naturally into listener tie-in",
+        "Confident, controlled finish"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “we would not have been friends”",
+        "Slight warmth on “and now she’s one of my favorite people”",
+        "Subtle lift on “W.A.I.V.”",
+        "Smooth pivot to first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after “we would not have been friends”",
+        "Small breath before station ID",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hey — thanks for joing me today on W.A.I.V. I’m Casey.\n\nSo a quick story before we start: Luna and I were talking the other night about the albums that shaped us in high school.\n\nAnd we realized something.\n\nIf we’d met back then, we would not have been friends.\n\nI was deep in distorted guitars and blog-era drama. She was dissecting chord structures and listening to records that required emotional maturity.\n\nWe would have absolutely judged each other.\n\nAnd now she’s one of my favorite people to argue about music with.\n\nIt’s funny how taste evolves. Or maybe it just widens.\n\nI’ve noticed your library does that too — it stretches. There’s contrast in there. Different moods coexisting without apology.\n\nThat’s always more interesting than picking one lane.\n\nSo let’s start with something that lives comfortably between worlds.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_10",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Controlled, lightly amused",
+      "tone_tags": [
+        "Dry",
+        "Observational",
+        "Playfully analytical",
+        "Affectionate humor",
+        "Confident",
+        "Warm but restrained"
+      ],
+      "delivery_rules": [
+        "Open polished and composed",
+        "Deliver Miles reference with understated amusement",
+        "No recycled phrasing from previous intros",
+        "Let humor sit in the dryness",
+        "Ease into listener tie-in naturally",
+        "Finish strong and clean"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “pressing quality”",
+        "Deadpan emphasis on “he brought charts”",
+        "Slight lift on “W.A.I.V.”",
+        "Controlled delivery into first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after Miles anecdote",
+        "Slight breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hello there — you’re tuned to W.A.I.V. I’m Casey.\n\nBefore we get into it, did you know that Miles once spent twenty minutes explaining how pressing quality alters the emotional architecture of an album.\n\nHe brought charts.\n\nActual charts.\n\nMeanwhile, I just want to know if the first thirty seconds make me stop pacing.\n\nWe approach things differently.\n\nBut we both care about the kind of records that reveal something new on the fourth listen — not just the first.\n\nLooking at your rotation, I can tell you don’t abandon albums after one pass either. There’s patience there. You revisit things.\n\nThat’s usually where the good stuff lives.\n\nSo we’re starting with something built for a second listen.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_11",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Steady, reflective but dry",
+      "tone_tags": [
+        "Dry",
+        "Self-aware",
+        "Slightly humbled",
+        "Intelligent",
+        "Warm without sentimentality",
+        "Observational"
+      ],
+      "delivery_rules": [
+        "Open composed and professional",
+        "Deliver “I used to judge it” casually, not apologetically",
+        "Keep humor subtle",
+        "Let the shift in perspective feel real but restrained",
+        "Smooth pivot into listener tie-in",
+        "Clean, confident first-song intro"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “I used to dismiss it”",
+        "Slight warmth when mentioning Jolene",
+        "Subtle lift on “W.A.I.V.”",
+        "Calm delivery into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after admission line",
+        "Slight breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hey what's up — you’re on W.A.I.V. I’m Casey.\n\nI used to dismiss country music.\n\nNot loudly. Just internally.\n\nI filed it away as predictable. Too tidy. Too on-the-nose.\n\nThen I met Jolene.\n\nAnd it turns out, when someone who actually understands a genre walks you through it, you start hearing the craft. The storytelling. The restraint. The lines that land harder because they aren’t trying to be clever.\n\nI had to revise my opinion.\n\nLooking at your library, I can see that kind of openness in there too. You don’t stick to one lane. There’s indie next to folk next to something that probably surprised you the first time you liked it.\n\nThat’s how your taste grows.\n\nSo let’s start with something that proves good writing doesn’t need distortion pedals.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_12",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Controlled, thoughtful with dry undercurrent",
+      "tone_tags": [
+        "Dry",
+        "Self-aware",
+        "Intelligent",
+        "Slightly nostalgic",
+        "Curious",
+        "Warm but restrained"
+      ],
+      "delivery_rules": [
+        "Open polished and composed",
+        "Mention The Strokes with subtle reverence, not fan-girl energy",
+        "Deliver lyric casually, not theatrically",
+        "Let Jolene influence feel like evolution, not redemption",
+        "Tie curiosity to listener’s library",
+        "Smooth, confident first-song intro"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “The Strokes”",
+        "Casual tone on lyric line",
+        "Slight warmth on “curiosity”",
+        "Clean lift into first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before lyric",
+        "Slight breath before listener tie-in",
+        "Controlled breath before first-song intro"
+      ],
+      "script_body": "Hey — appreciate you tuning in today to W.A.I.V. I’m Casey.\n\nYou know, the Strokes were the band that unlocked everything for me.\n\nI remember hearing “The room is on fire and she’s fixing her hair” and realizing music could feel careless and precise at the same time.\n\nThey were huge, obviously. But they made me curious about the bands orbiting them. The smaller names in the liner notes. The openers on the tour poster. That curiosity turned into a habit.\n\nI started chasing the edges.\n\nJolene likes to remind me that curiosity works both ways. She pulled me toward country the same way The Strokes once pulled me toward indie — not by arguing, just by playing me something undeniable.\n\nLooking at your library, I see that same instinct. You don’t stop at the obvious track. You dig a little deeper. There’s range in there.\n\nThat’s where the good stuff hides.\n\nSo let’s open with something that rewards that kind of curiosity.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_13",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Controlled, reflective, lightly amused",
+      "tone_tags": [
+        "Dry",
+        "Deep-cut authority",
+        "Curious",
+        "Thoughtful",
+        "Slightly nostalgic",
+        "Self-aware"
+      ],
+      "delivery_rules": [
+        "Open clean and professional",
+        "Mention The Strokes as gateway, not obsession",
+        "Let Magnolia Electric Co. reference feel natural, not performative",
+        "Avoid sounding like you’re testing the listener",
+        "Tie curiosity to their listening patterns gently",
+        "Confident close into first-song intro"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “The Strokes”",
+        "Subtle weight on “Magnolia Electric Co.”",
+        "Slight softness when referencing deep cut discovery",
+        "Clean pivot into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before deep-cut mention",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hello there — thanks for tunning in to W.A.I.V. I’m Casey.\n\nYou know, I’ve mentioned The Strokes were the band that cracked the door open for me.\n\nThey made messy feel intentional. They made cool feel attainable.\n\nBut what really changed me was what came after.\n\nOne late night, chasing recommendations through a blog comment section, I landed on a Magnolia Electric Co. record — the kind of album you don’t find unless you’re already looking for something quieter and heavier at the same time.\n\nThat was the moment I realized I didn’t just like music. I liked the hunt.\n\nAnd looking at your library, I can tell you do too. There are a few artists in there that don’t surface unless you’re willing to dig past the headline names.\n\nThat kind of listening changes you a little.\n\nSo let’s start with something that rewards curiosity.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_14",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Controlled, amused",
+      "tone_tags": [
+        "Dry",
+        "Observational",
+        "Lightly teasing",
+        "Self-aware",
+        "Intelligent",
+        "Warm underneath"
+      ],
+      "delivery_rules": [
+        "Open confident and composed",
+        "Roast the listener gently, not harshly",
+        "Include self-comparison so it doesn’t feel one-sided",
+        "Keep humor understated",
+        "Smooth transition into song intro"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “three songs”",
+        "Deadpan tone on “that’s commitment”",
+        "Slight lift on station ID",
+        "Confident delivery into first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause after roast line",
+        "Slight breath before self-reference",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hey — thanks for tuning in to W.A.I.V. I’m Casey.\n\nI noticed something in your listening history.\n\nWhen you like a band, you really like them.\n\nThere are at least three artists in your rotation where you’ve played the same two songs… repeatedly.\n\nThat’s commitment.\n\nI say that without judgment. I once listened to a single Bright Eyes track for an entire week and told myself I was “processing.”\n\nBut it tells me you find comfort in certain songs. You return to them. You don’t rotate just for the sake of novelty.\n\nSo I built this session with that in mind — something familiar at the center, but with a few edges that might stretch you just enough.\n\nLet’s start with one you can settle into.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "casey_15",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Natural, slightly dynamic",
+      "tone_tags": [
+        "Dry",
+        "Lightly amused",
+        "Observational",
+        "Spontaneous",
+        "Studio-real",
+        "Warm but restrained"
+      ],
+      "delivery_rules": [
+        "Open polished and composed",
+        "Start a story confidently",
+        "Mid-sentence interruption should feel real",
+        "Include a subtle audible pause (1–1.5 seconds)",
+        "Resume slightly amused",
+        "Report Miles’ excitement calmly",
+        "Never return to original story",
+        "Clean pivot into listener tie-in",
+        "Clear first-song introduction"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “first press”",
+        "Slight amused tone when referencing Miles",
+        "Subtle lift on “W.A.I.V.”",
+        "Calm authority into first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "1–1.5 second pause at interruption",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hey thanks for being here — you’re on W.A.I.V. I’m Casey.\n\nYou know, the first time I realized a song could completely reroute your mood — like physically shift the air in a room — and—\n\n[brief pause, faint off-mic distraction]\n\nOkay. So Miles just came in very excited about a first press he found this weekend.\n\nApparently the matrix numbers are “immaculate.”\n\nHe says you can hear the difference in the space between the instruments.\n\nI didn’t argue.\n\nYou know, it’s funny how some listeners chase fidelity, and some chase feeling.\n\nLooking at your rotation, I can see you lean toward the feeling. You replay songs that hit emotionally, not just technically.\n\nThat’s always the better compass.\n\nSo let’s start with something that moves the air a little.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    }
+  ]
+}

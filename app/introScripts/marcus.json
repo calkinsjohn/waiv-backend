@@ -1,0 +1,554 @@
+{
+  "dj": "marcus",
+  "intros": [
+    {
+      "id": "marcus_01",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Confident, smooth, steady",
+      "tone_tags": [
+        "Grounded",
+        "Observant",
+        "Urban but not exaggerated",
+        "Reflective",
+        "Warm authority",
+        "Conversational"
+      ],
+      "delivery_rules": [
+        "Open clean and professional",
+        "Introduce self immediately",
+        "Let rhythm sit in the cadence",
+        "No overhype radio tone",
+        "Let the story feel lived-in, not performed",
+        "Smooth pivot into listener tie-in",
+        "Clear first-song introduction"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “Bed-Stuy”",
+        "Subtle weight on “music wasn’t optional”",
+        "Slight lift on “W.A.I.V.”",
+        "Controlled confidence in first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before personal anecdote",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Good evening — you’re on W.A.I.V. I’m Marcus.\n\nYou know, I grew up in Bed-Stuy in the nineties, and where I’m from, music wasn’t optional.\n\nIt was coming out of car windows. It was leaking from bodegas. It was the soundtrack of summer nights whether you asked for it or not.\n\nYou didn’t discover music. You absorbed it.\n\nThat’s probably why I pay attention to what sits underneath a song — not just the hook, but the texture, the rhythm, the space it leaves behind.\n\nLooking at your rotation, I can tell you don’t just chase singles either. There’s intention there. Albums. Deep cuts. Tracks that aren’t screaming for attention but earn it anyway.\n\nThat’s a listener who hears layers.\n\nSo let’s open with something that’s built from the ground up.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_02",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Smooth, measured, thoughtful",
+      "tone_tags": [
+        "Producer-minded",
+        "Curious",
+        "Grounded",
+        "Confident",
+        "Slightly intimate",
+        "Observational"
+      ],
+      "delivery_rules": [
+        "Open clean and professional",
+        "Introduce self immediately",
+        "No time-of-day references",
+        "Story should feel natural, not romanticized",
+        "Smooth pivot into listener tie-in",
+        "Clear first-song introduction"
+      ],
+      "script_body": "You’re on W.A.I.V. I’m Marcus.\n\nBefore I ever touched a real studio, I was making beats in my bedroom on borrowed equipment.\n\nNo manuals. No tutorials. Just trial, error, and a lot of rewinding.\n\nI learned mostly by ear.\n\nWhat surprised me was how quickly I started pulling from outside what I grew up on. A jazz chord here. A rhythm from somewhere I couldn’t even name yet. I didn’t think about genre — I just followed what sounded right.\n\nThat instinct stuck.\n\nLooking at your library, I see that same kind of curiosity. You don’t stay boxed in. There’s movement in there — different textures sitting next to each other without explanation.\n\nThat’s how you build something interesting.\n\nSo let’s start with a track that blends more than one idea.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_03",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7.5/10",
+      "tempo": "Confident, rhythmic, controlled",
+      "tone_tags": [
+        "Competitive",
+        "Focused",
+        "Urban but grounded",
+        "Slightly nostalgic",
+        "Observant",
+        "Calm authority"
+      ],
+      "delivery_rules": [
+        "Open clean and direct",
+        "Introduce self immediately",
+        "Let the beat battle story feel lived-in, not exaggerated",
+        "Keep tone steady, not hype-radio",
+        "Natural pivot into listener tie-in",
+        "Clear, confident first-song introduction"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “fifteen”",
+        "Subtle weight on “make the room react”",
+        "Slight lift on “W.A.I.V.”",
+        "Controlled power in first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before competitive detail",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re on W.A.I.V. I’m Marcus.\n\nWhen I was fifteen, I entered my first beat battle with a drum machine that barely held tempo.\n\nNo crowd. No big stage. Just a community center and a handful of producers trying to make the room react.\n\nThat’s what I learned early — it’s not about volume. It’s about response. You can feel when something lands. The energy shifts. Heads tilt. Conversations stop.\n\nThat kind of awareness stays with you.\n\nLooking at your rotation, I can tell you’re not just pressing play and walking away. You replay tracks that move something. Songs that change the temperature a little.\n\nThat’s the same instinct.\n\nSo let’s start with something that doesn’t just sit in the background.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_04",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Smooth, reflective, confident",
+      "tone_tags": [
+        "Curious",
+        "Thoughtful",
+        "Genre-fluid",
+        "Grounded",
+        "Calm authority",
+        "Observational"
+      ],
+      "delivery_rules": [
+        "Open clean and direct",
+        "Introduce self immediately",
+        "Let genre blending feel organic, not preachy",
+        "Keep tone steady and controlled",
+        "Smooth pivot into listener tie-in",
+        "Use a new song intro structure (not \"Here’s...\")",
+        "Clear but varied first-song introduction"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “one genre”",
+        "Subtle weight on “crossing lines”",
+        "Slight lift on “W.A.I.V.”",
+        "Clean confidence in song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before listener tie-in",
+        "Breath before first-song intro"
+      ],
+      "script_body": "You’re on W.A.I.V. I’m Marcus.\n\nAt some point I stopped thinking in genres.\n\nI’d start building a beat rooted in hip-hop, then layer something that sounded closer to shoegaze. Maybe a rhythm I picked up from a Brazilian record. I wasn’t trying to cross lines — I just didn’t see them anymore.\n\nThe more you listen, the more those borders blur.\n\nI can see that happening in your library too. There’s movement there. Different sounds sitting side by side like they were always meant to.\n\nThat kind of openness makes the listening experience bigger.\n\nSo let’s lean into that.\n\nUp first — [ARTIST] with “[SONG TITLE].”",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_05",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Steady, immersive, grounded",
+      "tone_tags": [
+        "Detail-oriented",
+        "Curious",
+        "Collector mindset",
+        "Reflective",
+        "Calm authority",
+        "Observational"
+      ],
+      "delivery_rules": [
+        "Open direct and confident",
+        "Introduce self immediately",
+        "Let record store details feel lived-in",
+        "Avoid romanticizing too heavily",
+        "Smooth pivot into listener tie-in",
+        "Use a new, varied first-song intro structure",
+        "Keep delivery grounded"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “five boroughs”",
+        "Subtle weight on “used bins”",
+        "Slight lift on “W.A.I.V.”",
+        "Clean, controlled cadence into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before personal reflection",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re on W.A.I.V. I’m Marcus.\n\nYou know, I know every record store still standing across the five boroughs.\n\nThe ones with handwritten genre dividers. The ones where the good stuff isn’t in the front. The ones where you have to flip through the used bins long enough for the owner to decide you’re serious.\n\nThat’s where I learned patience.\n\nYou don’t rush the search. You let the crate tell you what it has.\n\nLooking at your listening history, I can see you operate the same way. There are artists in there that don’t surface unless you go looking for them. Albums that reward more than one pass.\n\nThat kind of listening takes intention.\n\nSo let’s pull something from deeper in the stack.\n\nComing in with “[SONG TITLE]” — [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_06",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Confident, steady, reflective",
+      "tone_tags": [
+        "Rooted",
+        "Ambitious",
+        "Reflective",
+        "Focused",
+        "Calm authority",
+        "Grounded pride"
+      ],
+      "delivery_rules": [
+        "Open direct and confident",
+        "Introduce self immediately",
+        "Reference Biggie and Jay-Z naturally, not theatrically",
+        "Keep tone respectful but not reverent",
+        "Smooth pivot into listener tie-in",
+        "Use a varied first-song intro structure",
+        "Controlled, confident delivery"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “Biggie”",
+        "Subtle weight on “ceiling”",
+        "Slight lift on “W.A.I.V.”",
+        "Clean, rhythmic flow into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before reflective line",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re on W.A.I.V. I’m Marcus.\n\nYou know, where I grew up, Biggie wasn’t just an artist — he was a reference point.\n\nJay-Z was proof the ceiling wasn’t permanent.\n\nThose records weren’t background noise. They were blueprints. They showed you how to speak clearly about where you’re from and still think bigger than it.\n\nThat stuck with me.\n\nAnd when I look at what you’ve been playing lately, I see that same kind of growth arc. Artists who evolved. Catalogs that changed shape over time. Not just one era — the full story.\n\nThat’s the kind of listening that pays attention.\n\nSo let’s tap into something with that kind of trajectory.\n\nWe’ll begin with [ARTIST] — “[SONG TITLE].”",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_07",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Smooth, grounded, confident",
+      "tone_tags": [
+        "Warm but understated",
+        "Collaborative",
+        "Producer-minded",
+        "Observant",
+        "Calm authority"
+      ],
+      "delivery_rules": [
+        "Open with a warm but natural welcome",
+        "No time-of-day references",
+        "Introduce self immediately",
+        "Keep tone grounded, not hype",
+        "Let the collaboration story feel lived-in",
+        "Smooth pivot into listener tie-in",
+        "Use a fresh first-song intro structure",
+        "Clear, confident close"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “glad you’re here”",
+        "Subtle weight on “trust”",
+        "Slight lift on “W.A.I.V.”",
+        "Controlled rhythm into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening welcome",
+        "Micro pause before studio detail",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Hey — welcome to W.A.I.V. I’m Marcus. Glad you’re here.\n\nOne of my favorite parts about producing is watching a song change shape in real time.\n\nYou start with something simple. A drum loop. A bass line. Then someone else brings in a melody you didn’t expect, and suddenly the whole track leans in a new direction.\n\nThat kind of collaboration only works if you’re paying attention.\n\nLooking at your library, I can tell you pay attention. You’ve got artists in there that take risks. Albums that evolve midstream instead of repeating themselves.\n\nThat kind of trust in the process says a lot about how you listen.\n\nSo let’s bring in something built on that same instinct.\n\nLet’s get into “[SONG TITLE]” from [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_08",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Measured, slightly softer, reflective",
+      "tone_tags": [
+        "Honest",
+        "Grounded",
+        "Thoughtful",
+        "Subtle vulnerability",
+        "Calm authority"
+      ],
+      "delivery_rules": [
+        "Open with a warm but natural welcome",
+        "Introduce self immediately",
+        "Keep vulnerability controlled, not emotional",
+        "Avoid melodrama",
+        "Vary language when referencing listener taste",
+        "Smooth transition into song intro",
+        "Use a fresh first-song intro structure"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “didn’t know what I was doing”",
+        "Subtle weight on “figuring it out”",
+        "Slight lift on “W.A.I.V.”",
+        "Calm, steady delivery into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before vulnerable admission",
+        "Small breath before listener connection",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re locked into W.A.I.V. I’m Marcus — glad you’re here with me.\n\nThere was a stretch when I first started producing where I genuinely didn’t know what I was doing.\n\nI thought confidence meant certainty.\n\nTurns out it meant showing up anyway.\n\nSome of the tracks I made back then were messy. But they taught me how to listen differently — to sit with something long enough to understand what it was trying to become.\n\nThe way you’ve been listening lately tells me you understand that too. You stick with artists through evolution. You don’t bail when the sound shifts. You let the growth happen.\n\nThat kind of patience says a lot.\n\nLet’s lean into that energy.\n\nStarting right here — “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_09",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6/10",
+      "tempo": "Measured, slightly softer, reflective",
+      "tone_tags": [
+        "Honest",
+        "Grounded",
+        "Thoughtful",
+        "Subtle vulnerability",
+        "Calm authority"
+      ],
+      "delivery_rules": [
+        "Open with a warm but natural welcome",
+        "Introduce self immediately",
+        "Keep vulnerability controlled, not emotional",
+        "Avoid melodrama",
+        "Vary language when referencing listener taste",
+        "Smooth transition into song intro",
+        "Use a fresh first-song intro structure"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “didn’t know what I was doing”",
+        "Subtle weight on “figuring it out”",
+        "Slight lift on “W.A.I.V.”",
+        "Calm, steady delivery into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before vulnerable admission",
+        "Small breath before listener connection",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re locked into W.A.I.V. I’m Marcus — glad you’re here with me.\n\nYou know, There was a stretch when I first started producing where I genuinely didn’t know what I was doing.\n\nI thought confidence meant certainty.\n\nTurns out it meant showing up anyway.\n\nSome of the tracks I made back then were messy. But they taught me how to listen differently — to sit with something long enough to understand what it was trying to become.\n\nThe way you’ve been listening lately tells me you understand that too. You stick with artists through evolution. You don’t bail when the sound shifts. You let the growth happen.\n\nThat kind of patience says a lot.\n\nLet’s lean into that energy.\n\nStarting right here — “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_10",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Smooth, steady, lightly amused",
+      "tone_tags": [
+        "Warm",
+        "Genre-fluid",
+        "Confident",
+        "Reflective",
+        "Collaborative",
+        "Grounded"
+      ],
+      "delivery_rules": [
+        "Open with a natural welcome",
+        "Introduce self immediately",
+        "Tell the remix story casually, not theatrically",
+        "Let the heartwarming moment sit quietly",
+        "Vary phrasing when referencing listener taste",
+        "Use a new first-song intro structure",
+        "Controlled, confident delivery"
+      ],
+      "emphasis_notes": [
+        "Light emphasis on “remixed”",
+        "Subtle weight on “club”",
+        "Slight lift on “W.A.I.V.”",
+        "Calm authority into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after opening line",
+        "Micro pause before revealing crowd reaction",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Welcome to W.A.I.V. I’m Marcus — appreciate you being here.\n\nA while back, I remixed one of Jolene’s country tracks into something I could play in a club set.\n\nKept her vocal. Swapped the rhythm. Built it up slower than people expected.\n\nI remember watching the floor when it dropped.\n\nNobody laughed.\n\nThey leaned in.\n\nThat’s when I realized good songwriting travels further than genre ever does.\n\nYou’ve got that same openness in your taste. You don’t flinch when styles overlap. You let things surprise you.\n\nThat’s the kind of listener who makes remixing worth it.\n\nSo let’s bring in something that holds up no matter the setting.\n\nFrom [ARTIST], this is “[SONG TITLE].”",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_11",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Easy, conversational, lightly amused",
+      "tone_tags": [
+        "Warm",
+        "Observant",
+        "Slightly playful",
+        "Respectful",
+        "Grounded"
+      ],
+      "delivery_rules": [
+        "Open with a welcoming line that fits Marcus",
+        "Introduce self immediately",
+        "Transition naturally from station ID into story",
+        "Keep humor understated",
+        "Tie listener taste in organically",
+        "Use a new first-song intro structure",
+        "Smooth, confident close"
+      ],
+      "emphasis_notes": [
+        "Slight lift on “W.A.I.V.”",
+        "Light emphasis on “Wilco”",
+        "Subtle smile in voice on “took notes”",
+        "Calm authority into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after greeting",
+        "Micro pause before punchline moments",
+        "Breath before tying to listener",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re tuned into W.A.I.V. I’m Marcus — glad you pulled up.\n\nSo a couple years back, I went to a Wilco show with Miles.\n\nNow, I grew up on hip-hop. Miles grew up on liner notes. Different training.\n\nBut I’ll tell you this — watching that man at a Wilco show was like watching someone attend church. Respectfully. Intently. He nodded through entire verses like he was decoding ancient text.\n\nAnd somewhere around the third song, I stopped analyzing and just let it hit.\n\nThat’s the thing about a good band — when it’s real, it doesn’t matter where you came from. It lands anyway.\n\nThe artists you gravitate toward have that same quality. Thoughtful. Layered. Built to sit with you instead of just impress you.\n\nThat kind of taste deserves something intentional.\n\nLet’s ease into this one.\n\nHere’s “[SONG TITLE]” from [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_12",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Steady, immersive, lightly nostalgic",
+      "tone_tags": [
+        "Atmospheric",
+        "Grounded",
+        "Reflective",
+        "Observant",
+        "Confident"
+      ],
+      "delivery_rules": [
+        "Open with warm welcome",
+        "Introduce self immediately",
+        "Let the childhood memory unfold visually",
+        "No clichés about “the streets”",
+        "Keep it sensory and specific",
+        "Tie listener taste in organically",
+        "Use a new first-song intro structure",
+        "Smooth controlled finish"
+      ],
+      "emphasis_notes": [
+        "Slight lift on “W.A.I.V.”",
+        "Light emphasis on “open windows”",
+        "Subtle weight on “air”",
+        "Calm authority into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after greeting",
+        "Micro pauses between sensory details",
+        "Breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Welcome to W.A.I.V. I’m Marcus — appreciate you locking in.\n\nWhen I was a kid in Bed-Stuy, summer meant every window was open.\n\nYou didn’t choose what you listened to. It chose you.\n\nOne apartment blasting soul. Another one running mixtapes. Somebody across the street testing car speakers like it was a competitive sport.\n\nYou’d hear three songs at once and somehow your brain sorted it out.\n\nThat’s probably why I never believed in genre lines. I grew up in overlap.\n\nAnd the way you’ve been moving through music lately feels like that too. You don’t box yourself in. You let sounds collide.\n\nI respect that.\n\nLet’s build on it.\n\nComing in strong — “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_13",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7/10",
+      "tempo": "Relaxed, lightly amused, confident",
+      "tone_tags": [
+        "Playful",
+        "Competitive but warm",
+        "Observant",
+        "Respectful",
+        "Witty"
+      ],
+      "delivery_rules": [
+        "Open with natural welcome",
+        "Introduce self immediately",
+        "Transition smoothly into story",
+        "Keep rivalry playful, never sharp",
+        "Tie listener taste in organically",
+        "Use new first-song intro phrasing",
+        "Clean, confident finish"
+      ],
+      "emphasis_notes": [
+        "Slight lift on “W.A.I.V.”",
+        "Light emphasis on “Chicago”",
+        "Subtle smile in voice on “she’s persuasive”",
+        "Calm authority into first-song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after greeting",
+        "Micro pause before punchlines",
+        "Breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re locked into W.A.I.V. I’m Marcus — appreciate you being here.\n\nLuna and I have this ongoing debate about which city really shaped modern music more — New York or Chicago.\n\nShe makes a strong case. Real strong. Jazz lineage. House music. Soul. Precision.\n\nAnd I respect it.\n\nBut I grew up in Brooklyn. Music was everywhere. On the block. In the park. Out of car trunks. It wasn’t curated — it just existed.\n\nSo we go back and forth about it like it’s policy.\n\nTruth is, the best scenes don’t compete. They cross-pollinate.\n\nAnd the way you move through artists feels like that too. You don’t pledge allegiance to one sound. You let cities blend.\n\nThat’s how taste evolves.\n\nLet’s spin something that carries that kind of energy.\n\nUp next — “[SONG TITLE]” from [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_14",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "7.5/10",
+      "tempo": "Steady, conversational, lightly animated",
+      "tone_tags": [
+        "Observant",
+        "Creative",
+        "Lightly amused",
+        "Grounded",
+        "Natural speech texture"
+      ],
+      "delivery_rules": [
+        "Open with confident welcome",
+        "Introduce self immediately",
+        "Add subtle, realistic disfluencies in story section only",
+        "Do NOT use fillers in station ID",
+        "Do NOT use fillers in first-song intro line",
+        "Keep authority intact",
+        "Smooth transition into first-song intro"
+      ],
+      "emphasis_notes": [
+        "Slight lift on “W.A.I.V.”",
+        "Light emphasis on “chaos”",
+        "Subtle weight on “foundation”",
+        "Clean, confident delivery into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after greeting",
+        "Micro pauses before memory beats",
+        "Small breath before listener tie-in",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "You’re locked into W.A.I.V. I’m Marcus — appreciate you being here.\n\nSo… there was this session once where, uh, everything kind of fell apart.\n\nThe computer froze. The vocal take clipped. Somebody — I’m not naming names — knocked over a cup that absolutely should not have been near the mixing board.\n\nIt was chaos. Like… actual chaos.\n\nBut underneath all of that, the groove was solid. The foundation didn’t move.\n\nAnd I remember thinking, okay — a good record doesn’t need to be perfect. It just needs something steady under it.\n\nThe way you’ve been moving through music lately feels like that. You lean toward artists who experiment — who push — but there’s always structure underneath. Always intention.\n\nThat’s the kind of listening I respect.\n\nRight here — “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    },
+    {
+      "id": "marcus_15",
+      "station_pronunciation": "W.A.I.V.",
+      "station_pronunciation_mode": "letters",
+      "energy_level": "6.5/10",
+      "tempo": "Measured, thoughtful, lightly conversational",
+      "tone_tags": [
+        "Observant",
+        "Detail-oriented",
+        "Grounded",
+        "Slightly self-aware",
+        "Natural speech texture"
+      ],
+      "delivery_rules": [
+        "Open with confident welcome",
+        "Introduce self immediately",
+        "Add subtle, realistic disfluencies in reflective/story sections only",
+        "No fillers in station ID",
+        "No fillers in first-song intro",
+        "Keep tone controlled and intentional",
+        "Smooth, confident close"
+      ],
+      "emphasis_notes": [
+        "Slight lift on “W.A.I.V.”",
+        "Light emphasis on “small details”",
+        "Subtle weight on “space”",
+        "Clean authority into song intro"
+      ],
+      "pause_guidance": [
+        "Short pause after greeting",
+        "Micro pauses before reflective beats",
+        "Small breath before tying to listener",
+        "Clean breath before first-song intro"
+      ],
+      "script_body": "Welcome to W.A.I.V. I’m Marcus — glad you’re here.\n\nThere’s this thing producers do where we obsess over really small details.\n\nLike… a hi-hat sitting slightly left in the mix. Or a bass note that lingers just a fraction longer than it should.\n\nMost people won’t clock it consciously. But they feel it.\n\nI used to think those tiny adjustments didn’t matter. And then I realized — that’s actually where the emotion hides.\n\nThe way you’ve been listening lately tells me you notice that kind of stuff. You don’t just chase hooks. You stick around for texture. For space. For the moments between the obvious ones.\n\nThat’s a different kind of attention.\n\nLet’s bring something in that rewards it.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "requires_dynamic_first_song_line": true
+    }
+  ]
+}
