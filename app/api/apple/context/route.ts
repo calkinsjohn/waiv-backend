@@ -55,6 +55,7 @@ function pickTrackRef(node: unknown): TrackRef | null {
 
   const record = node as {
     id?: unknown;
+    type?: unknown;
     attributes?: {
       name?: unknown;
       title?: unknown;
@@ -90,6 +91,18 @@ function pickTrackRef(node: unknown): TrackRef | null {
       : "";
 
   const id = playParamID || nodeID;
+  const rawType = typeof record.type === "string" ? normalizeWhitespace(record.type).toLowerCase() : "";
+  const rawKind =
+    typeof record.attributes?.playParams?.kind === "string"
+      ? normalizeWhitespace(record.attributes.playParams.kind).toLowerCase()
+      : "";
+  const looksLikeSongType = !rawType || rawType === "songs" || rawType === "library-songs";
+  const looksLikeSongKind = !rawKind || rawKind === "song";
+
+  if (!looksLikeSongType || !looksLikeSongKind) {
+    return null;
+  }
+
   if (!id || !title || !artist) {
     return null;
   }
