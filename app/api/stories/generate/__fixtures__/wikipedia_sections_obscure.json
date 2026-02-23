@@ -1,0 +1,9 @@
+{
+  "parse": {
+    "title": "Completely Obscure Song",
+    "sections": [
+      { "index": "1", "line": "Track listing" },
+      { "index": "2", "line": "Charts" }
+    ]
+  }
+}

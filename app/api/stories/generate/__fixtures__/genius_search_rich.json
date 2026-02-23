@@ -1,0 +1,12 @@
+{
+  "response": {
+    "hits": [
+      {
+        "result": {
+          "id": 12345,
+          "primary_artist": { "name": "The Beatles" }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "response": {
+    "song": {
+      "description": {
+        "plain": "A song from an album."
+      }
+    }
+  }
+}

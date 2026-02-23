@@ -1,0 +1,10 @@
+{
+  "parse": {
+    "title": "While My Guitar Gently Weeps",
+    "sections": [
+      { "index": "1", "line": "Background" },
+      { "index": "2", "line": "Recording" },
+      { "index": "3", "line": "Personnel" }
+    ]
+  }
+}
