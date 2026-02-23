@@ -207,7 +207,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return tokenFailure;
   }
 
-  const developerToken = process.env.APPLE_MUSIC_DEVELOPER_TOKEN?.trim();
+  const headerDeveloperToken = request.headers.get("x-apple-music-developer-token")?.trim();
+  const envDeveloperToken = process.env.APPLE_MUSIC_DEVELOPER_TOKEN?.trim();
+  const developerToken = headerDeveloperToken || envDeveloperToken;
   if (!developerToken) {
     return NextResponse.json({ error: "Missing APPLE_MUSIC_DEVELOPER_TOKEN." }, { status: 503 });
   }
