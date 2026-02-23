@@ -194,19 +194,28 @@ function heuristicDJLine(fact: RawTrackFact): string | null {
   return trimToWordCount(line, 30);
 }
 
-async function fetchMusicBrainzFacts(isrc: string): Promise<RawTrackFact[]> {
-  if (!isrc.trim()) {
-    return [];
-  }
+type MusicBrainzRecording = {
+  score?: number | string;
+  disambiguation?: string;
+  relations?: Array<{
+    type?: string;
+    artist?: { name?: string };
+    recording?: { title?: string };
+    work?: { title?: string };
+  }>;
+};
 
+async function waitForMusicBrainzRateLimit(): Promise<void> {
   const now = Date.now();
   const elapsed = now - lastMusicBrainzRequestAt;
   if (elapsed < 1000) {
     await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed));
   }
   lastMusicBrainzRequestAt = Date.now();
+}
 
-  const endpoint = `https://musicbrainz.org/ws/2/isrc/${encodeURIComponent(isrc)}?fmt=json&inc=recordings+artist-credits+relations+work-rels`;
+async function fetchMusicBrainzRecordings(endpoint: string): Promise<MusicBrainzRecording[]> {
+  await waitForMusicBrainzRateLimit();
   const response = await fetch(endpoint, {
     headers: {
       Accept: "application/json",
@@ -214,77 +223,122 @@ async function fetchMusicBrainzFacts(isrc: string): Promise<RawTrackFact[]> {
     },
     cache: "no-store",
   });
-
   if (!response.ok) {
     return [];
   }
 
-  const data = (await response.json()) as {
-    recordings?: Array<{
-      relations?: Array<{
-        type?: string;
-        artist?: { name?: string };
-        recording?: { title?: string };
-        work?: { title?: string };
-      }>;
-    }>;
-  };
+  const data = (await response.json()) as { recordings?: MusicBrainzRecording[] };
+  return data.recordings ?? [];
+}
 
-  const recording = data.recordings?.[0];
-  if (!recording?.relations?.length) {
+function musicBrainzFactsFromRecordings(recordings: MusicBrainzRecording[]): RawTrackFact[] {
+  const facts: RawTrackFact[] = [];
+
+  for (const recording of recordings) {
+    const disambiguation = recording.disambiguation?.trim();
+    if (disambiguation && disambiguation.length >= 8) {
+      facts.push({
+        type: "productionAnecdote",
+        body: `MusicBrainz notes this recording as: ${disambiguation}.`,
+        source: "musicbrainz",
+        confidence: 0.75,
+      });
+    }
+
+    for (const relation of recording.relations ?? []) {
+      const relationType = relation.type?.toLowerCase() ?? "";
+      const target = relation.recording?.title ?? relation.work?.title ?? relation.artist?.name;
+      if (!target) {
+        continue;
+      }
+
+      if (relationType.includes("cover")) {
+        facts.push({
+          type: "coverOf",
+          body: `This one is linked to a cover relationship with "${target}".`,
+          source: "musicbrainz",
+          confidence: 0.9,
+        });
+        continue;
+      }
+
+      if (relationType.includes("sample")) {
+        facts.push({
+          type: relationType.includes("from") ? "samples" : "sampledBy",
+          body: `It has a documented sampling link with "${target}".`,
+          source: "musicbrainz",
+          confidence: 0.9,
+        });
+        continue;
+      }
+
+      if (relationType.includes("producer") || relationType.includes("mix") || relationType.includes("remix")) {
+        facts.push({
+          type: "productionAnecdote",
+          body: `MusicBrainz credits "${target}" in a ${relationType || "production"} role on this recording.`,
+          source: "musicbrainz",
+          confidence: 0.78,
+        });
+      }
+    }
+  }
+
+  return dedupeFacts(facts);
+}
+
+async function fetchMusicBrainzFacts(isrc: string, title: string, artist: string): Promise<RawTrackFact[]> {
+  const normalizedISRC = isrc.trim();
+  const normalizedTitle = title.trim();
+  const normalizedArtist = artist.trim();
+
+  let recordings: MusicBrainzRecording[] = [];
+  if (normalizedISRC.length >= 8) {
+    const byISRC = `https://musicbrainz.org/ws/2/isrc/${encodeURIComponent(
+      normalizedISRC
+    )}?fmt=json&inc=recordings+artist-credits+relations+work-rels`;
+    recordings = await fetchMusicBrainzRecordings(byISRC);
+  }
+
+  if (recordings.length === 0 && normalizedTitle && normalizedArtist) {
+    const query = `recording:"${normalizedTitle.replace(/"/g, '\\"')}" AND artist:"${normalizedArtist.replace(/"/g, '\\"')}"`;
+    const byTitleArtist = `https://musicbrainz.org/ws/2/recording?query=${encodeURIComponent(
+      query
+    )}&fmt=json&limit=5&inc=artist-credits+relations+work-rels`;
+    const searched = await fetchMusicBrainzRecordings(byTitleArtist);
+    recordings = searched.filter((item) => Number(item.score ?? 0) >= 65).slice(0, 3);
+  }
+
+  if (recordings.length === 0) {
     return [];
   }
-
-  const facts: RawTrackFact[] = [];
-  for (const relation of recording.relations) {
-    const relationType = relation.type?.toLowerCase() ?? "";
-    const targetTitle = relation.recording?.title ?? relation.work?.title ?? relation.artist?.name;
-    if (!targetTitle) {
-      continue;
-    }
-
-    if (relationType.includes("cover")) {
-      facts.push({
-        type: "coverOf",
-        body: `This track is a cover connected to "${targetTitle}".`,
-        source: "musicbrainz",
-        confidence: 0.9,
-      });
-      continue;
-    }
-
-    if (relationType.includes("sample")) {
-      facts.push({
-        type: relationType.includes("from") ? "samples" : "sampledBy",
-        body: `There is a sampling relationship tied to "${targetTitle}".`,
-        source: "musicbrainz",
-        confidence: 0.9,
-      });
-    }
-  }
-
-  return facts;
+  return musicBrainzFactsFromRecordings(recordings);
 }
 
 async function fetchWikidataFacts(title: string, artist: string): Promise<RawTrackFact[]> {
-  if (!title.trim() || !artist.trim()) {
+  const normalizedTitle = title.trim();
+  const normalizedArtist = artist.trim();
+  if (!normalizedTitle || !normalizedArtist) {
     return [];
   }
 
-  const escapedTitle = title.replace(/"/g, '\\"');
-  const escapedArtist = artist.replace(/"/g, '\\"');
+  const escapedTitle = normalizedTitle.replace(/"/g, '\\"');
+  const escapedArtist = normalizedArtist.replace(/"/g, '\\"');
   const query = `
-    SELECT ?awardLabel WHERE {
-      ?song wdt:P31 wd:Q7366;
-            rdfs:label "${escapedTitle}"@en;
+    SELECT ?awardLabel ?chartLabel ?placementLabel WHERE {
+      ?song wdt:P31/wdt:P279* wd:Q7366;
             wdt:P175 ?performer.
+      ?song rdfs:label ?songLabel.
       ?performer rdfs:label ?artistLabel.
+      FILTER(LANG(?songLabel) = "en")
       FILTER(LANG(?artistLabel) = "en")
+      FILTER(CONTAINS(LCASE(?songLabel), LCASE("${escapedTitle}")))
       FILTER(CONTAINS(LCASE(?artistLabel), LCASE("${escapedArtist}")))
       OPTIONAL { ?song wdt:P166 ?award. }
+      OPTIONAL { ?song wdt:P1352 ?chart. }
+      OPTIONAL { ?song wdt:P1441 ?placement. }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }
-    LIMIT 5
+    LIMIT 10
   `;
 
   const response = await fetch("https://query.wikidata.org/sparql", {
@@ -304,21 +358,48 @@ async function fetchWikidataFacts(title: string, artist: string): Promise<RawTra
 
   const data = (await response.json()) as {
     results?: {
-      bindings?: Array<{ awardLabel?: { value?: string } }>;
+      bindings?: Array<{
+        awardLabel?: { value?: string };
+        chartLabel?: { value?: string };
+        placementLabel?: { value?: string };
+      }>;
     };
   };
 
-  const awardFacts = (data.results?.bindings ?? [])
-    .map((binding) => binding.awardLabel?.value?.trim())
-    .filter((value): value is string => Boolean(value))
-    .map<RawTrackFact>((award) => ({
-      type: "awardWin",
-      body: `It has a documented award tie-in: ${award}.`,
-      source: "wikidata",
-      confidence: 0.8,
-    }));
+  const facts: RawTrackFact[] = [];
+  for (const binding of data.results?.bindings ?? []) {
+    const award = binding.awardLabel?.value?.trim();
+    if (award) {
+      facts.push({
+        type: "awardWin",
+        body: `Wikidata links this track to the award "${award}".`,
+        source: "wikidata",
+        confidence: 0.8,
+      });
+    }
 
-  return dedupeFacts(awardFacts);
+    const chart = binding.chartLabel?.value?.trim();
+    if (chart) {
+      facts.push({
+        type: "chartMilestone",
+        body: `It has a documented chart milestone in ${chart}.`,
+        source: "wikidata",
+        confidence: 0.75,
+      });
+    }
+
+    const placement = binding.placementLabel?.value?.trim();
+    if (placement) {
+      facts.push({
+        type: "filmOrTVPlacement",
+        body: `Wikidata connects this track to ${placement}.`,
+        source: "wikidata",
+        confidence: 0.72,
+      });
+    }
+  }
+
+  return dedupeFacts(facts);
 }
 
 function extractInterestingSentence(text: string): string | null {
@@ -420,7 +501,7 @@ async function fetchGeniusFacts(title: string, artist: string): Promise<RawTrack
 
 async function fetchFactsFromSources(input: StoryGenerateRequest): Promise<RawTrackFact[]> {
   const [musicBrainzFacts, wikidataFacts, geniusFacts] = await Promise.all([
-    fetchMusicBrainzFacts(input.isrc).catch(() => []),
+    fetchMusicBrainzFacts(input.isrc, input.title, input.artist).catch(() => []),
     fetchWikidataFacts(input.title, input.artist).catch(() => []),
     fetchGeniusFacts(input.title, input.artist).catch(() => []),
   ]);
@@ -493,7 +574,12 @@ Write the DJ line, or return NO_STORY.`;
     return "NO_STORY";
   }
 
-  return trimToWordCount(text.replace(/\s+/g, " "), 30);
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  const strippedOuterQuotes = collapsed
+    .replace(/^["'“”‘’]+/, "")
+    .replace(/["'“”‘’]+$/, "")
+    .trim();
+  return trimToWordCount(strippedOuterQuotes, 30);
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
