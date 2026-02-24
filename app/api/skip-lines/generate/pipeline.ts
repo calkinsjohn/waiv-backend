@@ -1,0 +1,238 @@
+export type SkipLineTrack = {
+  isrc: string;
+  title: string;
+  artist: string;
+};
+
+export type SkipLineGenerateRequest = {
+  eventType?: string;
+  djID?: string;
+  fromTrack: SkipLineTrack;
+  toTrack: SkipLineTrack;
+  candidateCount?: number;
+};
+
+export type SkipLineGenerateResponse = {
+  fromIsrc: string;
+  toIsrc: string;
+  djLines: string[];
+  llmModel: string;
+};
+
+export type SkipLineNoContentReason = "llm_rejected";
+
+export type SkipLineGenerationResult =
+  | {
+      kind: "success";
+      response: SkipLineGenerateResponse;
+    }
+  | {
+      kind: "no_content";
+      reason: SkipLineNoContentReason;
+    };
+
+type AnthropicResponse = {
+  content?: Array<{ type?: string; text?: string }>;
+};
+
+type LLMResponse = {
+  lines?: unknown;
+};
+
+const MAX_WORDS = 15;
+const DEFAULT_CANDIDATE_COUNT = 5;
+const MIN_CANDIDATE_COUNT = 3;
+const MAX_CANDIDATE_COUNT = 5;
+
+function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function includesCaseInsensitive(haystack: string, needle: string): boolean {
+  return haystack.toLowerCase().includes(needle.toLowerCase());
+}
+
+function wordCount(text: string): number {
+  return normalizeWhitespace(text).split(" ").filter(Boolean).length;
+}
+
+function normalizeLine(line: string, toTrack: SkipLineTrack): string | null {
+  const trimmed = normalizeWhitespace(line)
+    .replace(/^['"“”‘’]+/, "")
+    .replace(/['"“”‘’]+$/, "")
+    .trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (wordCount(trimmed) > MAX_WORDS) {
+    return null;
+  }
+
+  if (!includesCaseInsensitive(trimmed, toTrack.title) || !includesCaseInsensitive(trimmed, toTrack.artist)) {
+    return null;
+  }
+
+  if (!/[.!?]$/.test(trimmed)) {
+    return `${trimmed}.`;
+  }
+
+  return trimmed;
+}
+
+function normalizeTrack(input: unknown): SkipLineTrack | null {
+  const payload = (input ?? {}) as Partial<SkipLineTrack>;
+  const isrc = typeof payload.isrc === "string" ? payload.isrc.trim() : "";
+  const title = typeof payload.title === "string" ? payload.title.trim() : "";
+  const artist = typeof payload.artist === "string" ? payload.artist.trim() : "";
+
+  if (!isrc || !title || !artist) {
+    return null;
+  }
+
+  return { isrc, title, artist };
+}
+
+export function normalizeSkipLineRequest(input: unknown): SkipLineGenerateRequest | null {
+  const payload = (input ?? {}) as Partial<SkipLineGenerateRequest>;
+  const fromTrack = normalizeTrack(payload.fromTrack);
+  const toTrack = normalizeTrack(payload.toTrack);
+  if (!fromTrack || !toTrack) {
+    return null;
+  }
+
+  const candidateCountValue = Number(payload.candidateCount ?? DEFAULT_CANDIDATE_COUNT);
+  const candidateCount = Number.isFinite(candidateCountValue)
+    ? Math.min(MAX_CANDIDATE_COUNT, Math.max(MIN_CANDIDATE_COUNT, Math.trunc(candidateCountValue)))
+    : DEFAULT_CANDIDATE_COUNT;
+
+  return {
+    eventType: typeof payload.eventType === "string" ? payload.eventType.trim() : "user_skip",
+    djID: typeof payload.djID === "string" ? payload.djID.trim() : "",
+    fromTrack,
+    toTrack,
+    candidateCount,
+  };
+}
+
+function extractJSONObject(raw: string): string | null {
+  const first = raw.indexOf("{");
+  const last = raw.lastIndexOf("}");
+  if (first < 0 || last < 0 || last <= first) {
+    return null;
+  }
+  return raw.slice(first, last + 1);
+}
+
+function parseLLMResponse(raw: string): string[] {
+  const jsonCandidate = extractJSONObject(raw.trim());
+  if (!jsonCandidate) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(jsonCandidate) as LLMResponse;
+    return Array.isArray(parsed.lines) ? parsed.lines.filter((line) => typeof line === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+async function generateWithAnthropic(request: SkipLineGenerateRequest): Promise<{ lines: string[]; model: string } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    return null;
+  }
+
+  const model = process.env.ANTHROPIC_SKIP_LINE_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
+
+  const systemPrompt = `You write ultra-short radio DJ skip-transition lines.
+
+Context: the listener just skipped a song, and the DJ is pivoting to the next one.
+
+Rules:
+- Return valid JSON only: {"lines":["...","..."]}
+- Produce exactly ${request.candidateCount} lines
+- Every line must be 1 sentence, max ${MAX_WORDS} words
+- Every line must include the exact next song title and exact artist name provided
+- Keep tone snappy, conversational, and varied
+- No filler, no backstory, no meta commentary
+- Do not mention release years, genres, or facts`;
+
+  const userPrompt = `Event type: ${request.eventType || "user_skip"}
+DJ: ${request.djID || "unknown"}
+Skipped track: "${request.fromTrack.title}" by ${request.fromTrack.artist}
+Next track: "${request.toTrack.title}" by ${request.toTrack.artist}
+
+Return JSON only.`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.5,
+      max_tokens: 260,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`anthropic_request_failed_${response.status}`);
+  }
+
+  const payload = (await response.json()) as AnthropicResponse;
+  const text = payload.content?.find((item) => item.type === "text")?.text?.trim();
+  if (!text) {
+    return { lines: [], model };
+  }
+
+  const rawLines = parseLLMResponse(text);
+  const deduped = new Set<string>();
+  const normalized: string[] = [];
+
+  for (const rawLine of rawLines) {
+    const line = normalizeLine(rawLine, request.toTrack);
+    if (!line) {
+      continue;
+    }
+
+    const key = line.toLowerCase();
+    if (deduped.has(key)) {
+      continue;
+    }
+    deduped.add(key);
+    normalized.push(line);
+  }
+
+  return { lines: normalized, model };
+}
+
+export async function generateSkipLines(
+  request: SkipLineGenerateRequest
+): Promise<SkipLineGenerationResult> {
+  const llm = await generateWithAnthropic(request).catch(() => null);
+  if (!llm || llm.lines.length < MIN_CANDIDATE_COUNT) {
+    return {
+      kind: "no_content",
+      reason: "llm_rejected",
+    };
+  }
+
+  return {
+    kind: "success",
+    response: {
+      fromIsrc: request.fromTrack.isrc,
+      toIsrc: request.toTrack.isrc,
+      djLines: llm.lines.slice(0, request.candidateCount ?? DEFAULT_CANDIDATE_COUNT),
+      llmModel: llm.model,
+    },
+  };
+}
