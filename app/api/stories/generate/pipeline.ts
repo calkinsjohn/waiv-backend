@@ -311,7 +311,7 @@ export async function fetchWikipediaNarratives(title: string, artist: string): P
 
     const targetSections = sections.filter((section) => {
       const sectionTitle = section.line?.trim().toLowerCase() ?? "";
-      return WIKIPEDIA_SECTION_TITLES.has(sectionTitle);
+      return Array.from(WIKIPEDIA_SECTION_TITLES).some((keyword) => sectionTitle.includes(keyword));
     });
 
     if (targetSections.length === 0) {
@@ -424,7 +424,8 @@ export async function fetchMusicBrainzStructuredContext(
   const normalizedArtist = artist.trim().toLowerCase();
 
   let recordings: MusicBrainzRecording[] = [];
-  if (normalizedISRC.length >= 8) {
+  const looksLikeRealISRC = /^[A-Z]{2}/.test(normalizedISRC);
+  if (normalizedISRC.length >= 8 && looksLikeRealISRC) {
     await waitForMusicBrainzRateLimit();
     const byISRC = await fetchJSON<MusicBrainzLookupResponse>(
       `https://musicbrainz.org/ws/2/isrc/${encodeURIComponent(normalizedISRC)}?fmt=json&inc=recordings+relations+artist-credits+work-rels`,
@@ -687,8 +688,6 @@ export async function generateStoryV2(input: StoryGenerateRequest): Promise<Stor
     };
   }
 
-  const fetchStart = Date.now();
-
   const [wikipediaNarratives, songfactsNarratives, geniusNarratives, allMusicNarratives, fetchedContext] =
     explicitNarrativesProvided
       ? [[], [], [], [], providedContext]
@@ -728,21 +727,12 @@ export async function generateStoryV2(input: StoryGenerateRequest): Promise<Stor
     };
   }
 
-  const elapsed = Date.now() - fetchStart;
   const response: StoryGenerateResponse = {
     isrc,
     djLine: llm.outcome.line,
     sourceAttribution: llm.outcome.source,
     llmModel: llm.model,
   };
-
-  if (elapsed > 10_000) {
-    return {
-      kind: "no_content",
-      reason: "llm_rejected",
-      sourcesTried: Array.from(new Set(collectedNarratives.map((narrative) => narrative.source))),
-    };
-  }
 
   return {
     kind: "success",
