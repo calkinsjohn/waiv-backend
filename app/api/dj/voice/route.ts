@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const voiceEnvName = VOICE_ENV_BY_DJ[input.djId];
   const voiceIdFallbackByDj: Partial<Record<DjId, string>> = {
     // Keep Jack available immediately; can be overridden by ELEVENLABS_VOICE_ID_JACK.
-    jack: "IjZViYz1zbpQ4B0R1Z0i",
+    jack: "IazpfpjmkHHQKVesClWm",
     miles: "IjZViYz1zbpQ4B0R1Z0i",
     marcus: "tB0V1KLPcxfI3Dzd6Yi9",
   };
