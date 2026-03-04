@@ -16,6 +16,7 @@ export type StoryGenerateRequest = {
   isrc: string;
   title: string;
   artist: string;
+  djID?: string;
   narratives?: NarrativeContent[];
   context?: Partial<StructuredContext> | null;
 };
@@ -532,11 +533,28 @@ function normalizeLLMLine(line: string): string {
   return trimToWordCount(collapsed, MAX_DJ_WORDS);
 }
 
+function storyPersonaGuidance(djID?: string): string {
+  const normalized = (djID ?? "").trim().toLowerCase();
+  if (normalized === "jack") {
+    return [
+      "Persona: Jack, an AI WAIV DJ.",
+      "Modern British delivery. Calm, sharp, understated, quietly funny.",
+      "No caricature slang, no cliches, no forced banter.",
+      "Keep it concise and punchy.",
+      "You may lightly acknowledge being AI, but do not repeat that bit.",
+      "Never claim impossible analysis (no mind-reading, waveform analysis, or mix analysis).",
+    ].join(" ");
+  }
+
+  return "Persona: neutral WAIV DJ voice. Warm, clear, conversational, concise.";
+}
+
 async function generateDJLineWithAnthropic(
   title: string,
   artist: string,
   narratives: NarrativeContent[],
-  context: StructuredContext
+  context: StructuredContext,
+  djID?: string
 ): Promise<{ outcome: LLMDecision; model: string } | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
@@ -546,6 +564,7 @@ async function generateDJLineWithAnthropic(
   const model = process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
 
   const systemPrompt = `You are a warm, knowledgeable radio DJ introducing a song. You are given editorial prose and optional context.
+${storyPersonaGuidance(djID)}
 
 Your job: find one compelling human moment and retell it in 1-2 spoken sentences.
 
@@ -718,7 +737,13 @@ export async function generateStoryV2(input: StoryGenerateRequest): Promise<Stor
     };
   }
 
-  const llm = await generateDJLineWithAnthropic(title, artist, collectedNarratives, fetchedContext).catch(() => null);
+  const llm = await generateDJLineWithAnthropic(
+    title,
+    artist,
+    collectedNarratives,
+    fetchedContext,
+    input.djID
+  ).catch(() => null);
   if (!llm || llm.outcome.status === "no_story") {
     return {
       kind: "no_content",

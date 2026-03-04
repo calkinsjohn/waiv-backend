@@ -37,6 +37,7 @@ function parseRequestBody(input: unknown): StoryGenerateRequest | null {
   const isrc = typeof payload.isrc === "string" ? payload.isrc.trim() : "";
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
   const artist = typeof payload.artist === "string" ? payload.artist.trim() : "";
+  const djID = typeof payload.djID === "string" ? payload.djID.trim() : "";
 
   if (!isrc || !title || !artist) {
     return null;
@@ -46,6 +47,7 @@ function parseRequestBody(input: unknown): StoryGenerateRequest | null {
     isrc,
     title,
     artist,
+    djID: djID || undefined,
     narratives: Array.isArray(payload.narratives) ? normalizeNarratives(payload.narratives) : undefined,
     context: payload.context === undefined ? undefined : normalizeStructuredContext(payload.context),
   };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type DjId = "miles" | "luna" | "casey" | "jolene" | "marcus";
+type DjId = "miles" | "jack" | "luna" | "casey" | "jolene" | "marcus";
 
 type VoiceRequest = {
   djId: DjId;
@@ -9,6 +9,7 @@ type VoiceRequest = {
 
 const VOICE_ENV_BY_DJ: Record<DjId, string> = {
   miles: "ELEVENLABS_VOICE_ID_MILES",
+  jack: "ELEVENLABS_VOICE_ID_JACK",
   luna: "ELEVENLABS_VOICE_ID_LUNA",
   casey: "ELEVENLABS_VOICE_ID_CASEY",
   jolene: "ELEVENLABS_VOICE_ID_JOLENE",
@@ -18,6 +19,7 @@ const VOICE_ENV_BY_DJ: Record<DjId, string> = {
 function isDjId(value: unknown): value is DjId {
   return (
     value === "miles" ||
+    value === "jack" ||
     value === "luna" ||
     value === "casey" ||
     value === "jolene" ||
@@ -54,6 +56,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const voiceEnvName = VOICE_ENV_BY_DJ[input.djId];
   const voiceIdFallbackByDj: Partial<Record<DjId, string>> = {
+    // Keep Jack available immediately; can be overridden by ELEVENLABS_VOICE_ID_JACK.
+    jack: "IjZViYz1zbpQ4B0R1Z0i",
+    miles: "IjZViYz1zbpQ4B0R1Z0i",
     marcus: "tB0V1KLPcxfI3Dzd6Yi9",
   };
   const voiceId = process.env[voiceEnvName] ?? voiceIdFallbackByDj[input.djId];
