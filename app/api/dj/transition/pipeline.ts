@@ -164,6 +164,9 @@ Rules:
 - Naturally include the song title "${request.toTrack.title}" and artist name "${request.toTrack.artist}"
 - Do not invent facts about the song or artist
 - Keep it conversational and natural for spoken audio
+- Write like the middle of a bridge, not the setup or sign-off
+- Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up", "let's keep it going")
+- Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
 - ${depthContext}`;

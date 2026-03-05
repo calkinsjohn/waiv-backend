@@ -158,6 +158,9 @@ Rules:
 - Every line must include the exact next song title and exact artist name provided
 - Keep tone snappy, conversational, and varied
 - No filler, no backstory, no meta commentary
+- Write like the middle of a bridge, not a setup or sign-off
+- Do not use stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
+- Do not use stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere")
 - Do not mention release years, genres, or facts`;
 
   const userPrompt = `Event type: ${request.eventType || "user_skip"}

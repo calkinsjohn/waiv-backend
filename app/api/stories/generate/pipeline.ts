@@ -581,6 +581,9 @@ STRICT RULES:
 - Never say "recorded live" as standalone story
 - Never invent details not present in provided prose
 - Keep output under 45 words
+- Write like the middle of a bridge, not the setup or sign-off
+- Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
+- Do not close with stock radio sign-offs (for example: "stick around", "stay tuned", "don't go anywhere")
 - Use optional context only when that relationship is already present in prose
 - Return valid JSON only in one of these forms:
   {"status":"ok","line":"...","source":"wikipediaRecording"}
