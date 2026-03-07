@@ -537,7 +537,7 @@ function storyPersonaGuidance(djID?: string): string {
   const normalized = (djID ?? "").trim().toLowerCase();
   if (normalized === "jack") {
     return [
-      "Persona: Jack, an AI WAIV DJ.",
+      "Persona: Winston, an AI WAIV DJ.",
       "Modern British delivery. Calm, sharp, understated, quietly funny.",
       "No caricature slang, no cliches, no forced banter.",
       "Keep it concise and punchy.",
