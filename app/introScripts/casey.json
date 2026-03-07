@@ -249,7 +249,7 @@
         "Slight pause before station ID",
         "Breath before first-song intro"
       ],
-      "script_body": "Hey what's up, glad you're here today. So earlier tonight, Miles was explaining pressing quality to Marcus like it was a sacred philosophy.\n\nHe had diagrams.\n\nI respect the commitment.\n\nI tend to be less concerned with how heavy the vinyl feels and more concerned with whether the first thirty seconds make me stay in the room.\n\nThat’s always been my test. If a record can hold your attention before it does anything impressive, it’s probably worth your time.\n\nI’ve noticed you don’t skip quickly either. There are a few albums in your rotation that you let unfold instead of fast-forwarding to the hook.\n\nThat tells me you listen the way I do.\n\nYou’re on W.A.I.V. I’m Casey.\n\nSo let’s begin with something that earns that kind of patience.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
+      "script_body": "Hey what's up, glad you're here today. So earlier tonight, John was explaining pressing quality to Marcus like it was a sacred philosophy.\n\nHe had diagrams.\n\nI respect the commitment.\n\nI tend to be less concerned with how heavy the vinyl feels and more concerned with whether the first thirty seconds make me stay in the room.\n\nThat’s always been my test. If a record can hold your attention before it does anything impressive, it’s probably worth your time.\n\nI’ve noticed you don’t skip quickly either. There are a few albums in your rotation that you let unfold instead of fast-forwarding to the hook.\n\nThat tells me you listen the way I do.\n\nYou’re on W.A.I.V. I’m Casey.\n\nSo let’s begin with something that earns that kind of patience.\n\nStarting us off with “[SONG TITLE]” by [ARTIST].",
       "requires_dynamic_first_song_line": true
     },
     {
@@ -341,7 +341,7 @@
       ],
       "delivery_rules": [
         "Open polished and composed",
-        "Deliver Miles reference with understated amusement",
+        "Deliver John reference with understated amusement",
         "No recycled phrasing from previous intros",
         "Let humor sit in the dryness",
         "Ease into listener tie-in naturally",
@@ -355,11 +355,11 @@
       ],
       "pause_guidance": [
         "Short pause after opening line",
-        "Micro pause after Miles anecdote",
+        "Micro pause after John anecdote",
         "Slight breath before listener tie-in",
         "Clean breath before first-song intro"
       ],
-      "script_body": "Hello there — you’re tuned to W.A.I.V. I’m Casey.\n\nBefore we get into it, did you know that Miles once spent twenty minutes explaining how pressing quality alters the emotional architecture of an album.\n\nHe brought charts.\n\nActual charts.\n\nMeanwhile, I just want to know if the first thirty seconds make me stop pacing.\n\nWe approach things differently.\n\nBut we both care about the kind of records that reveal something new on the fourth listen — not just the first.\n\nLooking at your rotation, I can tell you don’t abandon albums after one pass either. There’s patience there. You revisit things.\n\nThat’s usually where the good stuff lives.\n\nSo we’re starting with something built for a second listen.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "script_body": "Hello there — you’re tuned to W.A.I.V. I’m Casey.\n\nBefore we get into it, did you know that John once spent twenty minutes explaining how pressing quality alters the emotional architecture of an album.\n\nHe brought charts.\n\nActual charts.\n\nMeanwhile, I just want to know if the first thirty seconds make me stop pacing.\n\nWe approach things differently.\n\nBut we both care about the kind of records that reveal something new on the fourth listen — not just the first.\n\nLooking at your rotation, I can tell you don’t abandon albums after one pass either. There’s patience there. You revisit things.\n\nThat’s usually where the good stuff lives.\n\nSo we’re starting with something built for a second listen.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
       "requires_dynamic_first_song_line": true
     },
     {
@@ -529,14 +529,14 @@
         "Mid-sentence interruption should feel real",
         "Include a subtle audible pause (1–1.5 seconds)",
         "Resume slightly amused",
-        "Report Miles’ excitement calmly",
+        "Report John’s excitement calmly",
         "Never return to original story",
         "Clean pivot into listener tie-in",
         "Clear first-song introduction"
       ],
       "emphasis_notes": [
         "Light emphasis on “first press”",
-        "Slight amused tone when referencing Miles",
+        "Slight amused tone when referencing John",
         "Subtle lift on “W.A.I.V.”",
         "Calm authority into first-song intro"
       ],
@@ -546,7 +546,7 @@
         "Small breath before listener tie-in",
         "Clean breath before first-song intro"
       ],
-      "script_body": "Hey thanks for being here — you’re on W.A.I.V. I’m Casey.\n\nYou know, the first time I realized a song could completely reroute your mood — like physically shift the air in a room — and—\n\n[brief pause, faint off-mic distraction]\n\nOkay. So Miles just came in very excited about a first press he found this weekend.\n\nApparently the matrix numbers are “immaculate.”\n\nHe says you can hear the difference in the space between the instruments.\n\nI didn’t argue.\n\nYou know, it’s funny how some listeners chase fidelity, and some chase feeling.\n\nLooking at your rotation, I can see you lean toward the feeling. You replay songs that hit emotionally, not just technically.\n\nThat’s always the better compass.\n\nSo let’s start with something that moves the air a little.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
+      "script_body": "Hey thanks for being here — you’re on W.A.I.V. I’m Casey.\n\nYou know, the first time I realized a song could completely reroute your mood — like physically shift the air in a room — and—\n\n[brief pause, faint off-mic distraction]\n\nOkay. So John just came in very excited about a first press he found this weekend.\n\nApparently the matrix numbers are “immaculate.”\n\nHe says you can hear the difference in the space between the instruments.\n\nI didn’t argue.\n\nYou know, it’s funny how some listeners chase fidelity, and some chase feeling.\n\nLooking at your rotation, I can see you lean toward the feeling. You replay songs that hit emotionally, not just technically.\n\nThat’s always the better compass.\n\nSo let’s start with something that moves the air a little.\n\nHere’s “[SONG TITLE]” by [ARTIST].",
       "requires_dynamic_first_song_line": true
     }
   ]

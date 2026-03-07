@@ -74,7 +74,7 @@ const DJS: DJ[] = [
   },
   {
     id: "miles",
-    name: "Miles, the vinyl nerd",
+    name: "John, the vinyl nerd",
     description:
       "Lifelong vinyl obsessive spinning foundational albums and thoughtful deep cuts.",
     portraitSrc: imgDjMiles,
