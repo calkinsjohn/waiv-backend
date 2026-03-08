@@ -35,6 +35,7 @@ const stationTagVariants = [
   "Right here with W.A.I.V.",
   "Only here on W.A.I.V.",
 ] as const;
+const waivTagline = "Your music. Your station.";
 
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -63,19 +64,36 @@ function chosenStationTag(request: TransitionRequest): string {
   return stationTagVariants[deterministicIndex(seed, stationTagVariants.length)];
 }
 
-function enforceStationTagEnding(line: string, request: TransitionRequest): string {
-  const normalized = normalizeWhitespace(line).replace(/[.!?;,:\-–—\s]+$/u, "").trim();
-  const existingTag = [...stationTagVariants]
-    .sort((lhs, rhs) => rhs.length - lhs.length)
-    .find((tag) => normalized.toLowerCase().includes(tag.toLowerCase()));
+function shouldAppendTagline(request: TransitionRequest): boolean {
+  const seed = `${request.djID}|${request.sessionPosition}|${request.fromTrack?.isrc ?? request.fromTrack?.title ?? "none"}|${request.toTrack.isrc}|tagline`;
+  return deterministicIndex(seed, 5) === 0;
+}
 
-  if (existingTag) {
-    const matchIndex = normalized.toLowerCase().lastIndexOf(existingTag.toLowerCase());
-    const throughTag = normalized.slice(0, matchIndex + existingTag.length).trim();
-    return throughTag;
+function chosenStationSignoff(request: TransitionRequest): string {
+  const stationTag = chosenStationTag(request);
+  if (!shouldAppendTagline(request)) {
+    return stationTag;
+  }
+  return `${stationTag} ${waivTagline}`;
+}
+
+function enforceStationTagEnding(line: string, request: TransitionRequest): string {
+  let body = normalizeWhitespace(line);
+
+  for (const tag of [...stationTagVariants, waivTagline].sort((lhs, rhs) => rhs.length - lhs.length)) {
+    const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    body = body.replace(new RegExp(escapedTag, "giu"), " ");
   }
 
-  return `${normalized}. ${chosenStationTag(request)}`.replace(/\.\s+\./g, ".").trim();
+  body = normalizeWhitespace(body)
+    .replace(/[.!?;,:\-–—\s]+$/u, "")
+    .trim();
+
+  if (!body) {
+    return chosenStationSignoff(request);
+  }
+
+  return `${body}. ${chosenStationSignoff(request)}`.replace(/\.\s+\./g, ".").trim();
 }
 
 function sessionDepthLabel(position: number): string {
@@ -213,6 +231,8 @@ Rules:
 - Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
 - The final spoken words must be the station tag. Nothing comes after it
 - Do not put the song title or artist after the station tag
+- Occasionally, about one in five bridges, follow the station tag with the tagline "Your music. Your station."
+- Use the tagline sparingly. Most bridges should end with only the station tag
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
 - ${depthContext}`;
