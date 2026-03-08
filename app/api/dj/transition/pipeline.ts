@@ -27,6 +27,15 @@ type AnthropicResponse = {
   content?: Array<{ type?: string; text?: string }>;
 };
 
+const stationTagVariants = [
+  "This is W.A.I.V.",
+  "You're listening to W.A.I.V.",
+  "Only on W.A.I.V.",
+  "This is W.A.I.V. Radio.",
+  "Right here with W.A.I.V.",
+  "Only here on W.A.I.V.",
+] as const;
+
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
@@ -37,6 +46,36 @@ function normalizeLine(raw: string): string | null {
     .replace(/['"""'']+$/, "")
     .trim();
   return trimmed || null;
+}
+
+function deterministicIndex(seed: string, upperBound: number): number {
+  if (upperBound <= 0) return 0;
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash) % upperBound;
+}
+
+function chosenStationTag(request: TransitionRequest): string {
+  const seed = `${request.djID}|${request.sessionPosition}|${request.fromTrack?.isrc ?? request.fromTrack?.title ?? "none"}|${request.toTrack.isrc}|${request.toTrack.title}`;
+  return stationTagVariants[deterministicIndex(seed, stationTagVariants.length)];
+}
+
+function enforceStationTagEnding(line: string, request: TransitionRequest): string {
+  const normalized = normalizeWhitespace(line).replace(/[.!?;,:\-–—\s]+$/u, "").trim();
+  const existingTag = [...stationTagVariants]
+    .sort((lhs, rhs) => rhs.length - lhs.length)
+    .find((tag) => normalized.toLowerCase().includes(tag.toLowerCase()));
+
+  if (existingTag) {
+    const matchIndex = normalized.toLowerCase().lastIndexOf(existingTag.toLowerCase());
+    const throughTag = normalized.slice(0, matchIndex + existingTag.length).trim();
+    return throughTag;
+  }
+
+  return `${normalized}. ${chosenStationTag(request)}`.replace(/\.\s+\./g, ".").trim();
 }
 
 function sessionDepthLabel(position: number): string {
@@ -165,13 +204,15 @@ Rules:
 - Do not invent facts about the song or artist
 - Keep it conversational and natural for spoken audio
 - Write like the middle of a bridge, not the setup or sign-off
+- Mention the next song at most once. Do not restate or re-introduce the song title or artist in the final clause
 - Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up", "let's keep it going")
 - Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
 - Prefer fresher acknowledgments like "fair enough", "got it", "I see it", "understood", or simply move forward without approval language
 - Frequently end the line with a short station tag. Rotate naturally among variations such as "This is W.A.I.V.", "You're listening to W.A.I.V.", "Only on W.A.I.V.", "This is W.A.I.V. Radio.", "Right here with W.A.I.V.", and "Only here on W.A.I.V."
 - Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
-- When using a station tag, keep it concise, conversational, and place it at the very end of the line
+- The final spoken words must be the station tag. Nothing comes after it
+- Do not put the song title or artist after the station tag
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
 - ${depthContext}`;
@@ -210,7 +251,7 @@ Rules:
   const line = normalizeLine(text);
   if (!line) return null;
 
-  return { line, model };
+  return { line: enforceStationTagEnding(line, request), model };
 }
 
 export async function generateTransitionCommentary(request: TransitionRequest): Promise<TransitionResult> {
