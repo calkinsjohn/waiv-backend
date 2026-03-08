@@ -34,6 +34,8 @@ const stationTagVariants = [
   "This is W.A.I.V. Radio.",
   "Right here with W.A.I.V.",
   "Only here on W.A.I.V.",
+  "You're on W.A.I.V.",
+  "You’re on W.A.I.V.",
 ] as const;
 const waivTagline = "Your music. Your station.";
 
