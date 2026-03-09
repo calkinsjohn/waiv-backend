@@ -10,6 +10,7 @@ import {
 } from "../appleMusicClient";
 import caseyIntroLibraryRaw from "../introScripts/casey.json";
 import marcusIntroLibraryRaw from "../introScripts/marcus.json";
+import robertIntroLibraryRaw from "../introScripts/robert.json";
 import { buildCanonicalTrackKey } from "../trackIdentity";
 import { AudioOrchestrator } from "./audioOrchestrator";
 import { sanitizeSpokenArtist, sanitizeSpokenTitle } from "./sanitization";
@@ -60,6 +61,7 @@ type SessionIntroLibrary = {
 const SESSION_INTRO_LIBRARIES: Record<string, SessionIntroLibrary> = {
   casey: caseyIntroLibraryRaw as SessionIntroLibrary,
   marcus: marcusIntroLibraryRaw as SessionIntroLibrary,
+  robert: robertIntroLibraryRaw as SessionIntroLibrary,
 };
 const UNAVAILABLE_TOAST_VARIANTS = [
   "That one’s off the air — rolling the next track.",

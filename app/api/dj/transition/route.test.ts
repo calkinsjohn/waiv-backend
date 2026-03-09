@@ -125,4 +125,51 @@ describe("POST /api/dj/transition", () => {
     expect(payload.djLine).toMatch(/W\.A\.I\.V\./);
     expect(payload.llmModel.length).toBeGreaterThan(0);
   });
+
+  it("includes Robert's deadpan synthetic personality instructions", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'Everything appears stable enough for "Reckoner" by Radiohead. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "robert",
+        sessionPosition: 4,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are R0B-3RT, pronounced Robert");
+    expect(systemPrompt).toContain("never intentionally joke about being a robot");
+    expect(systemPrompt).toContain("slightly paranoid, mildly irritated, and unintentionally funny");
+  });
 });
