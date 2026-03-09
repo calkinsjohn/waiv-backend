@@ -40,4 +40,20 @@ describe("isAmbientLike", () => {
       })
     ).toBe(false);
   });
+
+  it("filters chillhop and lo-fi beat metadata", () => {
+    expect(
+      isAmbientLike({
+        title: "Night Drift",
+        genreTag: "Chillhop",
+      })
+    ).toBe(true);
+    expect(
+      isAmbientLike({
+        title: "Rainy Window",
+        albumTitle: "Lo-Fi Beats to Study To",
+        genreTag: "Hip-Hop/Rap",
+      })
+    ).toBe(true);
+  });
 });

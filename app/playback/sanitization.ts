@@ -17,6 +17,15 @@ const UNSAFE_TERMS = [
 
 const AMBIENT_TERMS = [
   "ambient",
+  "chillhop",
+  "lofi hip hop",
+  "lo-fi hip hop",
+  "lofi beats",
+  "lo-fi beats",
+  "study beats",
+  "beats to study",
+  "beats to relax",
+  "instrumental beats",
   "drone",
   "soundscape",
   "meditation",
