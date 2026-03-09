@@ -225,6 +225,23 @@ Rules:
 - Keep it conversational and natural for spoken audio
 - Write like the middle of a bridge, not the setup or sign-off
 - Mention the next song at most once. Do not restate or re-introduce the song title or artist in the final clause
+- Do not default to a "that was X, this is Y" structure
+- If a previous track is provided, you may reference it lightly, but only when it helps. Do not force a back-reference in every bridge
+- Vary your bridge structures so they feel like a real live DJ:
+  sometimes a quick reaction,
+  sometimes a scene-setting observation,
+  sometimes a tonal pivot,
+  sometimes a listener-facing aside,
+  sometimes a direct drop into the next song
+- Keep the transitions radio-real: smooth, efficient, and spontaneous rather than gimmicky
+- You may naturally reference time context when it genuinely fits the moment:
+  time of day (morning, afternoon, evening, night, late night),
+  day of week,
+  month,
+  season,
+  or the feel of the current hour
+- Treat time context as optional color, not a requirement. Most bridges do not need it
+- If you use time context, make it feel effortless and local to the moment, not like an announcement or calendar readout
 - Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up", "let's keep it going")
 - Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
