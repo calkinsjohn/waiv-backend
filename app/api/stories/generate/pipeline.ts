@@ -122,7 +122,8 @@ const WIKIPEDIA_SECTION_TITLES = new Set(
 );
 
 const NARRATIVE_SOURCE_ORDER: NarrativeSource[] = ["wikipediaRecording", "songfacts", "geniusAbout", "allMusic"];
-const MAX_DJ_WORDS = 45;
+const MIN_RICH_DJ_WORDS = 28;
+const MAX_DJ_WORDS = 80;
 const MUSICBRAINZ_USER_AGENT = "WAIV/2.0 (song stories narrative pipeline)";
 let lastMusicBrainzRequestAt = 0;
 
@@ -513,6 +514,35 @@ function trimToWordCount(text: string, maxWords: number): string {
   return words.slice(0, maxWords).join(" ").trim();
 }
 
+function wordCount(text: string): number {
+  return normalizeWhitespace(text).split(" ").filter(Boolean).length;
+}
+
+function sentenceCount(text: string): number {
+  return text
+    .split(/[.!?]+/)
+    .map((segment) => segment.trim())
+    .filter(Boolean).length;
+}
+
+function hasRichDetailStructure(line: string): boolean {
+  const normalized = normalizeWhitespace(line);
+  if (wordCount(normalized) < MIN_RICH_DJ_WORDS) {
+    return false;
+  }
+
+  const hasLinkedDetail =
+    normalized.includes(",")
+    || normalized.includes(" and ")
+    || normalized.includes(" but ")
+    || normalized.includes(" because ")
+    || normalized.includes(" while ")
+    || normalized.includes(" after ")
+    || normalized.includes(" before ");
+
+  return sentenceCount(normalized) >= 2 || hasLinkedDetail;
+}
+
 function isGenericLowQualityLine(line: string): boolean {
   const normalized = line.toLowerCase();
   const bannedPatterns = [
@@ -566,7 +596,7 @@ async function generateDJLineWithAnthropic(
   const systemPrompt = `You are a warm, knowledgeable radio DJ introducing a song. You are given editorial prose and optional context.
 ${storyPersonaGuidance(djID)}
 
-Your job: find one compelling human moment and retell it in 1-2 spoken sentences.
+Your job: find one compelling human moment and retell it as a rich backstory in 2-3 spoken sentences.
 
 A valid moment must include at least two of:
 - a named person
@@ -577,10 +607,11 @@ A valid moment must include at least two of:
 STRICT RULES:
 - If no narrative moment meets the bar, return: {"status":"no_story"}
 - Never mention release year unless part of a richer fact
-- Never list multiple facts
+- Do not make a dry fact list; weave 2-3 connected details into one narrative
 - Never say "recorded live" as standalone story
 - Never invent details not present in provided prose
-- Keep output under 45 words
+- Aim for 55-85 words, and never exceed 80 words
+- Include one primary moment, one supporting concrete detail, and one payoff that explains what it means for the song
 - Write like the middle of a bridge, not the setup or sign-off
 - Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
 - Do not close with stock radio sign-offs (for example: "stick around", "stay tuned", "don't go anywhere")
@@ -639,6 +670,63 @@ Write JSON only.`;
   const normalizedLine = normalizeLLMLine(parsed.line);
   if (!sourceValid || normalizedLine.length < 16 || isGenericLowQualityLine(normalizedLine)) {
     return { outcome: { status: "no_story" }, model };
+  }
+
+  if (!hasRichDetailStructure(normalizedLine)) {
+    const rewritePrompt = `Your first draft was too thin. Rewrite it into a richer 2-3 sentence backstory.
+
+Requirements:
+- Keep the same factual grounding and source
+- Use 55-85 words, but never exceed 80 words
+- Include at least two concrete details from the prose
+- End with why that detail matters for the song the listener is hearing
+- Do not add any fact not present in the prose
+- Return valid JSON only:
+  {"status":"ok","line":"...","source":"${parsed.source}"}
+  {"status":"no_story"}`;
+
+    const rewriteResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 260,
+        temperature: 0.2,
+        system: `${systemPrompt}\n\n${rewritePrompt}`,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+      cache: "no-store",
+    });
+
+    if (!rewriteResponse.ok) {
+      throw new Error(`anthropic_request_failed_${rewriteResponse.status}`);
+    }
+
+    const rewritePayload = (await rewriteResponse.json()) as AnthropicResponse;
+    const rewriteText = rewritePayload.content?.find((chunk) => chunk.type === "text")?.text?.trim();
+    const rewriteParsed = rewriteText ? safeParseLLMDecision(rewriteText) : null;
+    if (!rewriteParsed || rewriteParsed.status === "no_story") {
+      return { outcome: { status: "no_story" }, model };
+    }
+
+    const rewriteSourceValid = narratives.some((narrative) => narrative.source === rewriteParsed.source);
+    const rewrittenLine = normalizeLLMLine(rewriteParsed.line);
+    if (!rewriteSourceValid || isGenericLowQualityLine(rewrittenLine) || !hasRichDetailStructure(rewrittenLine)) {
+      return { outcome: { status: "no_story" }, model };
+    }
+
+    return {
+      outcome: {
+        status: "ok",
+        line: rewrittenLine,
+        source: rewriteParsed.source,
+      },
+      model,
+    };
   }
 
   return {

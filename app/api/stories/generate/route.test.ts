@@ -129,7 +129,7 @@ describe("POST /api/stories/generate", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("api.anthropic.com")) {
-        return jsonResponse(fixture("anthropic_ok.json"));
+        return jsonResponse(fixture("anthropic_rich_ok.json"));
       }
       return new Response(null, { status: 404 });
     });
@@ -164,8 +164,98 @@ describe("POST /api/stories/generate", () => {
 
     expect(response.status).toBe(200);
     expect(payload.djLine.length).toBeGreaterThan(20);
+    expect(payload.djLine.split(/\s+/).filter(Boolean).length).toBeGreaterThanOrEqual(28);
     expect(payload.sourceAttribution).toBe("wikipediaRecording");
     expect(payload.llmModel.length).toBeGreaterThan(0);
+  });
+
+  it("retries a thin first draft and returns the richer rewrite", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      const anthropicCallCount = fetchMock.mock.calls.filter(([requestInput]) =>
+        String(requestInput).includes("api.anthropic.com")
+      ).length;
+      return anthropicCallCount === 1
+        ? jsonResponse(fixture("anthropic_ok.json"))
+        : jsonResponse(fixture("anthropic_rich_ok.json"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/stories/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        isrc: "GBAYE6800015",
+        title: "While My Guitar Gently Weeps",
+        artist: "The Beatles",
+        narratives: [
+          {
+            source: "wikipediaRecording",
+            prose:
+              "Harrison invited Eric Clapton to play lead guitar on the track. Clapton was hesitant because no outside musician had played on a Beatles record, but Harrison insisted and the guitar became central to the song's emotional tone.",
+            confidence: 0.85,
+          },
+        ],
+        context: {
+          notableGuest: "Eric Clapton",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string; sourceAttribution: string; llmModel: string };
+    const anthropicCalls = fetchMock.mock.calls.filter(([input]) => String(input).includes("api.anthropic.com"));
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine.split(/\s+/).filter(Boolean).length).toBeGreaterThanOrEqual(28);
+    expect(payload.sourceAttribution).toBe("wikipediaRecording");
+    expect(anthropicCalls).toHaveLength(2);
+  });
+
+  it("returns 204 when both first draft and rewrite stay too thin", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("api.anthropic.com")) {
+        return jsonResponse(fixture("anthropic_ok.json"));
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/stories/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        isrc: "GBAYE6800015",
+        title: "While My Guitar Gently Weeps",
+        artist: "The Beatles",
+        narratives: [
+          {
+            source: "wikipediaRecording",
+            prose:
+              "Harrison invited Eric Clapton to play lead guitar on the track. Clapton was hesitant because no outside musician had played on a Beatles record, but Harrison insisted and the guitar became central to the song's emotional tone.",
+            confidence: 0.85,
+          },
+        ],
+      }),
+    });
+
+    const response = await POST(request);
+    const anthropicCalls = fetchMock.mock.calls.filter(([input]) => String(input).includes("api.anthropic.com"));
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Story-Reason")).toBe("llm_rejected");
+    expect(anthropicCalls).toHaveLength(2);
   });
 
   it("returns 204 when LLM rejects thin prose", async () => {
