@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-type DjId = "miles" | "jack" | "luna" | "casey" | "jolene" | "marcus" | "robert";
+type DjId = "miles" | "jack" | "luna" | "casey" | "jolene" | "marcus" | "tiffany" | "robert";
 
 type VoiceRequest = {
   djId: DjId;
@@ -14,6 +14,7 @@ const VOICE_ENV_BY_DJ: Record<DjId, string> = {
   casey: "ELEVENLABS_VOICE_ID_CASEY",
   jolene: "ELEVENLABS_VOICE_ID_JOLENE",
   marcus: "ELEVENLABS_VOICE_ID_MARCUS",
+  tiffany: "ELEVENLABS_VOICE_ID_TIFFANY",
   robert: "ELEVENLABS_VOICE_ID_ROBERT",
 };
 
@@ -25,6 +26,7 @@ function isDjId(value: unknown): value is DjId {
     value === "casey" ||
     value === "jolene" ||
     value === "marcus" ||
+    value === "tiffany" ||
     value === "robert"
   );
 }
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     luna: "0KUMUbM9SPqmcw1fvkg5",
     miles: "IjZViYz1zbpQ4B0R1Z0i",
     marcus: "tB0V1KLPcxfI3Dzd6Yi9",
+    tiffany: "XXdN7JMw4LRaRRHLBliy",
     robert: "HyKZ7TI0QOLeou9ImlCP",
   };
   const voiceId = process.env[voiceEnvName] ?? voiceIdFallbackByDj[input.djId];
