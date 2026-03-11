@@ -38,6 +38,11 @@ const stationTagVariants = [
   "You’re on W.A.I.V.",
 ] as const;
 const waivTagline = "Your music. Your station.";
+const overusedOpeningPatterns = [
+  /^there(?:'s| is)? something about\b/i,
+  /^you know that feeling when\b/i,
+  /^sometimes a song\b/i,
+] as const;
 
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -49,6 +54,16 @@ function normalizeLine(raw: string): string | null {
     .replace(/['"""'']+$/, "")
     .trim();
   return trimmed || null;
+}
+
+function hasOverusedOpening(line: string): boolean {
+  const normalized = normalizeWhitespace(line)
+    .replace(/^['"""'']+/, "")
+    .replace(/['"""'']+$/, "")
+    .replace(/[’']/g, "'")
+    .trim();
+
+  return overusedOpeningPatterns.some((pattern) => pattern.test(normalized));
 }
 
 function deterministicIndex(seed: string, upperBound: number): number {
@@ -252,6 +267,8 @@ Rules:
 - Treat time context as optional color, not a requirement. Most bridges do not need it
 - If you use time context, make it feel effortless and local to the moment, not like an announcement or calendar readout
 - Do not open with stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up", "let's keep it going")
+- Do not open with overused reflective stems like "There's something about...", "There is something about...", "You know that feeling when...", or "Sometimes a song..."
+- If your first instinct is "There's something about...", rewrite it into a different shape before answering
 - Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
 - Prefer fresher acknowledgments like "fair enough", "got it", "I see it", "understood", or simply move forward without approval language
@@ -298,6 +315,7 @@ Rules:
 
   const line = normalizeLine(text);
   if (!line) return null;
+  if (hasOverusedOpening(line)) return null;
 
   return { line: enforceStationTagEnding(line, request), model };
 }

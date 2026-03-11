@@ -80,6 +80,8 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("sometimes a tonal pivot");
     expect(systemPrompt).toContain("You may naturally reference time context when it genuinely fits the moment");
     expect(systemPrompt).toContain("Treat time context as optional color, not a requirement");
+    expect(systemPrompt).toContain('Do not open with overused reflective stems like "There\'s something about..."');
+    expect(systemPrompt).toContain('If your first instinct is "There\'s something about..."');
   });
 
   it("enforces the station-tag ending even when the model omits it", async () => {
@@ -171,5 +173,47 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("You are R0B-3RT, pronounced Robert");
     expect(systemPrompt).toContain("never intentionally joke about being a robot");
     expect(systemPrompt).toContain("slightly paranoid, mildly irritated, and unintentionally funny");
+  });
+
+  it("rejects overused opener shapes so the client can fall back locally", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'There\'s something about "Reckoner" by Radiohead that just hangs in the air.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "luna",
+        sessionPosition: 9,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Transition-Reason")).toBe("llm_rejected");
   });
 });
