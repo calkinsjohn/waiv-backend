@@ -80,10 +80,10 @@ function applyRafaPacing(text: string): string {
 function voiceSettingsForDJ(djId: DjId) {
   if (djId === "miles") {
     return {
-      stability: 0.5,
-      similarity_boost: 0.74,
-      style: 0.24,
-      speed: 1.03,
+      stability: 0.58,
+      similarity_boost: 0.76,
+      style: 0.18,
+      speed: 1.0,
       use_speaker_boost: true,
     };
   }

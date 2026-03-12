@@ -86,10 +86,10 @@ describe("POST /api/dj/voice", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(requestBody.voice_settings).toMatchObject({
-      stability: 0.5,
-      similarity_boost: 0.74,
-      style: 0.24,
-      speed: 1.03,
+      stability: 0.58,
+      similarity_boost: 0.76,
+      style: 0.18,
+      speed: 1.0,
       use_speaker_boost: true,
     });
   });
