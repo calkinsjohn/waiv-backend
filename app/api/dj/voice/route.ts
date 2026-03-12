@@ -31,6 +31,48 @@ function isDjId(value: unknown): value is DjId {
   );
 }
 
+function spokenTextForDJ(djId: DjId, text: string): string {
+  const trimmed = text.trim();
+  if (djId !== "miles") {
+    return trimmed;
+  }
+
+  // Rafa mixes in short Spanish phrases. Give ElevenLabs clearer phonetic hints
+  // while keeping the visible copy unchanged elsewhere in the app.
+  return trimmed
+    .replace(/\bclaro\b/gi, "clah-roh")
+    .replace(/\bdale\b/gi, "dah-leh")
+    .replace(/\bvamos a empezar\b/gi, "vah-mohs ah em-peh-sar")
+    .replace(/\bvamos\b/gi, "vah-mohs")
+    .replace(/\basí es\b/gi, "ah-see ess")
+    .replace(/\bsabes\b/gi, "sah-behs")
+    .replace(/\btranqui\b/gi, "trahn-kee")
+    .replace(/\bcréeme\b/gi, "cray-eh-meh")
+    .replace(/\bbueno\b/gi, "bweh-noh")
+    .replace(/\bmi gente\b/gi, "mee hen-teh")
+    .replace(/\bcontigo\b/gi, "cone-tee-goh")
+    .replace(/\by esta va primero\b/gi, "ee es-tah vah pree-meh-roh");
+}
+
+function voiceSettingsForDJ(djId: DjId) {
+  if (djId === "miles") {
+    return {
+      stability: 0.5,
+      similarity_boost: 0.74,
+      style: 0.24,
+      speed: 1.08,
+      use_speaker_boost: true,
+    };
+  }
+
+  return {
+    stability: 0.52,
+    similarity_boost: 0.72,
+    style: 0.22,
+    use_speaker_boost: true,
+  };
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const expectedAppToken = process.env.WAIV_API_APP_TOKEN?.trim();
   if (!expectedAppToken) {
@@ -79,6 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const maxChars = Number.isFinite(maxCharsRaw)
     ? Math.max(200, Math.min(4000, Math.floor(maxCharsRaw)))
     : 2200;
+  const spokenText = spokenTextForDJ(input.djId, input.text).slice(0, maxChars);
 
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -89,15 +132,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         "xi-api-key": apiKey,
       },
       body: JSON.stringify({
-        text: input.text.trim().slice(0, maxChars),
+        text: spokenText,
         model_id: modelId,
         output_format: outputFormat,
-        voice_settings: {
-          stability: 0.52,
-          similarity_boost: 0.72,
-          style: 0.22,
-          use_speaker_boost: true,
-        },
+        voice_settings: voiceSettingsForDJ(input.djId),
       }),
     });
 
