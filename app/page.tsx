@@ -12,7 +12,7 @@ import { FirstTimeHomeOnboardingModal } from "./components/FirstTimeHomeOnboardi
 import { WaivPlaybackController } from "./playback/waivPlaybackController";
 import { buildCanonicalTrackKey } from "./trackIdentity";
 
-const imgDjMiles = "/images/miles_640.webp";
+const imgDjMiles = "/images/rafa.jpg";
 const imgDjLuna = "/images/luna_640.webp";
 const imgDjCasey = "/images/casey_640.webp";
 const imgDjJolene = "/images/jolene_640.webp";
@@ -74,9 +74,9 @@ const DJS: DJ[] = [
   },
   {
     id: "miles",
-    name: "John, the vinyl nerd",
+    name: "Rafa, the late-night host",
     description:
-      "Lifelong vinyl obsessive spinning foundational albums and thoughtful deep cuts.",
+      "Calm, cinematic, and quietly magnetic, bringing sleek sequencing and after-hours confidence.",
     portraitSrc: imgDjMiles,
   },
   {

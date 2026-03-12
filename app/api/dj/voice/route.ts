@@ -63,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Keep Winston available immediately; can be overridden by ELEVENLABS_VOICE_ID_JACK.
     jack: "IazpfpjmkHHQKVesClWm",
     luna: "0KUMUbM9SPqmcw1fvkg5",
-    miles: "IjZViYz1zbpQ4B0R1Z0i",
+    miles: "vkSVKHR3X9w4QZWIh0MP",
     marcus: "tB0V1KLPcxfI3Dzd6Yi9",
     tiffany: "XXdN7JMw4LRaRRHLBliy",
     robert: "HyKZ7TI0QOLeou9ImlCP",
