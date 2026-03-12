@@ -216,4 +216,98 @@ describe("POST /api/dj/transition", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("X-WAIV-Transition-Reason")).toBe("llm_rejected");
   });
+
+  it("includes Rafa-specific bridge guidance in the transition prompt", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'A little more glow on this turn, "Night Drive" by Chromatics. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "miles",
+        sessionPosition: 11,
+        trigger: "auto",
+        toTrack: {
+          title: "Night Drive",
+          artist: "Chromatics",
+          isrc: "USCA29999999",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("DJ-specific bridge guidance for Rafa");
+    expect(systemPrompt).toContain("Favor mood, momentum, glow, shape, presence, and after-hours confidence");
+    expect(systemPrompt).toContain("A little more glow on this turn, vamos");
+  });
+
+  it("includes Tiffany-specific bridge guidance in the transition prompt", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'Okay, this next one is a whole mood: "Midnight City" by M83. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "tiffany",
+        sessionPosition: 8,
+        trigger: "auto",
+        toTrack: {
+          title: "Midnight City",
+          artist: "M83",
+          isrc: "USUG11111111",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("DJ-specific bridge guidance for Tiffany");
+    expect(systemPrompt).toContain("Set the mood first, then add a playful influencer-style observation");
+    expect(systemPrompt).toContain("The algorithm actually delivered a moment here");
+  });
 });
