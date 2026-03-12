@@ -130,7 +130,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     luna: "0KUMUbM9SPqmcw1fvkg5",
     miles: "vkSVKHR3X9w4QZWIh0MP",
     marcus: "tB0V1KLPcxfI3Dzd6Yi9",
-    tiffany: "XXdN7JMw4LRaRRHLBliy",
+    tiffany: "Soj83FHuFBnbh2kQSIYq",
     robert: "HyKZ7TI0QOLeou9ImlCP",
   };
   const voiceId = process.env[voiceEnvName] ?? voiceIdFallbackByDj[input.djId];

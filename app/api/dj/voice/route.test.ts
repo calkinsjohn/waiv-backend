@@ -43,7 +43,7 @@ describe("POST /api/dj/voice", () => {
     expect(audio).toBe("mp3-bytes");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "https://api.elevenlabs.io/v1/text-to-speech/XXdN7JMw4LRaRRHLBliy"
+      "https://api.elevenlabs.io/v1/text-to-speech/Soj83FHuFBnbh2kQSIYq"
     );
   });
 
