@@ -37,9 +37,11 @@ function spokenTextForDJ(djId: DjId, text: string): string {
     return trimmed;
   }
 
+  const paced = applyRafaPacing(trimmed);
+
   // Rafa mixes in short Spanish phrases. Give ElevenLabs clearer phonetic hints
   // while keeping the visible copy unchanged elsewhere in the app.
-  return trimmed
+  return paced
     .replace(/\bclaro\b/gi, "clah-roh")
     .replace(/\bdale\b/gi, "dah-leh")
     .replace(/\bvamos a empezar\b/gi, "vah-mohs ah em-peh-sar")
@@ -54,13 +56,34 @@ function spokenTextForDJ(djId: DjId, text: string): string {
     .replace(/\by esta va primero\b/gi, "ee es-tah vah pree-meh-roh");
 }
 
+function applyRafaPacing(text: string): string {
+  if (/<speak[\s>]|<break\b/i.test(text)) {
+    return text;
+  }
+
+  const normalizedLineEndings = text.replace(/\r\n?/g, "\n");
+  const paragraphs = normalizedLineEndings
+    .split(/\n\s*\n+/)
+    .map((paragraph) =>
+      paragraph
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => (/[.!?;:…]["')\]]*$/.test(line) ? line : `${line}.`))
+        .join(" ")
+    )
+    .filter(Boolean);
+
+  return paragraphs.join("\n\n");
+}
+
 function voiceSettingsForDJ(djId: DjId) {
   if (djId === "miles") {
     return {
       stability: 0.5,
       similarity_boost: 0.74,
       style: 0.24,
-      speed: 1.08,
+      speed: 1.03,
       use_speaker_boost: true,
     };
   }

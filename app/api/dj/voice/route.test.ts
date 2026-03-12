@@ -63,4 +63,80 @@ describe("POST /api/dj/voice", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("uses Rafa's tuned voice settings for the miles slot", async () => {
+    const fetchMock = vi.fn(async () => new Response("mp3-bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "miles",
+        text: "Good to have you here.\nMy thing is momentum.\nTexture.",
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody.voice_settings).toMatchObject({
+      stability: 0.5,
+      similarity_boost: 0.74,
+      style: 0.24,
+      speed: 1.03,
+      use_speaker_boost: true,
+    });
+  });
+
+  it("adds pacing punctuation to Rafa raw-text lines without touching SSML", async () => {
+    const fetchMock = vi.fn(async () => new Response("mp3-bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const plainRequest = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "miles",
+        text: "Good to have you here\nMy thing is momentum\nTexture",
+      }),
+    });
+
+    const plainResponse = await POST(plainRequest);
+
+    expect(plainResponse.status).toBe(200);
+    let requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody.text).toContain("Good to have you here.");
+    expect(requestBody.text).toContain("My thing is momentum.");
+    expect(requestBody.text).toContain("Texture.");
+
+    fetchMock.mockClear();
+
+    const ssmlRequest = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "miles",
+        text: "<speak>Momentum.<break time=\"320ms\"/>Texture.</speak>",
+      }),
+    });
+
+    const ssmlResponse = await POST(ssmlRequest);
+
+    expect(ssmlResponse.status).toBe(200);
+    requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody.text).toContain("<break time=\"320ms\"/>");
+    expect(requestBody.text).toContain("<speak>");
+  });
 });
