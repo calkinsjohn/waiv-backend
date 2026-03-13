@@ -38,6 +38,10 @@ const stationTagVariants = [
   "You’re on W.A.I.V.",
 ] as const;
 const waivTagline = "Your music. Your station.";
+const trailingStationMentionPattern = new RegExp(
+  String.raw`(?:(?:this\s+is|you(?:'|’)re\s+listening\s+to|you\s+are\s+listening\s+to|only\s+on|only\s+here\s+on|right\s+here\s+with|you(?:'|’)re\s+on|you\s+are\s+on)\s+)?w\s*\.?\s*a\s*\.?\s*i\s*\.?\s*v\.?(?:\s*radio)?`,
+  "giu"
+);
 const overusedOpeningPatterns = [
   /^there(?:'s| is)? something about\b/i,
   /^you know that feeling when\b/i,
@@ -221,8 +225,26 @@ function chosenStationSignoff(request: TransitionRequest): string {
   return `${stationTag} ${waivTagline}`;
 }
 
+function trailingStationMentionStart(text: string): number | null {
+  const tailStart = Math.max(0, Math.floor(text.length / 3));
+  const matches = Array.from(text.matchAll(trailingStationMentionPattern));
+  const candidate = matches
+    .filter((match) => (match.index ?? -1) >= tailStart)
+    .at(-1);
+
+  if (candidate?.index == null) {
+    return null;
+  }
+
+  return candidate.index;
+}
+
 function enforceStationTagEnding(line: string, request: TransitionRequest): string | null {
   let body = normalizeWhitespace(line);
+  const trailingStationMentionIndex = trailingStationMentionStart(body);
+  if (trailingStationMentionIndex != null) {
+    body = body.slice(0, trailingStationMentionIndex);
+  }
 
   for (const tag of [...stationTagVariants, waivTagline].sort((lhs, rhs) => rhs.length - lhs.length)) {
     const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -525,6 +547,7 @@ Rules:
 - Prefer fresher acknowledgments like "fair enough", "got it", "I see it", "understood", or simply move forward without approval language
 - Frequently end the line with a short station tag. Rotate naturally among variations such as "This is W.A.I.V.", "You're listening to W.A.I.V.", "Only on W.A.I.V.", "This is W.A.I.V. Radio.", "Right here with W.A.I.V.", and "Only here on W.A.I.V."
 - Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
+- Use one of those station-tag phrases exactly as written. Do not improvise a new station-tag wording or add extra words before or after it
 - The final spoken words must be the station tag. Nothing comes after it
 - Do not put the song title or artist after the station tag
 - Occasionally, about one in five bridges, follow the station tag with the tagline "Your music. Your station."
