@@ -89,6 +89,7 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
     expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
     expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
     expect(systemPrompt).toContain('such as "night", "tonight", "late night", "late tonight"');
+    expect(systemPrompt).toContain("Do not default to opening every intro with the same weekday-plus-time phrase.");
   });
 
   it("rejects generated intros with the wrong time of day for the listener", async () => {
