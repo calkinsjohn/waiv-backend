@@ -56,6 +56,133 @@ function normalizeLine(raw: string): string | null {
   return trimmed || null;
 }
 
+function trimEnclosingQuotes(text: string): string {
+  return normalizeWhitespace(text)
+    .replace(/^["'`“”‘’]+/u, "")
+    .replace(/["'`“”‘’]+$/u, "")
+    .trim();
+}
+
+function spokenWords(text: string): Array<{ value: string; index: number }> {
+  return Array.from(text.matchAll(/[A-Za-z0-9]+(?:['’\-][A-Za-z0-9]+)*/g)).map((match) => ({
+    value: match[0],
+    index: match.index ?? 0,
+  }));
+}
+
+function normalizeWord(word: string): string {
+  return word.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function collapseRepeatedTrailingWordSequence(text: string): string {
+  let trimmed = text.trim();
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    const words = spokenWords(trimmed);
+    if (words.length < 4) {
+      break;
+    }
+
+    const maxSequenceLength = Math.min(6, Math.floor(words.length / 2));
+    for (let sequenceLength = maxSequenceLength; sequenceLength >= 2; sequenceLength -= 1) {
+      const leading = words.slice(words.length - sequenceLength * 2, words.length - sequenceLength).map((word) => normalizeWord(word.value));
+      const trailing = words.slice(words.length - sequenceLength).map((word) => normalizeWord(word.value));
+      if (leading.length === 0 || leading.join(" ") !== trailing.join(" ")) {
+        continue;
+      }
+
+      trimmed = trimmed.slice(0, words[words.length - sequenceLength].index).trimEnd();
+      changed = true;
+      break;
+    }
+  }
+
+  return trimmed;
+}
+
+function clauseSegments(text: string): Array<{ value: string; index: number }> {
+  return Array.from(text.matchAll(/[^.!?;,:]+/gu))
+    .map((match) => ({
+      value: match[0].trim(),
+      index: match.index ?? 0,
+    }))
+    .filter((segment) => segment.value.length > 0);
+}
+
+function trimRepeatedTrailingClause(text: string): string {
+  const trimmed = text.trim();
+  const clauses = clauseSegments(trimmed);
+  if (clauses.length < 2) {
+    return trimmed;
+  }
+
+  const lastClause = clauses[clauses.length - 1];
+  const lastWords = spokenWords(lastClause.value).map((word) => normalizeWord(word.value));
+  if (lastWords.length < 5) {
+    return trimmed;
+  }
+
+  const hasEarlierDuplicate = clauses
+    .slice(0, -1)
+    .some((clause) => spokenWords(clause.value).map((word) => normalizeWord(word.value)).join(" ") === lastWords.join(" "));
+
+  if (!hasEarlierDuplicate) {
+    return trimmed;
+  }
+
+  return trimmed.slice(0, lastClause.index).replace(/[.!?;,:\-–—\s]+$/u, "").trimEnd();
+}
+
+function looksLikeGibberishWord(word: string): boolean {
+  const lettersOnly = normalizeWord(word).replace(/[^a-z]/g, "");
+  if (lettersOnly.length < 6) {
+    return false;
+  }
+  if (/(.)\1{3,}/u.test(lettersOnly)) {
+    return true;
+  }
+  if (/[bcdfghjklmnpqrstvwxyz]{6,}/u.test(lettersOnly)) {
+    return true;
+  }
+
+  const vowels = Array.from(lettersOnly).filter((character) => "aeiouy".includes(character)).length;
+  return vowels / Math.max(lettersOnly.length, 1) < 0.2;
+}
+
+function trimLikelyGibberishSuffix(text: string): string {
+  let trimmed = text.trim();
+  while (true) {
+    const words = spokenWords(trimmed);
+    if (words.length < 4) {
+      return trimmed;
+    }
+
+    const lastWord = words[words.length - 1];
+    if (!looksLikeGibberishWord(lastWord.value)) {
+      return trimmed;
+    }
+
+    trimmed = trimmed
+      .slice(0, lastWord.index)
+      .trimEnd()
+      .replace(/["'”’)\]}]+$/u, "")
+      .trimEnd();
+  }
+}
+
+function sanitizeGeneratedTransitionLine(raw: string): string | null {
+  let line = trimEnclosingQuotes(raw);
+  line = collapseRepeatedTrailingWordSequence(line);
+  line = trimRepeatedTrailingClause(line);
+  line = trimLikelyGibberishSuffix(line);
+  line = collapseRepeatedTrailingWordSequence(line);
+  line = trimRepeatedTrailingClause(line);
+  line = normalizeWhitespace(line);
+  return line || null;
+}
+
 function hasOverusedOpening(line: string): boolean {
   const normalized = normalizeWhitespace(line)
     .replace(/^['"""'']+/, "")
@@ -398,7 +525,10 @@ ${bridgeStyleGuidance}`.trim();
   const text = payload.content?.find((item) => item.type === "text")?.text?.trim();
   if (!text) return null;
 
-  const line = normalizeLine(text);
+  const normalized = normalizeLine(text);
+  if (!normalized) return null;
+
+  const line = sanitizeGeneratedTransitionLine(normalized);
   if (!line) return null;
   if (hasOverusedOpening(line)) return null;
 

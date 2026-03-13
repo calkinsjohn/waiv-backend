@@ -128,6 +128,94 @@ describe("POST /api/dj/transition", () => {
     expect(payload.llmModel.length).toBeGreaterThan(0);
   });
 
+  it("collapses duplicated ending phrases before appending the station tag", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'This one carries the right kind of weight for the room, "Reckoner" by Radiohead, this one carries the right kind of weight for the room.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "miles",
+        sessionPosition: 11,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain('This one carries the right kind of weight for the room, "Reckoner" by Radiohead.');
+    expect(payload.djLine.toLowerCase()).not.toContain('room, this one carries the right kind of weight for the room');
+  });
+
+  it("strips gibberish suffix fragments before appending the station tag", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'Everything cools off a little before "Reckoner" by Radiohead. skrrrttt',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        sessionPosition: 5,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain('Everything cools off a little before "Reckoner" by Radiohead.');
+    expect(payload.djLine.toLowerCase()).not.toContain("skrrrttt");
+  });
+
   it("includes Robert's deadpan synthetic personality instructions", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
