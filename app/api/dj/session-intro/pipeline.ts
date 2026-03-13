@@ -192,6 +192,39 @@ function djPersonalityPrompt(djID: string): string {
   }
 }
 
+function spokenDeliveryDisciplinePrompt(djID: string): string {
+  const shared = [
+    "Write for the ear first, not the screen.",
+    "Sound like a real radio host opening a session naturally in one take, not a chatbot or assistant.",
+    "Favor clear spoken cadence, complete thoughts, and smooth conversational rhythm.",
+    "Avoid stacked clipped fragments, slogan-like phrasing, ad-copy language, and lines that feel over-written for effect.",
+    "If a phrase sounds too polished, too theatrical, or too clever when spoken aloud, rewrite it simpler.",
+    "Let personality come from viewpoint, warmth, restraint, and what the DJ notices, not from repeated bits or catchphrases.",
+  ];
+
+  const byDJ: Record<string, string> = {
+    casey:
+      "Keep April dry and precise, but not as if she is polishing every sentence into a joke.",
+    luna:
+      "Keep Luna intimate and lightly poetic, but grounded, concrete, and easy to speak aloud.",
+    marcus:
+      "Keep Marcus confident and rhythmic, but relaxed enough to feel lived-in rather than like a promo read.",
+    miles:
+      "Keep Juan smooth and cinematic, but not self-consciously cool or overwritten.",
+    jack:
+      "Keep Winston witty and composed, but avoid overcrafted cleverness that sounds written instead of spoken.",
+    tiffany:
+      "Keep Tiffany stylish and playful, but avoid social-caption language, overly branded mood framing, and lines that sound curated for a post.",
+    jolene:
+      "Keep Jolene warm and affectionate, but never syrupy or unreal.",
+    robert:
+      "Keep Robert uncanny through perspective and over-control, not through broken syntax or random jargon clutter.",
+  };
+
+  const specific = byDJ[djID.trim().toLowerCase()];
+  return [...shared, specific].filter(Boolean).join(" ");
+}
+
 function introKindGuidance(introKind: string, request: SessionIntroRequest): string {
   if (introKind === "first_listen_ever") {
     return [
@@ -276,6 +309,8 @@ async function generateWithAnthropic(
     || "claude-haiku-4-5";
 
   const systemPrompt = `${djPersonalityPrompt(request.djID)}
+
+${spokenDeliveryDisciplinePrompt(request.djID)}
 
 Write a session-opening radio intro in plain text.
 

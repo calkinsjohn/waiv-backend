@@ -139,6 +139,8 @@ describe("POST /api/skip-lines/generate", () => {
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
     expect(systemPrompt).toContain("You care about sequencing, fit, tension, and how a track lands in a set.");
+    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
+    expect(systemPrompt).toContain("do not make every skip line sound sharpened into a joke");
     expect(systemPrompt).toContain("Never use bro-y slang");
     expect(systemPrompt).toContain("April should sound lightly amused, observant, and musically intentional.");
   });
@@ -205,6 +207,8 @@ describe("POST /api/skip-lines/generate", () => {
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("You are Luna, the DJ represented by the internal id 'luna' in WAIV.");
     expect(systemPrompt).toContain("Small voice, big feelings");
+    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
+    expect(systemPrompt).toContain("Keep Luna soft and emotionally specific, but grounded and concrete rather than vague or dreamy for its own sake.");
     expect(systemPrompt).toContain("Luna should sound calm, intuitive, and emotionally specific.");
     expect(systemPrompt).toContain("Avoid vague moonlight poetry");
   });

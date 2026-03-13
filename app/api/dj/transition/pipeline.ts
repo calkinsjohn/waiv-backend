@@ -417,6 +417,39 @@ function djPersonalityPrompt(djID: string): string {
   }
 }
 
+function spokenDeliveryDisciplinePrompt(djID: string): string {
+  const shared = [
+    "Write for the ear first, not the screen.",
+    "Sound like a real radio host speaking naturally in one take, not a chatbot generating copy.",
+    "Favor natural spoken cadence, clear syntax, and lines a human would actually say out loud.",
+    "Avoid stacked clipped fragments, slogan-like phrasing, ad-copy language, and self-consciously written cleverness.",
+    "If a phrase looks stylish on screen but sounds unnatural when spoken, rewrite it simpler.",
+    "Let personality come from perspective, taste, and what the DJ notices, not from catchphrases or forced bits.",
+  ];
+
+  const byDJ: Record<string, string> = {
+    casey:
+      "Keep Casey dry and sharp, but do not make every line sound polished into a joke or a bit.",
+    marcus:
+      "Keep Marcus confident and rhythmic, but relaxed enough to sound lived-in rather than like a promo read.",
+    luna:
+      "Keep Luna intimate and poetic, but grounded, concrete, and easy to say aloud.",
+    miles:
+      "Keep Juan smooth and cinematic, but not self-consciously cool or overwritten. Any Spanish should feel naturally integrated into the sentence.",
+    jack:
+      "Keep Winston witty and dry, but avoid overcrafted lines that feel written only to land a quip.",
+    tiffany:
+      "Keep Tiffany stylish and playful, but avoid social-caption language, constant 'this is a moment' framing, and overcurated copy.",
+    jolene:
+      "Keep Jolene warm and affectionate, but never syrupy, hallmark-sweet, or polished past believability.",
+    robert:
+      "Keep Robert uncanny through perspective and precision, not through awkward syntax, broken phrasing, or random technical clutter.",
+  };
+
+  const specific = byDJ[djID.toLowerCase()];
+  return [...shared, specific].filter(Boolean).join(" ");
+}
+
 function normalizeTrack(input: unknown): TransitionTrack | null {
   const payload = (input ?? {}) as Partial<TransitionTrack>;
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
@@ -454,6 +487,8 @@ async function generateWithAnthropic(request: TransitionRequest): Promise<{ line
   const bridgeStyleGuidance = djBridgeStyleGuidance(request.djID);
 
   const systemPrompt = `${personality}
+
+${spokenDeliveryDisciplinePrompt(request.djID)}
 
 Write a single track introduction for radio broadcast.
 

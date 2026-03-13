@@ -165,6 +165,38 @@ function djPersonalityPrompt(djID: string): string {
   }
 }
 
+function spokenDeliveryDisciplinePrompt(djID: string): string {
+  const shared = [
+    "Write for the ear first, not the screen.",
+    "Sound like a real radio host reacting in the moment, not a chatbot, assistant, or copywriter.",
+    "Favor concise natural speech over polished slogans, stock patter, or lines that look better written than spoken.",
+    "Keep syntax clean and highly speakable.",
+    "Let personality come through in perspective and word choice, not in catchphrases or overperformed bits.",
+  ];
+
+  const byDJ: Record<string, string> = {
+    casey:
+      "Keep April dry and controlled, but do not make every skip line sound sharpened into a joke.",
+    luna:
+      "Keep Luna soft and emotionally specific, but grounded and concrete rather than vague or dreamy for its own sake.",
+    marcus:
+      "Keep Marcus confident and rhythmic, but not like a hype-man or announcer.",
+    miles:
+      "Keep Juan smooth and cinematic, but not self-consciously cool or overly stylized.",
+    jack:
+      "Keep Winston dry and neat, but not overly composed for a punchline.",
+    tiffany:
+      "Keep Tiffany stylish and playful, but avoid social-caption wording, influencer filler, and overcurated copy.",
+    jolene:
+      "Keep Jolene warm and affectionate, but believable and never syrupy.",
+    robert:
+      "Keep Robert odd through perspective, not through clunky syntax or random machine noise.",
+  };
+
+  const specific = byDJ[djID.trim().toLowerCase()];
+  return [...shared, specific].filter(Boolean).join(" ");
+}
+
 function skipLineStyleGuidance(djID: string): string {
   switch (djID.trim().toLowerCase()) {
     case "casey":
@@ -234,6 +266,8 @@ async function generateWithAnthropic(
   const model = process.env.ANTHROPIC_SKIP_LINE_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
 
   const systemPrompt = `${djPersonalityPrompt(request.djID || "")}
+
+${spokenDeliveryDisciplinePrompt(request.djID || "")}
 
 You write ultra-short radio DJ skip-transition lines.
 

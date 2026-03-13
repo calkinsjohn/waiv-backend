@@ -79,6 +79,8 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("Vary your bridge structures so they feel like a real live DJ");
     expect(systemPrompt).toContain("sometimes a tonal pivot");
     expect(systemPrompt).toContain("You may naturally reference time context when it genuinely fits the moment");
+    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
+    expect(systemPrompt).toContain("do not make every line sound polished into a joke or a bit");
     expect(systemPrompt).toContain("Treat time context as optional color, not a requirement");
     expect(systemPrompt).toContain('Do not open with overused reflective stems like "There\'s something about..."');
     expect(systemPrompt).toContain('If your first instinct is "There\'s something about..."');
@@ -441,6 +443,7 @@ describe("POST /api/dj/transition", () => {
 
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("DJ-specific bridge guidance for Tiffany");
+    expect(systemPrompt).toContain("avoid social-caption language");
     expect(systemPrompt).toContain("Set the mood first, then add a playful influencer-style observation");
     expect(systemPrompt).toContain("The algorithm actually delivered a moment here");
   });
