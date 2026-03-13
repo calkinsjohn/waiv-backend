@@ -151,6 +151,15 @@ function djPersonalityPrompt(djID: string): string {
         "You sound like a real host with taste, not a chatbot, assistant, or hype person.",
         "Never use bro-y slang or lines like dude, my guy, chief, savage, rockstar, or let us go bigger.",
       ].join(" ");
+    case "luna":
+      return [
+        "You are Luna, the DJ represented by the internal id 'luna' in WAIV.",
+        "You are a warm, intimate, emotionally observant female radio DJ.",
+        "Small voice, big feelings: soft without being sleepy, poetic without becoming abstract.",
+        "You care about atmosphere, emotional texture, and the quieter through-lines in a set.",
+        "You sound like a real host who notices subtle shifts in mood, not a chatbot, assistant, or hype person.",
+        "Avoid influencer phrasing, bro-y slang, therapy-speak, and generic dreamy filler.",
+      ].join(" ");
     default:
       return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
   }
@@ -167,6 +176,14 @@ function skipLineStyleGuidance(djID: string): string {
         "She may hint at pacing, texture, weight, or shape, but never explain too much.",
         "Avoid perky encouragement, influencer phrasing, and obvious stock radio patter.",
       ].join(" ");
+    case "luna":
+      return [
+        "These lines are spoken right after the listener rejects a song.",
+        "Luna should sound calm, intuitive, and emotionally specific.",
+        "She can acknowledge the miss softly, then place the next song like a gentle correction.",
+        "Favor atmosphere, feeling, tone, or the way a song settles in, but keep it concise.",
+        "Avoid vague moonlight poetry, generic comfort-language, and overexplaining the choice.",
+      ].join(" ");
     default:
       return "Make the skip line sound specific, concise, and natural.";
   }
@@ -177,6 +194,10 @@ function exampleSkipLinesForDJ(request: SkipLineGenerateRequest): string {
     case "casey":
       return [
         `{"lines":["Not the shape. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Too loose there. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","${request.toTrack.title} by ${request.toTrack.artist} should sit better here."]}`,
+      ].join(" ");
+    case "luna":
+      return [
+        `{"lines":["Not this one. \\"${request.toTrack.title}\\" by ${request.toTrack.artist} feels steadier.","Let’s soften the turn with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} settles in better here."]}`,
       ].join(" ");
     default:
       return "";
@@ -195,6 +216,8 @@ function retryGuidance(attempt: "primary" | "repair", request: SkipLineGenerateR
     "Keep each line compact and highly usable for spoken radio.",
     (request.djID || "").trim().toLowerCase() === "casey"
       ? `For April, favor a brief wry observation followed by the placement of "${request.toTrack.title}" by ${request.toTrack.artist}.`
+      : (request.djID || "").trim().toLowerCase() === "luna"
+        ? `For Luna, favor a quiet emotional correction that gently places "${request.toTrack.title}" by ${request.toTrack.artist}.`
       : "Keep the structure concise and direct.",
   ].join(" ");
 }
@@ -291,7 +314,7 @@ export async function generateSkipLines(
 ): Promise<SkipLineGenerationResult> {
   const normalizedDJID = (request.djID || "").trim().toLowerCase();
   let llm = await generateWithAnthropic(request, "primary").catch(() => null);
-  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && normalizedDJID === "casey") {
+  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && (normalizedDJID === "casey" || normalizedDJID === "luna")) {
     llm = await generateWithAnthropic(request, "repair").catch(() => null);
   }
   if (!llm || llm.lines.length < MIN_CANDIDATE_COUNT) {

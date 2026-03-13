@@ -93,6 +93,60 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
     expect(systemPrompt).toContain("Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.");
   });
 
+  it("sends Luna-specific personality guidance for Luna intros", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hi. I'm Luna.
+
+Tonight leaves a little more room around the edges.
+
+We'll start with "Reckoner" by Radiohead.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "luna",
+        introKind: "standard",
+        firstTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { intro: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.intro).toContain("Reckoner");
+    expect(payload.intro).toContain("Radiohead");
+    expect(systemPrompt).toContain("You are Luna, the DJ represented by the internal id 'luna' in WAIV.");
+    expect(systemPrompt).toContain("Small voice, big feelings");
+    expect(systemPrompt).toContain("not a wellness bot, not a therapist");
+  });
+
   it("rejects generated intros with the wrong time of day for the listener", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
