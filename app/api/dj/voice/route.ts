@@ -5,7 +5,6 @@ type DjId = "miles" | "jack" | "luna" | "casey" | "jolene" | "marcus" | "tiffany
 type VoiceRequest = {
   djId: DjId;
   text: string;
-  utteranceKind?: "standard" | "bridge";
 };
 
 const VOICE_ENV_BY_DJ: Record<DjId, string> = {
@@ -97,34 +96,6 @@ function voiceSettingsForDJ(djId: DjId) {
   };
 }
 
-function normalizedUtteranceKind(value: unknown): "standard" | "bridge" {
-  return value === "bridge" ? "bridge" : "standard";
-}
-
-function modelIDForRequest(kind: "standard" | "bridge"): string {
-  if (kind === "bridge") {
-    return (
-      process.env.ELEVENLABS_BRIDGE_MODEL_ID?.trim() ||
-      "eleven_multilingual_v2"
-    );
-  }
-
-  return process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_multilingual_v2";
-}
-
-function voiceSettingsForRequest(djId: DjId, kind: "standard" | "bridge") {
-  if (kind === "bridge") {
-    const base = voiceSettingsForDJ(djId);
-    return {
-      ...base,
-      stability: Math.max(base.stability, 0.68),
-      style: 0,
-    };
-  }
-
-  return voiceSettingsForDJ(djId);
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const expectedAppToken = process.env.WAIV_API_APP_TOKEN?.trim();
   if (!expectedAppToken) {
@@ -167,8 +138,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: `Missing ${voiceEnvName}.` }, { status: 503 });
   }
 
-  const utteranceKind = normalizedUtteranceKind(input.utteranceKind);
-  const modelId = modelIDForRequest(utteranceKind);
+  const modelId = process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_multilingual_v2";
   const outputFormat = process.env.ELEVENLABS_OUTPUT_FORMAT ?? "mp3_44100_128";
   const maxCharsRaw = Number(process.env.ELEVENLABS_MAX_CHARS ?? "2200");
   const maxChars = Number.isFinite(maxCharsRaw)
@@ -188,9 +158,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         text: spokenText,
         model_id: modelId,
         output_format: outputFormat,
-      voice_settings: voiceSettingsForRequest(input.djId, utteranceKind),
-    }),
-  });
+        voice_settings: voiceSettingsForDJ(input.djId),
+      }),
+    });
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
