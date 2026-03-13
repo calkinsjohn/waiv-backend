@@ -172,7 +172,37 @@ function skipLineStyleGuidance(djID: string): string {
   }
 }
 
-async function generateWithAnthropic(request: SkipLineGenerateRequest): Promise<{ lines: string[]; model: string } | null> {
+function exampleSkipLinesForDJ(request: SkipLineGenerateRequest): string {
+  switch ((request.djID || "").trim().toLowerCase()) {
+    case "casey":
+      return [
+        `{"lines":["Not the shape. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Too loose there. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","${request.toTrack.title} by ${request.toTrack.artist} should sit better here."]}`,
+      ].join(" ");
+    default:
+      return "";
+  }
+}
+
+function retryGuidance(attempt: "primary" | "repair", request: SkipLineGenerateRequest): string {
+  if (attempt === "primary") {
+    return "";
+  }
+
+  return [
+    "Your previous answer did not satisfy the format constraints tightly enough.",
+    "Repair it now.",
+    "Be even more literal about including the exact next song title and exact artist name in every line.",
+    "Keep each line compact and highly usable for spoken radio.",
+    (request.djID || "").trim().toLowerCase() === "casey"
+      ? `For April, favor a brief wry observation followed by the placement of "${request.toTrack.title}" by ${request.toTrack.artist}.`
+      : "Keep the structure concise and direct.",
+  ].join(" ");
+}
+
+async function generateWithAnthropic(
+  request: SkipLineGenerateRequest,
+  attempt: "primary" | "repair" = "primary"
+): Promise<{ lines: string[]; model: string } | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
     return null;
@@ -197,6 +227,7 @@ Rules:
 - Do not use stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
 - Do not use stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere")
 - Do not mention release years, genres, or facts
+- ${retryGuidance(attempt, request)}
 - ${skipLineStyleGuidance(request.djID || "")}`.trim();
 
   const userPrompt = `Event type: ${request.eventType || "user_skip"}
@@ -204,7 +235,8 @@ DJ: ${request.djID || "unknown"}
 Skipped track: "${request.fromTrack.title}" by ${request.fromTrack.artist}
 Next track: "${request.toTrack.title}" by ${request.toTrack.artist}
 
-Return JSON only.`;
+Return JSON only.
+${exampleSkipLinesForDJ(request)}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -257,7 +289,11 @@ Return JSON only.`;
 export async function generateSkipLines(
   request: SkipLineGenerateRequest
 ): Promise<SkipLineGenerationResult> {
-  const llm = await generateWithAnthropic(request).catch(() => null);
+  const normalizedDJID = (request.djID || "").trim().toLowerCase();
+  let llm = await generateWithAnthropic(request, "primary").catch(() => null);
+  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && normalizedDJID === "casey") {
+    llm = await generateWithAnthropic(request, "repair").catch(() => null);
+  }
   if (!llm || llm.lines.length < MIN_CANDIDATE_COUNT) {
     return {
       kind: "no_content",

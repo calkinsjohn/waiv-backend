@@ -82,7 +82,7 @@ function allowedTimeOfDayPhrases(timeOfDay: string): string[] {
     case "evening":
       return ["evening", "this evening", "tonight", "after dark"];
     case "night":
-      return ["night", "tonight", "late night", "late tonight", "this late", "at this hour", "after dark"];
+      return ["night", "tonight", "late night", "this late", "at this hour", "after dark"];
     default:
       return [];
   }
@@ -220,7 +220,7 @@ function timeContextVariationGuidance(request: SessionIntroRequest): string {
     "Reference the local time of day lightly, but do not open the intro with the weekday or calendar phrase. Let the time cue arrive after the first thought.",
     `Let the intro carry a local-night feel, but mention only one calendar detail naturally, such as "${listenerContext.weekday}" or "${listenerContext.month}", not both together.`,
     "Work the time cue into the song setup or second paragraph instead of making it the opening label for the whole intro.",
-    "Use a softer local-time nod, like tonight or at this hour, rather than spelling out the full weekday-plus-time phrase.",
+    "Use a softer local-time nod, like tonight or at this hour, and fold it into a full sentence rather than a chopped time-stamp opener.",
   ];
 
   const seed = [
@@ -245,8 +245,10 @@ function listenerTimeGuidance(listenerContext?: SessionIntroListenerContext): st
     `The listener's local time is ${listenerContext.localTimestamp} in ${listenerContext.timeZoneIdentifier}.`,
     `Locally, it is ${localDate}, around hour ${listenerContext.hour24} in the ${listenerContext.timeOfDay}.`,
     `Naturally reference the correct local time of day in the intro using a phrase that fits this moment, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
+    "Open like a real radio host: with an observation, a feeling, a reaction, or a thought about the set, not a bare time label.",
     "You may also mention the weekday, month, or date when it feels effortless and human.",
     "Do not default to opening every intro with the same weekday-plus-time phrase.",
+    "Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.",
     "Never guess a different time of day or greet the listener with the wrong local moment.",
   ].join(" ");
 }

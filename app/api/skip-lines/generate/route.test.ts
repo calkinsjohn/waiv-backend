@@ -143,6 +143,83 @@ describe("POST /api/skip-lines/generate", () => {
     expect(systemPrompt).toContain("April should sound lightly amused, observant, and musically intentional.");
   });
 
+  it("retries April skip generation when the first LLM output is invalid", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    "Not that one.",
+                    "Too soft there.",
+                    "Try this instead.",
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'Not the shape. Try "Yellow" by Coldplay.',
+                    'Too loose there. Try "Yellow" by Coldplay.',
+                    '"Yellow" by Coldplay should sit better here.',
+                    'Try "Yellow" by Coldplay instead.',
+                    'Let "Yellow" by Coldplay take it from here.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "casey",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLines: string[] };
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.djLines.length).toBeGreaterThanOrEqual(3);
+    expect(payload.djLines.every((line) => line.includes("Yellow") && line.includes("Coldplay"))).toBe(true);
+  });
+
   it("returns 204 when LLM output fails validation", async () => {
     vi.stubGlobal(
       "fetch",
