@@ -1,0 +1,149 @@
+import { NextRequest } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { POST } from "./route";
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json",
+    },
+  });
+}
+
+describe("POST /api/dj/session-intro", () => {
+  const appToken = "test-app-token";
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env.WAIV_API_APP_TOKEN = appToken;
+    process.env.ANTHROPIC_API_KEY = "test-anthropic-key";
+  });
+
+  afterEach(() => {
+    delete process.env.WAIV_API_APP_TOKEN;
+    delete process.env.ANTHROPIC_API_KEY;
+  });
+
+  it("sends first-listen guidance for April intros", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, I’m April.
+
+Welcome to W.A.I.V. I like when a first song earns its place.
+
+We’re opening with "Yellow" by Coldplay. Stay with me.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "first_listen_ever",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { intro: string; llmModel: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.intro).toContain("Yellow");
+    expect(payload.intro).toContain("Coldplay");
+    expect(systemPrompt).toContain("This is the listener's very first session on WAIV.");
+    expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
+  });
+
+  it("rejects generated intros that omit the song details", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, I’m April.
+
+Let’s start carefully tonight.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("llm_rejected");
+  });
+
+  it("returns no content when the Anthropic key is missing", async () => {
+    delete process.env.ANTHROPIC_API_KEY;
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("no_api_key");
+  });
+});

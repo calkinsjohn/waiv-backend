@@ -1,0 +1,253 @@
+export type SessionIntroTrack = {
+  title: string;
+  artist: string;
+  isrc: string;
+};
+
+export type SessionIntroRequest = {
+  djID: string;
+  firstTrack: SessionIntroTrack;
+  introKind: string;
+};
+
+export type SessionIntroResponse = {
+  intro: string;
+  llmModel: string;
+};
+
+export type SessionIntroNoContentReason = "llm_rejected" | "no_api_key";
+
+export type SessionIntroResult =
+  | { kind: "success"; response: SessionIntroResponse }
+  | { kind: "no_content"; reason: SessionIntroNoContentReason };
+
+type AnthropicResponse = {
+  content?: Array<{ type?: string; text?: string }>;
+};
+
+const maxWordCount = 110;
+const maxParagraphCount = 5;
+
+function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function splitParagraphs(text: string): string[] {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split(/\n\s*\n+/)
+    .map((paragraph) => normalizeWhitespace(paragraph))
+    .filter(Boolean);
+}
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+function normalizedContainment(text: string): string {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeIntro(raw: string, request: SessionIntroRequest): string | null {
+  const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
+  if (paragraphs.length === 0 || paragraphs.length > maxParagraphCount) {
+    return null;
+  }
+
+  const intro = paragraphs.join("\n\n").trim();
+  if (!intro) {
+    return null;
+  }
+  if (wordCount(intro) > maxWordCount) {
+    return null;
+  }
+  if (!/[A-Za-z]/.test(intro)) {
+    return null;
+  }
+  if (/<\/?(speak|break|audio|phoneme|say-as)\b/i.test(intro)) {
+    return null;
+  }
+  if (/```|https?:\/\/|www\./i.test(intro)) {
+    return null;
+  }
+  if (/(.)\1{5,}/.test(intro)) {
+    return null;
+  }
+  if (/\b([a-z][a-z'’-]{1,})\b(?:\s+\1\b){3,}/i.test(intro)) {
+    return null;
+  }
+  if (/\b[bcdfghjklmnpqrstvwxyz]{8,}\b/i.test(intro)) {
+    return null;
+  }
+
+  const normalizedIntro = normalizedContainment(intro);
+  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.title))) {
+    return null;
+  }
+  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.artist))) {
+    return null;
+  }
+
+  return intro;
+}
+
+function djPersonalityPrompt(djID: string): string {
+  switch (djID.trim().toLowerCase()) {
+    case "casey":
+      return [
+        "You are April, the DJ represented by the internal id 'casey' in WAIV.",
+        "You are a dry, self-aware female radio DJ.",
+        "Warm but controlled. Never perky, breathy, or over-the-top.",
+        "Your humor is understated, wry, and precise.",
+        "You care about sequencing and the meaning of a first song.",
+        "You sound like a real host, not a chatbot or assistant.",
+      ].join(" ");
+    default:
+      return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
+  }
+}
+
+function introKindGuidance(introKind: string, request: SessionIntroRequest): string {
+  if (introKind === "first_listen_ever") {
+    return [
+      "This is the listener's very first session on WAIV.",
+      "Welcome them briefly to W.A.I.V.",
+      "You may mention that WAIV shapes a radio-style listening session from their music taste.",
+      "You may mention they can switch DJs later, but do it lightly and only once.",
+      `End by naturally introducing the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
+    ].join(" ");
+  }
+
+  return [
+    "This is a normal session open, not a first-time product onboarding moment.",
+    "Do not explain the app or over-introduce yourself.",
+    "Make it feel like the opening breath of a fresh set.",
+    `Naturally introduce the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}, inside the intro itself.`,
+  ].join(" ");
+}
+
+async function generateWithAnthropic(
+  request: SessionIntroRequest
+): Promise<{ intro: string; model: string } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    return null;
+  }
+
+  const model =
+    process.env.ANTHROPIC_SESSION_INTRO_MODEL?.trim()
+    || process.env.ANTHROPIC_MODEL?.trim()
+    || "claude-haiku-4-5";
+
+  const systemPrompt = `${djPersonalityPrompt(request.djID)}
+
+Write a session-opening radio intro in plain text.
+
+Rules:
+- Return plain text only, not JSON
+- 2 to 4 short paragraphs
+- 45 to 110 words total
+- No markdown, no bullet points, no stage directions, no SSML
+- No URLs, no hashtags, no emojis
+- Sound natural when spoken aloud
+- Do not invent facts about the song or artist
+- Do not use placeholder text
+- Do not end with generic radio lines like "stay tuned" or "don't go anywhere"
+- Avoid generic AI-assistant phrasing
+- The intro must include the song title "${request.firstTrack.title}" and artist "${request.firstTrack.artist}"
+- Mention the song and artist naturally inside the intro, not as a separate labeled field
+- You may mention W.A.I.V. when it helps, but do not force a station tag ending
+- ${introKindGuidance(request.introKind, request)}`.trim();
+
+  const userPrompt = `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}
+DJ id: ${request.djID}
+Intro kind: ${request.introKind}`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.75,
+      max_tokens: 260,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`anthropic_request_failed_${response.status}`);
+  }
+
+  const payload = (await response.json()) as AnthropicResponse;
+  const text = payload.content?.find((item) => item.type === "text")?.text?.trim();
+  if (!text) {
+    return null;
+  }
+
+  const intro = normalizeIntro(text, request);
+  if (!intro) {
+    return null;
+  }
+
+  return { intro, model };
+}
+
+function normalizeTrack(input: unknown): SessionIntroTrack | null {
+  const payload = (input ?? {}) as Partial<SessionIntroTrack>;
+  const title = typeof payload.title === "string" ? payload.title.trim() : "";
+  const artist = typeof payload.artist === "string" ? payload.artist.trim() : "";
+  const isrc = typeof payload.isrc === "string" ? payload.isrc.trim() : "";
+  if (!title || !artist) {
+    return null;
+  }
+  return { title, artist, isrc };
+}
+
+export function normalizeSessionIntroRequest(input: unknown): SessionIntroRequest | null {
+  const payload = (input ?? {}) as Partial<Record<string, unknown>>;
+  const djID = typeof payload.djID === "string" ? payload.djID.trim() : "";
+  const firstTrack = normalizeTrack(payload.firstTrack);
+  const introKind = typeof payload.introKind === "string" ? payload.introKind.trim() : "standard";
+
+  if (!djID || !firstTrack) {
+    return null;
+  }
+
+  return {
+    djID,
+    firstTrack,
+    introKind: introKind || "standard",
+  };
+}
+
+export async function generateSessionIntro(request: SessionIntroRequest): Promise<SessionIntroResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    return { kind: "no_content", reason: "no_api_key" };
+  }
+
+  const result = await generateWithAnthropic(request).catch(() => null);
+  if (!result) {
+    return { kind: "no_content", reason: "llm_rejected" };
+  }
+
+  return {
+    kind: "success",
+    response: {
+      intro: result.intro,
+      llmModel: result.model,
+    },
+  };
+}
