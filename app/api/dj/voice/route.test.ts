@@ -93,6 +93,7 @@ describe("POST /api/dj/voice", () => {
       speed: 1.0,
       use_speaker_boost: true,
     });
+    expect(requestBody.enable_ssml_parsing).toBe(true);
   });
 
   it("adds pacing punctuation to Rafa raw-text lines without touching SSML", async () => {
@@ -139,5 +140,36 @@ describe("POST /api/dj/voice", () => {
     requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(requestBody.text).toContain("<break time=\"320ms\"/>");
     expect(requestBody.text).toContain("<speak>");
+  });
+
+  it("stabilizes standalone station signoff pronunciation without flattening normal requests", async () => {
+    const fetchMock = vi.fn(async () => new Response("mp3-bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "luna",
+        text: "Right here with W.A.I.V.",
+        utteranceKind: "station_signoff",
+      }),
+    });
+
+    const response = await POST(request);
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+
+    expect(response.status).toBe(200);
+    expect(requestBody.text).toBe("Right here with W A I V.")
+    expect(requestBody.voice_settings).toMatchObject({
+      stability: 0.72,
+      similarity_boost: 0.72,
+      style: 0.08,
+      use_speaker_boost: true,
+    });
+    expect(requestBody.enable_ssml_parsing).toBe(true);
   });
 });

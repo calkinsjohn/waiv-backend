@@ -5,6 +5,7 @@ type DjId = "miles" | "jack" | "luna" | "casey" | "jolene" | "marcus" | "tiffany
 type VoiceRequest = {
   djId: DjId;
   text: string;
+  utteranceKind?: "standard" | "station_signoff";
 };
 
 const VOICE_ENV_BY_DJ: Record<DjId, string> = {
@@ -31,8 +32,15 @@ function isDjId(value: unknown): value is DjId {
   );
 }
 
-function spokenTextForDJ(djId: DjId, text: string): string {
-  const trimmed = text.trim();
+function normalizeStationSignoffForSpeech(text: string): string {
+  return text
+    .replace(/\bW\s*\.?\s*A\s*\.?\s*I\s*\.?\s*V\.?\b/giu, "W A I V")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function spokenTextForDJ(djId: DjId, text: string, utteranceKind: "standard" | "station_signoff"): string {
+  const trimmed = utteranceKind === "station_signoff" ? normalizeStationSignoffForSpeech(text) : text.trim();
   if (djId !== "miles") {
     return trimmed;
   }
@@ -96,6 +104,26 @@ function voiceSettingsForDJ(djId: DjId) {
   };
 }
 
+function normalizeUtteranceKind(value: unknown): "standard" | "station_signoff" {
+  return value === "station_signoff" ? "station_signoff" : "standard";
+}
+
+function voiceSettingsForUtterance(
+  djId: DjId,
+  utteranceKind: "standard" | "station_signoff"
+) {
+  const base = voiceSettingsForDJ(djId);
+  if (utteranceKind !== "station_signoff") {
+    return base;
+  }
+
+  return {
+    ...base,
+    stability: Math.max(base.stability, 0.72),
+    style: Math.min(base.style, 0.08),
+  };
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const expectedAppToken = process.env.WAIV_API_APP_TOKEN?.trim();
   if (!expectedAppToken) {
@@ -144,7 +172,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const maxChars = Number.isFinite(maxCharsRaw)
     ? Math.max(200, Math.min(4000, Math.floor(maxCharsRaw)))
     : 2200;
-  const spokenText = spokenTextForDJ(input.djId, input.text).slice(0, maxChars);
+  const utteranceKind = normalizeUtteranceKind(input.utteranceKind);
+  const spokenText = spokenTextForDJ(input.djId, input.text, utteranceKind).slice(0, maxChars);
 
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -158,7 +187,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         text: spokenText,
         model_id: modelId,
         output_format: outputFormat,
-        voice_settings: voiceSettingsForDJ(input.djId),
+        enable_ssml_parsing: true,
+        voice_settings: voiceSettingsForUtterance(input.djId, utteranceKind),
       }),
     });
 
