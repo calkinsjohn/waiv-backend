@@ -17,6 +17,8 @@ describe("POST /api/dj/voice", () => {
     delete process.env.WAIV_API_APP_TOKEN;
     delete process.env.ELEVENLABS_API_KEY;
     delete process.env.ELEVENLABS_VOICE_ID_TIFFANY;
+    delete process.env.ELEVENLABS_MODEL_ID;
+    delete process.env.ELEVENLABS_BRIDGE_MODEL_ID;
   });
 
   it("proxies Tiffany voice requests with the fallback voice ID", async () => {
@@ -90,6 +92,37 @@ describe("POST /api/dj/voice", () => {
       similarity_boost: 0.76,
       style: 0.18,
       speed: 1.0,
+      use_speaker_boost: true,
+    });
+  });
+
+  it("uses a conservative bridge voice profile", async () => {
+    process.env.ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
+    const fetchMock = vi.fn(async () => new Response("mp3-bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "luna",
+        text: "Same band, different light. Yellow by Coldplay moves slower. Right here with W.A.I.V.",
+        utteranceKind: "bridge",
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody.model_id).toBe("eleven_multilingual_v2");
+    expect(requestBody.voice_settings).toMatchObject({
+      stability: 0.68,
+      similarity_boost: 0.72,
+      style: 0,
       use_speaker_boost: true,
     });
   });
