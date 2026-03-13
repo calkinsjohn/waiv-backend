@@ -14,6 +14,16 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 describe("POST /api/dj/session-intro", () => {
   const appToken = "test-app-token";
+  const listenerContext = {
+    localTimestamp: "2026-03-12T22:00:00-04:00",
+    timeZoneIdentifier: "America/Indiana/Indianapolis",
+    weekday: "Thursday",
+    month: "March",
+    dayOfMonth: 12,
+    year: 2026,
+    hour24: 22,
+    timeOfDay: "night",
+  };
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -41,7 +51,7 @@ describe("POST /api/dj/session-intro", () => {
             type: "text",
             text: `Hey, I’m April.
 
-Welcome to W.A.I.V. I like when a first song earns its place.
+Thursday night on W.A.I.V. feels right when a first song earns its place.
 
 We’re opening with "Yellow" by Coldplay. Stay with me.`,
           },
@@ -64,6 +74,7 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
           artist: "Coldplay",
           isrc: "GBAYE0000001",
         },
+        listenerContext,
       }),
     });
 
@@ -76,6 +87,52 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
     expect(payload.intro).toContain("Coldplay");
     expect(systemPrompt).toContain("This is the listener's very first session on WAIV.");
     expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
+    expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
+    expect(systemPrompt).toContain('such as "night", "tonight", "late night", "late tonight"');
+  });
+
+  it("rejects generated intros with the wrong time of day for the listener", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Good morning. I’m April.
+
+It’s a clean place to start with Yellow by Coldplay tonight.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("llm_rejected");
   });
 
   it("rejects generated intros that omit the song details", async () => {
@@ -112,6 +169,7 @@ Let’s start carefully tonight.`,
           artist: "Radiohead",
           isrc: "USCA21504635",
         },
+        listenerContext,
       }),
     });
 
@@ -138,6 +196,7 @@ Let’s start carefully tonight.`,
           artist: "Radiohead",
           isrc: "USCA21504635",
         },
+        listenerContext,
       }),
     });
 

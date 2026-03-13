@@ -4,10 +4,22 @@ export type SessionIntroTrack = {
   isrc: string;
 };
 
+export type SessionIntroListenerContext = {
+  localTimestamp: string;
+  timeZoneIdentifier: string;
+  weekday: string;
+  month: string;
+  dayOfMonth: number;
+  year: number;
+  hour24: number;
+  timeOfDay: string;
+};
+
 export type SessionIntroRequest = {
   djID: string;
   firstTrack: SessionIntroTrack;
   introKind: string;
+  listenerContext?: SessionIntroListenerContext;
 };
 
 export type SessionIntroResponse = {
@@ -54,6 +66,61 @@ function normalizedContainment(text: string): string {
     .trim();
 }
 
+function containsPhrase(text: string, phrases: string[]): boolean {
+  return phrases.some((phrase) => {
+    const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(text);
+  });
+}
+
+function allowedTimeOfDayPhrases(timeOfDay: string): string[] {
+  switch (timeOfDay.trim().toLowerCase()) {
+    case "morning":
+      return ["morning", "this morning"];
+    case "afternoon":
+      return ["afternoon", "this afternoon"];
+    case "evening":
+      return ["evening", "this evening", "tonight"];
+    case "night":
+      return ["night", "tonight", "late night", "late tonight"];
+    default:
+      return [];
+  }
+}
+
+function conflictingTimeOfDayPhrases(timeOfDay: string): string[] {
+  switch (timeOfDay.trim().toLowerCase()) {
+    case "morning":
+      return ["afternoon", "evening", "night", "late night", "tonight"];
+    case "afternoon":
+      return ["morning", "evening", "night", "late night", "tonight"];
+    case "evening":
+      return ["morning", "afternoon", "late night"];
+    case "night":
+      return ["morning", "afternoon", "evening"];
+    default:
+      return [];
+  }
+}
+
+function matchesListenerTimeContext(intro: string, listenerContext?: SessionIntroListenerContext): boolean {
+  if (!listenerContext) {
+    return true;
+  }
+
+  const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay);
+  if (allowed.length > 0 && !containsPhrase(intro, allowed)) {
+    return false;
+  }
+
+  const conflicting = conflictingTimeOfDayPhrases(listenerContext.timeOfDay);
+  if (conflicting.length > 0 && containsPhrase(intro, conflicting)) {
+    return false;
+  }
+
+  return true;
+}
+
 function normalizeIntro(raw: string, request: SessionIntroRequest): string | null {
   const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
   if (paragraphs.length === 0 || paragraphs.length > maxParagraphCount) {
@@ -91,6 +158,9 @@ function normalizeIntro(raw: string, request: SessionIntroRequest): string | nul
     return null;
   }
   if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.artist))) {
+    return null;
+  }
+  if (!matchesListenerTimeContext(intro, request.listenerContext)) {
     return null;
   }
 
@@ -132,6 +202,22 @@ function introKindGuidance(introKind: string, request: SessionIntroRequest): str
   ].join(" ");
 }
 
+function listenerTimeGuidance(listenerContext?: SessionIntroListenerContext): string {
+  if (!listenerContext) {
+    return "Do not guess the listener's time of day.";
+  }
+
+  const localDate = `${listenerContext.weekday}, ${listenerContext.month} ${listenerContext.dayOfMonth}, ${listenerContext.year}`;
+  const allowedPhrases = allowedTimeOfDayPhrases(listenerContext.timeOfDay);
+  return [
+    `The listener's local time is ${listenerContext.localTimestamp} in ${listenerContext.timeZoneIdentifier}.`,
+    `Locally, it is ${localDate}, around hour ${listenerContext.hour24} in the ${listenerContext.timeOfDay}.`,
+    `Naturally reference the correct local time of day in the intro using a phrase that fits this moment, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
+    "You may also mention the weekday, month, or date when it feels effortless and human.",
+    "Never guess a different time of day or greet the listener with the wrong local moment.",
+  ].join(" ");
+}
+
 async function generateWithAnthropic(
   request: SessionIntroRequest
 ): Promise<{ intro: string; model: string } | null> {
@@ -163,11 +249,17 @@ Rules:
 - The intro must include the song title "${request.firstTrack.title}" and artist "${request.firstTrack.artist}"
 - Mention the song and artist naturally inside the intro, not as a separate labeled field
 - You may mention W.A.I.V. when it helps, but do not force a station tag ending
+- ${listenerTimeGuidance(request.listenerContext)}
 - ${introKindGuidance(request.introKind, request)}`.trim();
 
   const userPrompt = `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}
 DJ id: ${request.djID}
-Intro kind: ${request.introKind}`;
+Intro kind: ${request.introKind}
+Listener local time: ${request.listenerContext?.localTimestamp ?? "unknown"}
+Listener timezone: ${request.listenerContext?.timeZoneIdentifier ?? "unknown"}
+Listener weekday: ${request.listenerContext?.weekday ?? "unknown"}
+Listener date: ${request.listenerContext?.month ?? "unknown"} ${request.listenerContext?.dayOfMonth ?? "unknown"}, ${request.listenerContext?.year ?? "unknown"}
+Listener time of day: ${request.listenerContext?.timeOfDay ?? "unknown"}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -215,11 +307,48 @@ function normalizeTrack(input: unknown): SessionIntroTrack | null {
   return { title, artist, isrc };
 }
 
+function normalizeListenerContext(input: unknown): SessionIntroListenerContext | null {
+  const payload = (input ?? {}) as Partial<Record<keyof SessionIntroListenerContext, unknown>>;
+  const localTimestamp = typeof payload.localTimestamp === "string" ? payload.localTimestamp.trim() : "";
+  const timeZoneIdentifier = typeof payload.timeZoneIdentifier === "string" ? payload.timeZoneIdentifier.trim() : "";
+  const weekday = typeof payload.weekday === "string" ? payload.weekday.trim() : "";
+  const month = typeof payload.month === "string" ? payload.month.trim() : "";
+  const timeOfDay = typeof payload.timeOfDay === "string" ? payload.timeOfDay.trim() : "";
+  const dayOfMonth = Number(payload.dayOfMonth);
+  const year = Number(payload.year);
+  const hour24 = Number(payload.hour24);
+
+  if (
+    !localTimestamp ||
+    !timeZoneIdentifier ||
+    !weekday ||
+    !month ||
+    !timeOfDay ||
+    !Number.isFinite(dayOfMonth) ||
+    !Number.isFinite(year) ||
+    !Number.isFinite(hour24)
+  ) {
+    return null;
+  }
+
+  return {
+    localTimestamp,
+    timeZoneIdentifier,
+    weekday,
+    month,
+    dayOfMonth: Math.trunc(dayOfMonth),
+    year: Math.trunc(year),
+    hour24: Math.trunc(hour24),
+    timeOfDay,
+  };
+}
+
 export function normalizeSessionIntroRequest(input: unknown): SessionIntroRequest | null {
   const payload = (input ?? {}) as Partial<Record<string, unknown>>;
   const djID = typeof payload.djID === "string" ? payload.djID.trim() : "";
   const firstTrack = normalizeTrack(payload.firstTrack);
   const introKind = typeof payload.introKind === "string" ? payload.introKind.trim() : "standard";
+  const listenerContext = payload.listenerContext ? normalizeListenerContext(payload.listenerContext) : undefined;
 
   if (!djID || !firstTrack) {
     return null;
@@ -229,6 +358,7 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     djID,
     firstTrack,
     introKind: introKind || "standard",
+    listenerContext: listenerContext ?? undefined,
   };
 }
 
