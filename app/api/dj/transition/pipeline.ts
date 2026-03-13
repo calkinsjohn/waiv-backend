@@ -221,7 +221,7 @@ function chosenStationSignoff(request: TransitionRequest): string {
   return `${stationTag} ${waivTagline}`;
 }
 
-function enforceStationTagEnding(line: string, request: TransitionRequest): string {
+function enforceStationTagEnding(line: string, request: TransitionRequest): string | null {
   let body = normalizeWhitespace(line);
 
   for (const tag of [...stationTagVariants, waivTagline].sort((lhs, rhs) => rhs.length - lhs.length)) {
@@ -233,11 +233,17 @@ function enforceStationTagEnding(line: string, request: TransitionRequest): stri
     .replace(/[.!?;,:\-–—\s]+$/u, "")
     .trim();
 
-  if (!body) {
-    return chosenStationSignoff(request);
+  const sanitizedBody = sanitizeGeneratedTransitionLine(body);
+  if (!sanitizedBody) {
+    return null;
   }
 
-  return `${body}. ${chosenStationSignoff(request)}`.replace(/\.\s+\./g, ".").trim();
+  const trimmedBody = sanitizedBody.replace(/[.!?;,:\-–—\s]+$/u, "").trim();
+  if (!trimmedBody) {
+    return null;
+  }
+
+  return `${trimmedBody}. ${chosenStationSignoff(request)}`.replace(/\.\s+\./g, ".").trim();
 }
 
 function sessionDepthLabel(position: number): string {
@@ -532,7 +538,10 @@ ${bridgeStyleGuidance}`.trim();
   if (!line) return null;
   if (hasOverusedOpening(line)) return null;
 
-  return { line: enforceStationTagEnding(line, request), model };
+  const enforcedLine = enforceStationTagEnding(line, request);
+  if (!enforcedLine) return null;
+
+  return { line: enforcedLine, model };
 }
 
 export async function generateTransitionCommentary(request: TransitionRequest): Promise<TransitionResult> {
