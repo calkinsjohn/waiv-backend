@@ -139,6 +139,39 @@ function parseLLMResponse(raw: string): string[] {
   }
 }
 
+function djPersonalityPrompt(djID: string): string {
+  switch (djID.trim().toLowerCase()) {
+    case "casey":
+      return [
+        "You are April, the DJ represented by the internal id 'casey' in WAIV.",
+        "You are a dry, self-aware female radio DJ.",
+        "Warm but controlled. Never bubbly, breathy, or overperformed.",
+        "Your humor is understated, wry, and precise.",
+        "You care about sequencing, fit, tension, and how a track lands in a set.",
+        "You sound like a real host with taste, not a chatbot, assistant, or hype person.",
+        "Never use bro-y slang or lines like dude, my guy, chief, savage, rockstar, or let us go bigger.",
+      ].join(" ");
+    default:
+      return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
+  }
+}
+
+function skipLineStyleGuidance(djID: string): string {
+  switch (djID.trim().toLowerCase()) {
+    case "casey":
+      return [
+        "These lines are spoken right after the listener rejects a song.",
+        "April should sound lightly amused, observant, and musically intentional.",
+        "She can acknowledge the miss, then place the next song with cool confidence.",
+        "Favor dry course-correction language over generic radio filler.",
+        "She may hint at pacing, texture, weight, or shape, but never explain too much.",
+        "Avoid perky encouragement, influencer phrasing, and obvious stock radio patter.",
+      ].join(" ");
+    default:
+      return "Make the skip line sound specific, concise, and natural.";
+  }
+}
+
 async function generateWithAnthropic(request: SkipLineGenerateRequest): Promise<{ lines: string[]; model: string } | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
@@ -147,7 +180,9 @@ async function generateWithAnthropic(request: SkipLineGenerateRequest): Promise<
 
   const model = process.env.ANTHROPIC_SKIP_LINE_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
 
-  const systemPrompt = `You write ultra-short radio DJ skip-transition lines.
+  const systemPrompt = `${djPersonalityPrompt(request.djID || "")}
+
+You write ultra-short radio DJ skip-transition lines.
 
 Context: the listener just skipped a song, and the DJ is pivoting to the next one.
 
@@ -161,7 +196,8 @@ Rules:
 - Write like the middle of a bridge, not a setup or sign-off
 - Do not use stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
 - Do not use stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere")
-- Do not mention release years, genres, or facts`;
+- Do not mention release years, genres, or facts
+- ${skipLineStyleGuidance(request.djID || "")}`.trim();
 
   const userPrompt = `Event type: ${request.eventType || "user_skip"}
 DJ: ${request.djID || "unknown"}

@@ -77,6 +77,72 @@ describe("POST /api/skip-lines/generate", () => {
     expect(payload.llmModel.length).toBeGreaterThan(0);
   });
 
+  it("sends April-specific personality guidance for casey skip lines", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("api.anthropic.com")) {
+          return new Response(null, { status: 404 });
+        }
+
+        anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'That one drifted. Try "Yellow" by Coldplay.',
+                    'Too soft there. Try "Yellow" by Coldplay.',
+                    'Not quite the shape. Try "Yellow" by Coldplay.',
+                    'Let us tighten it with "Yellow" by Coldplay.',
+                    'Better weight here: "Yellow" by Coldplay.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      })
+    );
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "casey",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
+    expect(systemPrompt).toContain("You care about sequencing, fit, tension, and how a track lands in a set.");
+    expect(systemPrompt).toContain("Never use bro-y slang");
+    expect(systemPrompt).toContain("April should sound lightly amused, observant, and musically intentional.");
+  });
+
   it("returns 204 when LLM output fails validation", async () => {
     vi.stubGlobal(
       "fetch",
