@@ -10,6 +10,7 @@ export type TransitionRequest = {
   fromTrack?: TransitionTrack | null;
   sessionPosition: number;
   trigger: string;
+  avoidRecentLines?: string[];
 };
 
 export type TransitionResponse = {
@@ -491,8 +492,14 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
   const sessionPositionRaw = Number(payload.sessionPosition ?? 0);
   const sessionPosition = Number.isFinite(sessionPositionRaw) ? Math.max(0, Math.trunc(sessionPositionRaw)) : 0;
   const trigger = typeof payload.trigger === "string" ? payload.trigger.trim() : "auto";
+  const avoidRecentLines = Array.isArray(payload.avoidRecentLines)
+    ? payload.avoidRecentLines
+        .map((value) => (typeof value === "string" ? normalizeWhitespace(value) : ""))
+        .filter((value) => value.length > 0)
+        .slice(0, 6)
+    : [];
 
-  return { djID, toTrack, fromTrack, sessionPosition, trigger };
+  return { djID, toTrack, fromTrack, sessionPosition, trigger, avoidRecentLines };
 }
 
 async function generateWithAnthropic(request: TransitionRequest): Promise<{ line: string; model: string } | null> {
@@ -552,6 +559,7 @@ Rules:
 - Do not put the song title or artist after the station tag
 - Occasionally, about one in five bridges, follow the station tag with the tagline "Your music. Your station."
 - Use the tagline sparingly. Most bridges should end with only the station tag
+- If recent bridge lines are provided, treat them as anti-patterns for this turn: do not echo their opening shape, sentence rhythm, key metaphor, or signature phrase
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
 - ${depthContext}
@@ -563,6 +571,11 @@ ${bridgeStyleGuidance}`.trim();
     parts.push(`Transitioning from: "${request.fromTrack.title}" by ${request.fromTrack.artist}`);
   }
   parts.push(`Next track: "${request.toTrack.title}" by ${request.toTrack.artist}`);
+  if (request.avoidRecentLines && request.avoidRecentLines.length > 0) {
+    parts.push(
+      `Recently used bridge lines to avoid echoing:\n${request.avoidRecentLines.map((line, index) => `${index + 1}. ${line}`).join("\n")}`
+    );
+  }
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

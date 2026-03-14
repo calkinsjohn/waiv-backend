@@ -56,6 +56,9 @@ describe("POST /api/dj/transition", () => {
         djID: "casey",
         sessionPosition: 6,
         trigger: "auto",
+        avoidRecentLines: [
+          'That opens the door for "High and Dry" by Radiohead. This is W.A.I.V.',
+        ],
         fromTrack: {
           title: "Yellow",
           artist: "Coldplay",
@@ -72,6 +75,7 @@ describe("POST /api/dj/transition", () => {
     const response = await POST(request);
     const payload = (await response.json()) as { djLine: string; llmModel: string };
     const systemPrompt = String(anthropicBody?.system ?? "");
+    const messageContent = JSON.stringify((anthropicBody?.messages as Array<{ content?: string }> | undefined)?.[0]?.content ?? "");
 
     expect(response.status).toBe(200);
     expect(payload.djLine).toContain("W.A.I.V.");
@@ -82,8 +86,10 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
     expect(systemPrompt).toContain("do not make every line sound polished into a joke or a bit");
     expect(systemPrompt).toContain("Treat time context as optional color, not a requirement");
+    expect(systemPrompt).toContain("If recent bridge lines are provided, treat them as anti-patterns for this turn");
     expect(systemPrompt).toContain('Do not open with overused reflective stems like "There\'s something about..."');
     expect(systemPrompt).toContain('If your first instinct is "There\'s something about..."');
+    expect(messageContent).toContain("Recently used bridge lines to avoid echoing");
   });
 
   it("enforces the station-tag ending even when the model omits it", async () => {
