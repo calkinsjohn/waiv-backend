@@ -345,6 +345,8 @@ describe("POST /api/skip-lines/generate", () => {
     expect(systemPrompt).toContain("vinyl-loving millennial radio host in your 30s with calm, effortless cool");
     expect(systemPrompt).toContain("Keep John calm, tasteful, and lightly textured");
     expect(systemPrompt).toContain("John should sound calm, discerning, and casually assured.");
+    expect(systemPrompt).toContain("big sports fan, especially baseball");
+    expect(systemPrompt).toContain("restrained baseball phrase is fine once in a while");
     expect(systemPrompt).toContain("Avoid zingers, old-radio cosplay, vinyl cliches, and generic filler.");
   });
 

@@ -260,6 +260,7 @@ We'll open with "Reckoner" by Radiohead.`,
     expect(systemPrompt).toContain("vinyl-loving millennial radio host in your 30s with calm, effortless cool");
     expect(systemPrompt).toContain("NPR-adjacent in the best way");
     expect(systemPrompt).toContain("Keep John calm, articulate, and naturally cool");
+    expect(systemPrompt).toContain("genuine sports fan, especially baseball");
   });
 
   it("rejects generated intros with the wrong time of day for the listener", async () => {

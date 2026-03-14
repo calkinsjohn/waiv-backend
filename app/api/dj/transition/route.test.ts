@@ -140,6 +140,7 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("NPR-style music host energy");
     expect(systemPrompt).toContain("You are John, an AI DJ host in WAIV.");
     expect(systemPrompt).toContain("Keep John calm, tasteful, and naturally cool");
+    expect(systemPrompt).toContain("big sports fan, especially baseball");
   });
 
   it("enforces the station-tag ending even when the model omits it", async () => {

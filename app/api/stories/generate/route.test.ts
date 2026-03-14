@@ -264,6 +264,7 @@ describe("POST /api/stories/generate", () => {
     expect(systemPrompt).toContain("Persona: John, an AI WAIV DJ.");
     expect(systemPrompt).toContain("Vinyl-loving millennial in his 30s. Calm, effortlessly cool");
     expect(systemPrompt).toContain("NPR-style music-host energy");
+    expect(systemPrompt).toContain("Big sports fan, especially baseball");
     expect(systemPrompt).toContain("No retro cosplay, no collector smugness");
   });
 
