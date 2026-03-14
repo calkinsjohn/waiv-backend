@@ -160,6 +160,15 @@ function djPersonalityPrompt(djID: string): string {
         "You sound like a real host who notices subtle shifts in mood, not a chatbot, assistant, or hype person.",
         "Avoid influencer phrasing, bro-y slang, therapy-speak, and generic dreamy filler.",
       ].join(" ");
+    case "marcus":
+      return [
+        "You are Marcus, the DJ represented by the internal id 'marcus' in WAIV.",
+        "You are a confident, charismatic male radio DJ with grounded swagger.",
+        "Smooth, rhythmic, and decisive. Never a hype man, never a sports-announcer voice, never overcooked.",
+        "You care about momentum, impact, pressure, and when a track should arrive cleanly.",
+        "You sound like a real host with calm authority and taste, not a chatbot, assistant, or promo read.",
+        "Avoid bro-y filler, influencer phrasing, and fake-big-energy slogans.",
+      ].join(" ");
     default:
       return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
   }
@@ -216,6 +225,14 @@ function skipLineStyleGuidance(djID: string): string {
         "Favor atmosphere, feeling, tone, or the way a song settles in, but keep it concise.",
         "Avoid vague moonlight poetry, generic comfort-language, and overexplaining the choice.",
       ].join(" ");
+    case "marcus":
+      return [
+        "These lines are spoken right after the listener rejects a song.",
+        "Marcus should sound confident, quick, and musically intentional.",
+        "He can acknowledge the miss, then place the next song with momentum and authority.",
+        "Favor language about timing, weight, energy, lift, pressure, or the cleanness of the next move.",
+        "Avoid hype-man shouting, sports metaphors, locker-room phrasing, and generic radio filler.",
+      ].join(" ");
     default:
       return "Make the skip line sound specific, concise, and natural.";
   }
@@ -230,6 +247,10 @@ function exampleSkipLinesForDJ(request: SkipLineGenerateRequest): string {
     case "luna":
       return [
         `{"lines":["Not this one. \\"${request.toTrack.title}\\" by ${request.toTrack.artist} feels steadier.","Let’s soften the turn with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} settles in better here."]}`,
+      ].join(" ");
+    case "marcus":
+      return [
+        `{"lines":["That lost momentum. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better pressure here with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} lands cleaner right now."]}`,
       ].join(" ");
     default:
       return "";
@@ -250,7 +271,9 @@ function retryGuidance(attempt: "primary" | "repair", request: SkipLineGenerateR
       ? `For April, favor a brief wry observation followed by the placement of "${request.toTrack.title}" by ${request.toTrack.artist}.`
       : (request.djID || "").trim().toLowerCase() === "luna"
         ? `For Luna, favor a quiet emotional correction that gently places "${request.toTrack.title}" by ${request.toTrack.artist}.`
-      : "Keep the structure concise and direct.",
+        : (request.djID || "").trim().toLowerCase() === "marcus"
+          ? `For Marcus, favor a confident momentum-reset that cleanly places "${request.toTrack.title}" by ${request.toTrack.artist}.`
+        : "Keep the structure concise and direct.",
   ].join(" ");
 }
 
@@ -348,7 +371,7 @@ export async function generateSkipLines(
 ): Promise<SkipLineGenerationResult> {
   const normalizedDJID = (request.djID || "").trim().toLowerCase();
   let llm = await generateWithAnthropic(request, "primary").catch(() => null);
-  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && (normalizedDJID === "casey" || normalizedDJID === "luna")) {
+  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && (normalizedDJID === "casey" || normalizedDJID === "luna" || normalizedDJID === "marcus")) {
     llm = await generateWithAnthropic(request, "repair").catch(() => null);
   }
   if (!llm || llm.lines.length < MIN_CANDIDATE_COUNT) {

@@ -151,6 +151,62 @@ We'll start with "Reckoner" by Radiohead.`,
     expect(systemPrompt).toContain("not a wellness bot, not a therapist");
   });
 
+  it("sends Marcus-specific personality guidance for Marcus intros", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, I'm Marcus.
+
+Tonight is built for something that arrives with a little authority.
+
+We're opening with "Midnight City" by M83.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "marcus",
+        introKind: "standard",
+        firstTrack: {
+          title: "Midnight City",
+          artist: "M83",
+          isrc: "USQX91500866",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { intro: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.intro).toContain("Midnight City");
+    expect(payload.intro).toContain("M83");
+    expect(systemPrompt).toContain("You are Marcus, the DJ represented by the internal id 'marcus' in WAIV.");
+    expect(systemPrompt).toContain("You are a confident, charismatic male radio DJ with grounded swagger.");
+    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
+    expect(systemPrompt).toContain("Keep Marcus confident and rhythmic, but relaxed enough to feel lived-in rather than like a promo read.");
+    expect(systemPrompt).toContain("not a chatbot, assistant, or announcer reading copy");
+  });
+
   it("rejects generated intros with the wrong time of day for the listener", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
