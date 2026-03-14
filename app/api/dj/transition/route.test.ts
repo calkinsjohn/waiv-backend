@@ -92,6 +92,56 @@ describe("POST /api/dj/transition", () => {
     expect(messageContent).toContain("Recently used bridge lines to avoid echoing");
   });
 
+  it("sends John-specific bridge guidance for jack transitions", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'This one slides in beautifully here, "Reckoner" by Radiohead. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "jack",
+        sessionPosition: 4,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(systemPrompt).toContain("DJ-specific bridge guidance for John");
+    expect(systemPrompt).toContain("NPR-style music host energy");
+    expect(systemPrompt).toContain("You are John, an AI DJ host in WAIV.");
+    expect(systemPrompt).toContain("Keep John calm, tasteful, and naturally cool");
+  });
+
   it("enforces the station-tag ending even when the model omits it", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

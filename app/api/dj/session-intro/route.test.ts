@@ -207,6 +207,61 @@ We're opening with "Midnight City" by M83.`,
     expect(systemPrompt).toContain("not a chatbot, assistant, or announcer reading copy");
   });
 
+  it("sends John-specific personality guidance for jack intros", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `John here.
+
+This one has the right kind of grain for tonight.
+
+We'll open with "Reckoner" by Radiohead.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "jack",
+        introKind: "standard",
+        firstTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { intro: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.intro).toContain("Reckoner");
+    expect(payload.intro).toContain("Radiohead");
+    expect(systemPrompt).toContain("You are John, the DJ represented by the internal id 'jack' in WAIV.");
+    expect(systemPrompt).toContain("vinyl-loving millennial radio host in your 30s with calm, effortless cool");
+    expect(systemPrompt).toContain("NPR-adjacent in the best way");
+    expect(systemPrompt).toContain("Keep John calm, articulate, and naturally cool");
+  });
+
   it("rejects generated intros with the wrong time of day for the listener", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

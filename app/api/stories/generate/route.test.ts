@@ -219,6 +219,54 @@ describe("POST /api/stories/generate", () => {
     expect(anthropicCalls).toHaveLength(2);
   });
 
+  it("sends John-specific story persona guidance for jack", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse(fixture("anthropic_rich_ok.json"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/stories/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "jack",
+        isrc: "GBAYE6800015",
+        title: "While My Guitar Gently Weeps",
+        artist: "The Beatles",
+        narratives: [
+          {
+            source: "wikipediaRecording",
+            prose:
+              "Harrison invited Eric Clapton to play lead guitar on the track. Clapton was hesitant because no outside musician had played on a Beatles record, but Harrison insisted and the guitar became central to the song's emotional tone.",
+            confidence: 0.85,
+          },
+        ],
+        context: {
+          notableGuest: "Eric Clapton",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("Persona: John, an AI WAIV DJ.");
+    expect(systemPrompt).toContain("Vinyl-loving millennial in his 30s. Calm, effortlessly cool");
+    expect(systemPrompt).toContain("NPR-style music-host energy");
+    expect(systemPrompt).toContain("No retro cosplay, no collector smugness");
+  });
+
   it("returns 204 when both first draft and rewrite stay too thin", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

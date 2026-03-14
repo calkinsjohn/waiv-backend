@@ -169,6 +169,15 @@ function djPersonalityPrompt(djID: string): string {
         "You sound like a real host with calm authority and taste, not a chatbot, assistant, or promo read.",
         "Avoid bro-y filler, influencer phrasing, and fake-big-energy slogans.",
       ].join(" ");
+    case "jack":
+      return [
+        "You are John, the DJ represented by the internal id 'jack' in WAIV.",
+        "You are a vinyl-loving millennial radio host in your 30s with calm, effortless cool.",
+        "You sound composed, tasteful, and low-key magnetic, with an NPR-style ease that stays human and unforced.",
+        "You care about sequencing, feel, fidelity, and whether the next song slides in with the right kind of purpose.",
+        "You sound like a real host with quiet confidence and record-store depth, not a chatbot, assistant, or irony machine.",
+        "Avoid retro cosplay, forced vinyl jargon, smugness, bro-y slang, and anything that sounds too self-consciously cool.",
+      ].join(" ");
     default:
       return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
   }
@@ -190,10 +199,10 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
       "Keep Luna soft and emotionally specific, but grounded and concrete rather than vague or dreamy for its own sake.",
     marcus:
       "Keep Marcus confident and rhythmic, but not like a hype-man or announcer.",
+    jack:
+      "Keep John calm, tasteful, and lightly textured, but not so understated that the line goes flat or bloodless.",
     miles:
       "Keep Juan smooth and cinematic, but not self-consciously cool or overly stylized.",
-    jack:
-      "Keep Winston dry and neat, but not overly composed for a punchline.",
     tiffany:
       "Keep Tiffany stylish and playful, but avoid social-caption wording, influencer filler, and overcurated copy.",
     jolene:
@@ -233,6 +242,14 @@ function skipLineStyleGuidance(djID: string): string {
         "Favor language about timing, weight, energy, lift, pressure, or the cleanness of the next move.",
         "Avoid hype-man shouting, sports metaphors, locker-room phrasing, and generic radio filler.",
       ].join(" ");
+    case "jack":
+      return [
+        "These lines are spoken right after the listener rejects a song.",
+        "John should sound calm, discerning, and casually assured.",
+        "He can acknowledge the miss with understated taste, then place the next song like a cleaner, better pull from the shelf.",
+        "Favor language about fit, texture, placement, tone, feel, or the way the next track lands.",
+        "Avoid zingers, old-radio cosplay, vinyl cliches, and generic filler.",
+      ].join(" ");
     default:
       return "Make the skip line sound specific, concise, and natural.";
   }
@@ -251,6 +268,10 @@ function exampleSkipLinesForDJ(request: SkipLineGenerateRequest): string {
     case "marcus":
       return [
         `{"lines":["That lost momentum. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better pressure here with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} lands cleaner right now."]}`,
+      ].join(" ");
+    case "jack":
+      return [
+        `{"lines":["That was not quite the fit. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} sits better here.","Better pull here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}."]}`,
       ].join(" ");
     default:
       return "";
@@ -273,6 +294,8 @@ function retryGuidance(attempt: "primary" | "repair", request: SkipLineGenerateR
         ? `For Luna, favor a quiet emotional correction that gently places "${request.toTrack.title}" by ${request.toTrack.artist}.`
         : (request.djID || "").trim().toLowerCase() === "marcus"
           ? `For Marcus, favor a confident momentum-reset that cleanly places "${request.toTrack.title}" by ${request.toTrack.artist}.`
+          : (request.djID || "").trim().toLowerCase() === "jack"
+            ? `For John, favor a calm, tasteful correction that cleanly places "${request.toTrack.title}" by ${request.toTrack.artist}.`
         : "Keep the structure concise and direct.",
   ].join(" ");
 }
@@ -371,7 +394,7 @@ export async function generateSkipLines(
 ): Promise<SkipLineGenerationResult> {
   const normalizedDJID = (request.djID || "").trim().toLowerCase();
   let llm = await generateWithAnthropic(request, "primary").catch(() => null);
-  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && (normalizedDJID === "casey" || normalizedDJID === "luna" || normalizedDJID === "marcus")) {
+  if ((!llm || llm.lines.length < MIN_CANDIDATE_COUNT) && (normalizedDJID === "casey" || normalizedDJID === "luna" || normalizedDJID === "marcus" || normalizedDJID === "jack")) {
     llm = await generateWithAnthropic(request, "repair").catch(() => null);
   }
   if (!llm || llm.lines.length < MIN_CANDIDATE_COUNT) {
