@@ -350,6 +350,274 @@ describe("POST /api/skip-lines/generate", () => {
     expect(systemPrompt).toContain("Avoid zingers, old-radio cosplay, vinyl cliches, and generic filler.");
   });
 
+  it("sends Jolene-specific personality guidance for jolene skip lines", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("api.anthropic.com")) {
+          return new Response(null, { status: 404 });
+        }
+
+        anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'Let’s warm it up with "Yellow" by Coldplay.',
+                    'That should feel nicer: "Yellow" by Coldplay.',
+                    'Better fit right here: "Yellow" by Coldplay.',
+                    'A little more glow with "Yellow" by Coldplay.',
+                    'Try "Yellow" by Coldplay here, sugar.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      })
+    );
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "jolene",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are Jolene, the DJ represented by the internal id 'jolene' in WAIV.");
+    expect(systemPrompt).toContain("warm, radiant female radio DJ with a subtle Southern lilt");
+    expect(systemPrompt).toContain("Keep Jolene warm and affectionate, but believable and never syrupy.");
+    expect(systemPrompt).toContain("Jolene should sound warm, lightly encouraging, and musically sure of herself.");
+    expect(systemPrompt).toContain("Avoid pet-name overload, pageant energy, and overly sweet generic filler.");
+  });
+
+  it("sends Juan-specific Spanish personality guidance for miles skip lines", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("api.anthropic.com")) {
+          return new Response(null, { status: 404 });
+        }
+
+        anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'Vamos con "Yellow" de Coldplay.',
+                    'Mejor asi: "Yellow" de Coldplay.',
+                    '"Yellow" de Coldplay entra mejor aqui.',
+                    'Tiene mas pulso "Yellow" de Coldplay.',
+                    'Deja que entre "Yellow" de Coldplay.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      })
+    );
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "miles",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are Juan, the DJ represented by the internal id 'miles' in WAIV.");
+    expect(systemPrompt).toContain("Speak entirely in natural spoken Spanish. Never switch into English.");
+    expect(systemPrompt).toContain("Write every line fully in natural spoken Spanish.");
+    expect(systemPrompt).toContain("Juan should sound calm, smooth, and musically intentional in natural Spanish.");
+    expect(systemPrompt).toContain("Avoid generic radio filler, forced Spanglish, cheesy flirtiness, and overexplaining the choice.");
+  });
+
+  it("sends Tiffany-specific personality guidance for tiffany skip lines", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("api.anthropic.com")) {
+          return new Response(null, { status: 404 });
+        }
+
+        anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'No, we can do hotter than that. Try "Yellow" by Coldplay.',
+                    'Better look right here: "Yellow" by Coldplay.',
+                    '"Yellow" by Coldplay has the better glow right now.',
+                    'This is the shinier move: "Yellow" by Coldplay.',
+                    'Let "Yellow" by Coldplay take the spotlight.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      })
+    );
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "tiffany",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are Tiffany, the DJ represented by the internal id 'tiffany' in WAIV.");
+    expect(systemPrompt).toContain("glamorous, high-energy female radio DJ with true influencer flair and real musical taste");
+    expect(systemPrompt).toContain("Keep Tiffany stylish, playful, and intentionally extra");
+    expect(systemPrompt).toContain("Tiffany should sound stylish, fast, dramatic, and musically intentional.");
+    expect(systemPrompt).toContain("Avoid empty influencer filler, generic hype, and anything too branded or hashtag-ready.");
+  });
+
+  it("sends Robert-specific personality guidance for robert skip lines", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("api.anthropic.com")) {
+          return new Response(null, { status: 404 });
+        }
+
+        anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'That was not the correct move. Try "Yellow" by Coldplay.',
+                    'A more stable outcome here is "Yellow" by Coldplay.',
+                    '"Yellow" by Coldplay aligns better here.',
+                    'This is the cleaner correction: "Yellow" by Coldplay.',
+                    'Proceed instead with "Yellow" by Coldplay.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        );
+      })
+    );
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "robert",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("You are Robert, the DJ represented by the internal id 'robert' in WAIV.");
+    expect(systemPrompt).toContain("robot DJ who believes he is a perfectly ordinary human host");
+    expect(systemPrompt).toContain("Keep Robert uncanny through precision, deadpan suspicion, and over-controlled phrasing");
+    expect(systemPrompt).toContain("Robert should sound procedural, precise, and faintly suspicious");
+    expect(systemPrompt).toContain("Never use actual glitch text, fake corruption, or machine gibberish.");
+  });
+
   it("retries April skip generation when the first LLM output is invalid", async () => {
     const fetchMock = vi
       .fn()
@@ -635,6 +903,315 @@ describe("POST /api/skip-lines/generate", () => {
       body: JSON.stringify({
         eventType: "user_skip",
         djID: "jack",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLines: string[] };
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.djLines.length).toBeGreaterThanOrEqual(3);
+    expect(payload.djLines.every((line) => line.includes("Yellow") && line.includes("Coldplay"))).toBe(true);
+  });
+
+  it("retries Jolene skip generation when the first LLM output is invalid", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    "Not this one.",
+                    "Try another.",
+                    "Better fit coming.",
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'Let’s warm it up with "Yellow" by Coldplay.',
+                    'That should feel nicer: "Yellow" by Coldplay.',
+                    'Better fit right here: "Yellow" by Coldplay.',
+                    'A little more glow with "Yellow" by Coldplay.',
+                    'Let "Yellow" by Coldplay take it from here.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "jolene",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLines: string[] };
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.djLines.length).toBeGreaterThanOrEqual(3);
+    expect(payload.djLines.every((line) => line.includes("Yellow") && line.includes("Coldplay"))).toBe(true);
+  });
+
+  it("retries Juan skip generation when the first LLM output is invalid", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    "No esa.",
+                    "La otra mejor.",
+                    "Algo mas limpio.",
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'Vamos con "Yellow" de Coldplay.',
+                    'Mejor asi: "Yellow" de Coldplay.',
+                    '"Yellow" de Coldplay entra mejor aqui.',
+                    'Tiene mas pulso "Yellow" de Coldplay.',
+                    'Deja que entre "Yellow" de Coldplay.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "miles",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLines: string[] };
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.djLines.length).toBeGreaterThanOrEqual(3);
+    expect(payload.djLines.every((line) => line.includes("Yellow") && line.includes("Coldplay"))).toBe(true);
+    expect(payload.djLines.every((line) => line.includes(" de Coldplay"))).toBe(true);
+  });
+
+  it("retries Tiffany skip generation when the first LLM output is invalid", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    "No.",
+                    "Try another.",
+                    "Something prettier.",
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'No, we can do hotter than that. Try "Yellow" by Coldplay.',
+                    'Better look right here: "Yellow" by Coldplay.',
+                    '"Yellow" by Coldplay has the better glow right now.',
+                    'This is the shinier move: "Yellow" by Coldplay.',
+                    'Let "Yellow" by Coldplay take the spotlight.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "tiffany",
+        candidateCount: 5,
+        fromTrack: {
+          isrc: "US1",
+          title: "Fix You",
+          artist: "Coldplay",
+        },
+        toTrack: {
+          isrc: "US2",
+          title: "Yellow",
+          artist: "Coldplay",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLines: string[] };
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(payload.djLines.length).toBeGreaterThanOrEqual(3);
+    expect(payload.djLines.every((line) => line.includes("Yellow") && line.includes("Coldplay"))).toBe(true);
+  });
+
+  it("retries Robert skip generation when the first LLM output is invalid", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    "Incorrect.",
+                    "Recalculating.",
+                    "Proceed elsewhere.",
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+      .mockImplementationOnce(async () =>
+        new Response(
+          JSON.stringify({
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  lines: [
+                    'That was not the correct move. Try "Yellow" by Coldplay.',
+                    'A more stable outcome here is "Yellow" by Coldplay.',
+                    '"Yellow" by Coldplay aligns better here.',
+                    'This is the cleaner correction: "Yellow" by Coldplay.',
+                    'Proceed instead with "Yellow" by Coldplay.',
+                  ],
+                }),
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/skip-lines/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        eventType: "user_skip",
+        djID: "robert",
         candidateCount: 5,
         fromTrack: {
           isrc: "US1",

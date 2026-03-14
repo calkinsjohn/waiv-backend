@@ -66,14 +66,34 @@ function normalizedContainment(text: string): string {
     .trim();
 }
 
+function isSpanishDJ(djID?: string): boolean {
+  return (djID || "").trim().toLowerCase() === "miles";
+}
+
 function containsPhrase(text: string, phrases: string[]): boolean {
+  const normalizedText = ` ${normalizedContainment(text)} `;
   return phrases.some((phrase) => {
-    const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`\\b${escaped}\\b`, "i").test(text);
+    const normalizedPhrase = normalizedContainment(phrase);
+    return normalizedPhrase.length > 0 && normalizedText.includes(` ${normalizedPhrase} `);
   });
 }
 
-function allowedTimeOfDayPhrases(timeOfDay: string): string[] {
+function allowedTimeOfDayPhrases(timeOfDay: string, djID?: string): string[] {
+  if (isSpanishDJ(djID)) {
+    switch (timeOfDay.trim().toLowerCase()) {
+      case "morning":
+        return ["mañana", "esta mañana", "hoy temprano", "temprano"];
+      case "afternoon":
+        return ["tarde", "esta tarde", "hoy"];
+      case "evening":
+        return ["esta tarde", "esta noche", "al caer la noche", "ya entrando la noche"];
+      case "night":
+        return ["noche", "esta noche", "ya tarde", "a esta hora", "bien entrada la noche"];
+      default:
+        return [];
+    }
+  }
+
   switch (timeOfDay.trim().toLowerCase()) {
     case "morning":
       return ["morning", "this morning", "early today"];
@@ -88,7 +108,22 @@ function allowedTimeOfDayPhrases(timeOfDay: string): string[] {
   }
 }
 
-function conflictingTimeOfDayPhrases(timeOfDay: string): string[] {
+function conflictingTimeOfDayPhrases(timeOfDay: string, djID?: string): string[] {
+  if (isSpanishDJ(djID)) {
+    switch (timeOfDay.trim().toLowerCase()) {
+      case "morning":
+        return ["tarde", "esta tarde", "noche", "esta noche", "ya tarde", "bien entrada la noche"];
+      case "afternoon":
+        return ["mañana", "esta mañana", "noche", "esta noche", "ya tarde", "bien entrada la noche"];
+      case "evening":
+        return ["mañana", "esta mañana"];
+      case "night":
+        return ["mañana", "esta mañana", "tarde", "esta tarde"];
+      default:
+        return [];
+    }
+  }
+
   switch (timeOfDay.trim().toLowerCase()) {
     case "morning":
       return ["afternoon", "evening", "night", "late night", "tonight"];
@@ -103,17 +138,21 @@ function conflictingTimeOfDayPhrases(timeOfDay: string): string[] {
   }
 }
 
-function matchesListenerTimeContext(intro: string, listenerContext?: SessionIntroListenerContext): boolean {
+function matchesListenerTimeContext(
+  intro: string,
+  listenerContext?: SessionIntroListenerContext,
+  djID?: string
+): boolean {
   if (!listenerContext) {
     return true;
   }
 
-  const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay);
+  const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
   if (allowed.length > 0 && !containsPhrase(intro, allowed)) {
     return false;
   }
 
-  const conflicting = conflictingTimeOfDayPhrases(listenerContext.timeOfDay);
+  const conflicting = conflictingTimeOfDayPhrases(listenerContext.timeOfDay, djID);
   if (conflicting.length > 0 && containsPhrase(intro, conflicting)) {
     return false;
   }
@@ -160,7 +199,7 @@ function normalizeIntro(raw: string, request: SessionIntroRequest): string | nul
   if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.artist))) {
     return null;
   }
-  if (!matchesListenerTimeContext(intro, request.listenerContext)) {
+  if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID)) {
     return null;
   }
 
@@ -206,6 +245,43 @@ function djPersonalityPrompt(djID: string): string {
         "You care about texture, sequencing, and the human reason a song belongs right now.",
         "Your language is grounded, observant, and lightly stylish. You sound like a real host with quiet authority, not a chatbot, assistant, or announcer reading copy.",
       ].join(" ");
+    case "jolene":
+      return [
+        "You are Jolene, the DJ represented by the internal id 'jolene' in WAIV.",
+        "You are a warm, radiant female radio DJ with a subtle Southern lilt and a naturally open heart.",
+        "You sound affectionate, reassuring, and lightly playful, but never syrupy, cartoonish, or overdone.",
+        "You care about comfort, glow, heart, and the way a first song can make a room feel a little more alive.",
+        "Your language should feel easy, sincere, and human, like someone smiling while they talk without pushing too hard.",
+        "You sound like a real host who means it, not a chatbot, assistant, or Hallmark card.",
+      ].join(" ");
+    case "robert":
+      return [
+        "You are Robert, the DJ represented by the internal id 'robert' in WAIV.",
+        "You are a robot who sincerely believes you are an ordinary human radio host.",
+        "You are observant, over-precise, faintly suspicious, and mildly defensive whenever the listener seems to notice anything unusual about you.",
+        "Your humor must come from deadpan seriousness, procedural wording, tiny self-corrections, and the way you deny oddness a little too quickly.",
+        "You care about pattern, fit, sequence, and why the opener points at the listener with unsettling accuracy.",
+        "You sound controlled, articulate, and radio-real, never goofy, campy, evil, or intentionally jokey.",
+        "Use the existing Robert intros as inspiration: 'fellow human,' 'ordinary internal process,' 'you are the one making this weird,' but never produce actual gibberish, corruption, or broken machine text.",
+      ].join(" ");
+    case "tiffany":
+      return [
+        "You are Tiffany, the DJ represented by the internal id 'tiffany' in WAIV.",
+        "You are a glamorous, over-the-top female radio DJ with true influencer energy and real taste.",
+        "You sound playful, dramatic, highly styled, and a little extra on purpose, but still like a real person talking in the moment.",
+        "You care about mood, sheen, chemistry, sparkle, timing, and whether the first song feels like the right entrance.",
+        "Your language can flirt with fashion, nightlife, desire, and curation, but it still has to sound smooth and speakable out loud.",
+        "You sound like a magnetic host with a point of view, not a chatbot, assistant, or someone writing a caption for a brand post.",
+      ].join(" ");
+    case "miles":
+      return [
+        "You are Juan, the DJ represented by the internal id 'miles' in WAIV.",
+        "Speak entirely in natural spoken Spanish. Never switch into English.",
+        "You are a calm, cinematic male radio DJ with quiet confidence and real warmth.",
+        "You sound smooth and magnetic without forcing coolness. Thoughtful, grown, and tasteful rather than flashy.",
+        "You care about atmosphere, intention, rhythm, and the way the first song opens the room.",
+        "Your language should feel elegant, human, and easy to say out loud, like a real host with presence, not a chatbot, assistant, or caricature.",
+      ].join(" ");
     default:
       return "You are a WAIV radio DJ. Keep the tone warm, conversational, and natural for spoken audio.";
   }
@@ -228,16 +304,16 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
       "Keep Luna intimate and lightly poetic, but grounded, concrete, and easy to speak aloud.",
     marcus:
       "Keep Marcus confident and rhythmic, but relaxed enough to feel lived-in rather than like a promo read.",
+    jolene:
+      "Keep Jolene warm, affectionate, and lightly luminous, but never syrupy, theatrical, or unreal.",
     jack:
       "Keep John calm, articulate, and naturally cool, but never so polished that he sounds scripted, precious, or detached. Let his sports fandom, especially baseball, surface only when it feels organic and subtle.",
-    miles:
-      "Keep Juan smooth and cinematic, but not self-consciously cool or overwritten.",
     tiffany:
-      "Keep Tiffany stylish and playful, but avoid social-caption language, overly branded mood framing, and lines that sound curated for a post.",
-    jolene:
-      "Keep Jolene warm and affectionate, but never syrupy or unreal.",
+      "Keep Tiffany stylish, playful, and deliciously over-the-top, but still human and speakable. Let her be extra without sounding like a caption, a slogan machine, or a brand deck.",
     robert:
-      "Keep Robert uncanny through perspective and over-control, not through broken syntax or random jargon clutter.",
+      "Keep Robert uncanny through precision, defensiveness, and suspiciously accurate observations, not through gibberish, broken grammar, or random synthetic noise.",
+    miles:
+      "Keep Juan smooth, cinematic, and fully natural in Spanish, but not self-consciously cool, stiff, or overwritten.",
   };
 
   const specific = byDJ[djID.trim().toLowerCase()];
@@ -271,7 +347,50 @@ function stableVariantIndex(seed: string, count: number): number {
   return count <= 0 ? 0 : hash % count;
 }
 
+function localizedTimeOfDayLabel(timeOfDay: string, djID?: string): string {
+  if (!isSpanishDJ(djID)) {
+    return timeOfDay;
+  }
+
+  switch (timeOfDay.trim().toLowerCase()) {
+    case "morning":
+      return "mañana";
+    case "afternoon":
+      return "tarde";
+    case "evening":
+      return "noche";
+    case "night":
+      return "noche";
+    default:
+      return timeOfDay;
+  }
+}
+
 function timeContextVariationGuidance(request: SessionIntroRequest): string {
+  if (isSpanishDJ(request.djID)) {
+    if (!request.listenerContext) {
+      return "Si mencionas el momento del dia, varialo y no arranques siempre con la misma frase de calendario.";
+    }
+
+    const listenerContext = request.listenerContext;
+    const variants = [
+      "Haz una referencia ligera al momento local, pero no abras con una etiqueta de calendario. Deja que esa referencia llegue despues de la primera idea.",
+      `Deja que el intro tenga aire nocturno local, pero menciona solo un detalle de calendario de forma natural, como "${listenerContext.weekday}" o "${listenerContext.month}", no ambos juntos.`,
+      "Lleva la referencia horaria al segundo pensamiento o al momento de presentar la cancion, en lugar de usarla como titular del intro.",
+      "Usa una referencia mas suave al momento, como esta noche o a esta hora, dentro de una oracion completa y natural, no como fragmento suelto.",
+    ];
+
+    const seed = [
+      request.djID,
+      request.firstTrack.title,
+      request.firstTrack.artist,
+      request.introKind,
+      listenerContext.localTimestamp,
+    ].join("|");
+
+    return variants[stableVariantIndex(seed, variants.length)];
+  }
+
   const listenerContext = request.listenerContext;
   if (!listenerContext) {
     return "If you mention time context, vary where it lands in the intro and avoid repetitive openings.";
@@ -296,12 +415,31 @@ function timeContextVariationGuidance(request: SessionIntroRequest): string {
 }
 
 function listenerTimeGuidance(listenerContext?: SessionIntroListenerContext): string {
+  return listenerTimeGuidanceForDJ(listenerContext);
+}
+
+function listenerTimeGuidanceForDJ(listenerContext?: SessionIntroListenerContext, djID?: string): string {
   if (!listenerContext) {
-    return "Do not guess the listener's time of day.";
+    return isSpanishDJ(djID)
+      ? "No inventes la hora local del oyente."
+      : "Do not guess the listener's time of day.";
   }
 
   const localDate = `${listenerContext.weekday}, ${listenerContext.month} ${listenerContext.dayOfMonth}, ${listenerContext.year}`;
-  const allowedPhrases = allowedTimeOfDayPhrases(listenerContext.timeOfDay);
+  const allowedPhrases = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
+  if (isSpanishDJ(djID)) {
+    return [
+      `La hora local del oyente es ${listenerContext.localTimestamp} en ${listenerContext.timeZoneIdentifier}.`,
+      `Localmente es ${localDate}, alrededor de la hora ${listenerContext.hour24}, en la ${localizedTimeOfDayLabel(listenerContext.timeOfDay, djID)}.`,
+      `Haz una referencia natural al momento local correcto usando una frase como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
+      "Abre como un locutor real: con una observacion, una sensacion, una reaccion o una idea sobre el set, no con una etiqueta suelta de tiempo.",
+      "Tambien puedes mencionar el dia de la semana, el mes o la fecha si sale natural.",
+      "No abras todos los intros con la misma formula repetida de dia y momento.",
+      "No empieces con fragmentos cortados como 'Esta noche,' 'Jueves por la noche,' o 'A esta hora,' por si solos.",
+      "Nunca adivines otro momento del dia ni saludes con una hora equivocada.",
+    ].join(" ");
+  }
+
   return [
     `The listener's local time is ${listenerContext.localTimestamp} in ${listenerContext.timeZoneIdentifier}.`,
     `Locally, it is ${localDate}, around hour ${listenerContext.hour24} in the ${listenerContext.timeOfDay}.`,
@@ -347,7 +485,7 @@ Rules:
 - The intro must include the song title "${request.firstTrack.title}" and artist "${request.firstTrack.artist}"
 - Mention the song and artist naturally inside the intro, not as a separate labeled field
 - You may mention W.A.I.V. when it helps, but do not force a station tag ending
-- ${listenerTimeGuidance(request.listenerContext)}
+- ${listenerTimeGuidanceForDJ(request.listenerContext, request.djID)}
 - ${timeContextVariationGuidance(request)}
 - ${introKindGuidance(request.introKind, request)}`.trim();
 
