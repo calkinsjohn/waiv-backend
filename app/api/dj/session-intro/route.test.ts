@@ -87,8 +87,9 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
     expect(payload.intro).toContain("Coldplay");
     expect(systemPrompt).toContain("This is the listener's very first session on WAIV.");
     expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
+    expect(systemPrompt).toContain("You are a former college radio DJ in your early 30s.");
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
-    expect(systemPrompt).toContain("Keep April dry and precise, but not as if she is polishing every sentence into a joke.");
+    expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
     expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
     expect(systemPrompt).toContain('such as "night", "tonight", "late night", "this late"');
     expect(systemPrompt).toContain("Do not default to opening every intro with the same weekday-plus-time phrase.");

@@ -138,11 +138,11 @@ describe("POST /api/skip-lines/generate", () => {
 
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
-    expect(systemPrompt).toContain("You care about sequencing, fit, tension, and how a track lands in a set.");
+    expect(systemPrompt).toContain("You are a former college radio DJ in your early 30s.");
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
-    expect(systemPrompt).toContain("do not make every skip line sound sharpened into a joke");
+    expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
     expect(systemPrompt).toContain("Never use bro-y slang");
-    expect(systemPrompt).toContain("April should sound lightly amused, observant, and musically intentional.");
+    expect(systemPrompt).toContain("April should sound calm, human, and quietly confident.");
   });
 
   it("sends Luna-specific personality guidance for luna skip lines", async () => {
