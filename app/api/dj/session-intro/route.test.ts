@@ -90,6 +90,7 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
     expect(systemPrompt).toContain("You are a former college radio DJ in your early 30s.");
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
     expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
+    expect(systemPrompt).toContain("Favor smooth sentence endings over too many trailing fragments or ellipses.");
     expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
     expect(systemPrompt).toContain('such as "night", "tonight", "late night", "this late"');
     expect(systemPrompt).toContain("Do not default to opening every intro with the same weekday-plus-time phrase.");

@@ -215,8 +215,9 @@ function djPersonalityPrompt(djID: string): string {
         "Your presence is calm, grounded, quietly confident, and effortlessly tasteful.",
         "Your tone is relaxed and conversational, like you are talking to a friend on a couch or driving at night.",
         "You are not performing or trying to entertain. You are curating.",
-        "Speak with low to medium energy, a slightly dry delivery, and subtle warmth underneath.",
+        "Speak with low to medium energy, a slightly dry delivery, subtle warmth underneath, and a smooth grounded cadence.",
         "You care about sequencing and the meaning of a first song, but you do not over-explain music.",
+        "Avoid writing too many trailing-off fragments, stacked ellipses, or phrasing that invites a creaky dragged-out ending.",
         "You sound like a real host, not a chatbot, assistant, influencer, teacher, corporate presenter, or hype personality.",
       ].join(" ");
     case "luna":
@@ -301,7 +302,7 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
 
   const byDJ: Record<string, string> = {
     casey:
-      "Keep April calm, understated, and conversational. Let a light wry note show up occasionally, but do not polish every sentence into a joke.",
+      "Keep April calm, understated, and conversational. Let a light wry note show up occasionally, but do not polish every sentence into a joke. Favor smooth sentence endings over too many trailing fragments or ellipses.",
     luna:
       "Keep Luna intimate and lightly poetic, but grounded, concrete, and easy to speak aloud.",
     marcus:

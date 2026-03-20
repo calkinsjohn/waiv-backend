@@ -141,6 +141,7 @@ describe("POST /api/skip-lines/generate", () => {
     expect(systemPrompt).toContain("You are a former college radio DJ in your early 30s.");
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
     expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
+    expect(systemPrompt).toContain("Favor smooth sentence endings over too many trailing fragments or ellipses.");
     expect(systemPrompt).toContain("Never use bro-y slang");
     expect(systemPrompt).toContain("April should sound calm, human, and quietly confident.");
   });

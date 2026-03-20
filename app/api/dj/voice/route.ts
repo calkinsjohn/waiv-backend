@@ -96,6 +96,15 @@ function voiceSettingsForDJ(djId: DjId) {
     };
   }
 
+  if (djId === "casey") {
+    return {
+      stability: 0.62,
+      similarity_boost: 0.74,
+      style: 0.14,
+      use_speaker_boost: true,
+    };
+  }
+
   return {
     stability: 0.52,
     similarity_boost: 0.72,

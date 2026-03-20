@@ -10,12 +10,14 @@ describe("POST /api/dj/voice", () => {
     vi.restoreAllMocks();
     process.env.WAIV_API_APP_TOKEN = appToken;
     process.env.ELEVENLABS_API_KEY = "test-elevenlabs-key";
+    process.env.ELEVENLABS_VOICE_ID_CASEY = "test-casey-voice-id";
     delete process.env.ELEVENLABS_VOICE_ID_TIFFANY;
   });
 
   afterEach(() => {
     delete process.env.WAIV_API_APP_TOKEN;
     delete process.env.ELEVENLABS_API_KEY;
+    delete process.env.ELEVENLABS_VOICE_ID_CASEY;
     delete process.env.ELEVENLABS_VOICE_ID_TIFFANY;
     delete process.env.ELEVENLABS_MODEL_ID;
   });
@@ -91,6 +93,36 @@ describe("POST /api/dj/voice", () => {
       similarity_boost: 0.76,
       style: 0.18,
       speed: 1.0,
+      use_speaker_boost: true,
+    });
+    expect(requestBody.enable_ssml_parsing).toBe(true);
+  });
+
+  it("uses gentler voice settings for April to keep the delivery smoother", async () => {
+    const fetchMock = vi.fn(async () => new Response("mp3-bytes", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/voice", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djId: "casey",
+        text: "I had something better lined up.",
+      }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(requestBody.voice_settings).toMatchObject({
+      stability: 0.62,
+      similarity_boost: 0.74,
+      style: 0.14,
       use_speaker_boost: true,
     });
     expect(requestBody.enable_ssml_parsing).toBe(true);

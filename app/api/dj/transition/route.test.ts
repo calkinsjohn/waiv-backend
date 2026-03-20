@@ -85,6 +85,7 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("You may naturally reference time context when it genuinely fits the moment");
     expect(systemPrompt).toContain("Write for the ear first, not the screen.");
     expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
+    expect(systemPrompt).toContain("Favor smooth sentence endings over too many trailing fragments or ellipses.");
     expect(systemPrompt).toContain("Treat time context as optional color, not a requirement");
     expect(systemPrompt).toContain("If recent bridge lines are provided, treat them as anti-patterns for this turn");
     expect(systemPrompt).toContain('Do not open with overused reflective stems like "There\'s something about..."');
