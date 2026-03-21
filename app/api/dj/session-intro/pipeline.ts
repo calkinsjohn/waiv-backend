@@ -151,6 +151,7 @@ type SessionBehaviorPlan = {
   required: IntroComponentName[];
   optional: IntroComponentName[];
   allowStationMention: boolean;
+  desiredParagraphs: number;
 };
 
 const minWordCount = 28;
@@ -1041,6 +1042,7 @@ function applySessionTypeBehavior(
         required: ["openingHit", "songHandoff"],
         optional: context.timeContext.timeOfDay === "night" ? ["momentAnchor"] : [],
         allowStationMention: false,
+        desiredParagraphs: 2,
       };
     case "switched_dj":
       return {
@@ -1050,6 +1052,7 @@ function applySessionTypeBehavior(
         required: ["openingHit", "setFraming", "songHandoff"],
         optional: ["momentAnchor"],
         allowStationMention: false,
+        desiredParagraphs: 3,
       };
     case "returning_after_gap":
       return {
@@ -1059,6 +1062,7 @@ function applySessionTypeBehavior(
         required: ["openingHit", "momentAnchor", "songHandoff"],
         optional: ["setFraming", "personalityFlourish"],
         allowStationMention: false,
+        desiredParagraphs: 3,
       };
     case "first_ever_session":
       return {
@@ -1068,6 +1072,7 @@ function applySessionTypeBehavior(
         required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
         optional: ["personalityFlourish"],
         allowStationMention: true,
+        desiredParagraphs: 4,
       };
     case "first_show_today":
       return {
@@ -1077,6 +1082,7 @@ function applySessionTypeBehavior(
         required: basePlan.required,
         optional: basePlan.optional,
         allowStationMention: false,
+        desiredParagraphs: 3,
       };
     default:
       return {
@@ -1086,6 +1092,7 @@ function applySessionTypeBehavior(
         required: basePlan.required,
         optional: basePlan.optional,
         allowStationMention: false,
+        desiredParagraphs: 3,
       };
   }
 }
@@ -1147,6 +1154,47 @@ function buildListenerMomentPrompt(
   return [firstSessionLine, localTimeLine, timeReferenceRule, repetitionRule, clippedRule].filter(Boolean).join(" ");
 }
 
+function archetypeDirective(archetype: string): string {
+  const directives: Record<string, string> = {
+    cold_open: "Open immediately with conviction. Minimal ceremony. It should feel like the station is already moving.",
+    confident_station_open: "Let this feel like a real show open with presence, momentum, and calm authority.",
+    understated_cool_open: "Keep it restrained, tasteful, and low-drama, but still intentional enough to feel like a real opening moment.",
+    warm_familiar_open: "Make it feel welcoming and lived-in, like the listener is settling into a station they trust.",
+    mood_setter: "Start by shaping the room and the emotional weather before you turn into the first song.",
+    immediate_song_forward: "Get to the first song quickly, but still make the open feel deliberate and live.",
+    cinematic_open: "Create a vivid scene and a sense of scale without sounding overwritten or movie-trailer dramatic.",
+    playful_tease: "Use a lightly teasing entrance with charisma, then pivot cleanly into the opener.",
+    reflective_open: "Let the opening feel thoughtful and specific, like the DJ noticed the exact right entry point into the hour.",
+    late_night_confession: "Keep it close-mic, intimate, and unforced, like a late-night host talking to one listener.",
+    friday_liftoff: "Give it weekend lift and a feeling of release, but stay grounded and radio-real.",
+    slow_burn_open: "Let the set arrive patiently. The opening should feel unhurried but unmistakably intentional.",
+    local_radio_style: "Write like a real human station open: present, specific, lightly scene-setting, and naturally rhythmic.",
+    intimate_low_key_open: "Keep it close, human, and lightly hushed, but not sleepy or vague.",
+    caught_you_at_the_right_time: "Make it feel like the DJ caught the listener at exactly the right moment for this first song.",
+  };
+
+  return directives[archetype] ?? "Make the intro feel like a real radio opening happening live right now.";
+}
+
+function musicAwareDirective(context: SessionIntroShowContext): string {
+  const mood = context.setContext.openingTrackMood.join(", ") || "intentional";
+  const texture = context.setContext.openingTrackTexture.join(", ") || "curated";
+  const energyBand =
+    context.setContext.openingTrackEnergy >= 0.72
+      ? "high and assertive"
+      : context.setContext.openingTrackEnergy <= 0.4
+        ? "low and patient"
+        : "mid-tempo and controlled";
+
+  return [
+    `The opener's role is ${context.setContext.openingTrackRole}.`,
+    `Its felt mood is ${mood}.`,
+    `Its texture reads as ${texture}.`,
+    `Its energy feels ${energyBand}.`,
+    "Imply why this is a strong opening choice without sounding analytical or metadata-driven.",
+  ].join(" ");
+}
+
 function buildContextPrompt(
   request: SessionIntroRequest,
   context: SessionIntroShowContext,
@@ -1160,14 +1208,17 @@ function buildContextPrompt(
   return [
     `Show context: ${JSON.stringify(context)}.`,
     `Primary archetype: ${archetype}.`,
+    archetypeDirective(archetype),
     `Session type behavior: ${context.sessionType}.`,
     `Required components: ${requiredComponents}. Optional components: ${optionalComponents || "none"}.`,
-    `Target: ${sessionBehavior.targetSentences} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across 2 to 5 short paragraphs.`,
+    `Target: ${sessionBehavior.targetSentences} to ${Math.min(maxSentenceCount, sessionBehavior.targetSentences + 1)} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across ${sessionBehavior.desiredParagraphs} short paragraphs.`,
     `Variation constraints: avoid opening structures ${variation.bannedOpeningStructures.join(", ") || "none"}, avoid opening phrases ${variation.bannedOpeningPhrases.join(", ") || "none"}, avoid handoff styles ${variation.bannedHandoffStyles.join(", ") || "none"}, avoid repeating vocabulary ${variation.bannedVocabulary.join(", ") || "none"}.`,
     variation.shouldUseTimeReference
       ? `Use a natural local-moment reference that fits ${context.timeContext.label}, such as ${allowedPhrases.join(", ")}.`
       : "A time reference is optional here. Do not force one if it feels recycled.",
+    musicAwareDirective(context),
     `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
+    "Do not write a tiny intro. This should feel like a real show opening with scene, direction, and a memorable turn into music.",
     "Make this feel like a living station already in motion. Imply continuity, set direction, and land the handoff cleanly into the first song.",
   ].join(" ");
 }
@@ -1181,7 +1232,11 @@ function buildComponentPrompt(
   return [
     "Return strict JSON with these top-level keys only:",
     '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false}}',
-    "Each populated component must be at most one sentence.",
+    "openingHit must be 1 sentence.",
+    "momentAnchor must be 1 sentence.",
+    "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale.",
+    "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
+    "songHandoff must be 1 sentence and must name the song and artist directly.",
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
@@ -1191,6 +1246,7 @@ function buildComponentPrompt(
       ? "For a first-ever session, be invitational but never tutorial. One light WAIV cue is enough."
       : "For a normal session open, do not explain the app or over-introduce the DJ.",
     `Archetype ${archetype} should drive the structure more than session type, unless session type clearly asks for shorter behavior.`,
+    "The overall result should feel like tuning into a real station at the top of a set, not hearing a generated pre-roll.",
     `Required components in order of importance: ${sessionBehavior.required.join(", ")}.`,
   ].join(" ");
 }
@@ -1291,7 +1347,11 @@ function composeIntro(
     if (!requiredSet.has(name) && !optionalSet.has(name) && name !== "songHandoff") {
       return;
     }
-    const cleaned = cleanSentence(raw);
+    const cleaned = normalizeWhitespace(raw)
+      .split(/(?<=[.!?])\s+/)
+      .map((sentence) => cleanSentence(sentence))
+      .filter(Boolean)
+      .join(" ");
     if (!cleaned) return;
     sentences.push(cleaned);
   });
@@ -1312,18 +1372,22 @@ function composeIntro(
   const handoff = deduped[deduped.length - 1];
   const paragraphs: string[] = [];
 
-  if (bodySentences.length >= 3) {
-    paragraphs.push(bodySentences.slice(0, 2).join(" "));
-    if (bodySentences.length > 2) {
-      paragraphs.push(bodySentences.slice(2).join(" "));
+  if (bodySentences.length >= 4) {
+    paragraphs.push(bodySentences.slice(0, 1).join(" "));
+    paragraphs.push(bodySentences.slice(1, 3).join(" "));
+    if (bodySentences.length > 3) {
+      paragraphs.push(bodySentences.slice(3).join(" "));
     }
+  } else if (bodySentences.length === 3) {
+    paragraphs.push(bodySentences[0]);
+    paragraphs.push(bodySentences.slice(1).join(" "));
   } else if (bodySentences.length > 0) {
     paragraphs.push(bodySentences.join(" "));
   }
 
   paragraphs.push(handoff);
 
-  const maxParagraphsForIntro = clamp(sessionBehavior.targetSentences >= 4 ? 3 : 2, 2, maxParagraphCount);
+  const maxParagraphsForIntro = clamp(sessionBehavior.desiredParagraphs, 2, maxParagraphCount);
   return paragraphs
     .filter(Boolean)
     .slice(0, maxParagraphsForIntro)
