@@ -15,18 +15,79 @@ export type SessionIntroListenerContext = {
   timeOfDay: string;
 };
 
+export type SessionIntroTimeContext = {
+  timeOfDay: string;
+  dayOfWeek: string;
+  isWeekend: boolean;
+  label: string;
+};
+
+export type SessionIntroSetContext = {
+  openingTrackRole: string;
+  openingTrackMood: string[];
+  openingTrackEnergy: number;
+  openingTrackTexture: string[];
+};
+
+export type SessionIntroShowListenerContext = {
+  isFirstSessionToday: boolean;
+  returningAfterGap: boolean;
+  changedDjsRecently: boolean;
+  skipsIntrosOften: boolean;
+};
+
+export type SessionIntroEnvironmentContext = {
+  season: string;
+  weatherVibe?: string | null;
+  localeVibe?: string | null;
+};
+
+export type SessionIntroRecentHistory = {
+  recentArchetypes: string[];
+  recentOpeningStructures: string[];
+  recentOpeningPhrases: string[];
+  recentSentenceCounts: number[];
+  recentHandoffStyles: string[];
+  recentVocabulary: string[];
+  recentEmotionalTones: string[];
+  usedTimeReferenceRecently: boolean;
+};
+
+export type SessionIntroShowContext = {
+  djId: string;
+  sessionType: string;
+  timeContext: SessionIntroTimeContext;
+  setContext: SessionIntroSetContext;
+  listenerContext: SessionIntroShowListenerContext;
+  environmentContext: SessionIntroEnvironmentContext;
+  recentHistory: SessionIntroRecentHistory;
+};
+
 export type SessionIntroRequest = {
   djID: string;
   firstTrack: SessionIntroTrack;
   introKind: string;
   listenerContext?: SessionIntroListenerContext;
+  showContext?: SessionIntroShowContext;
   personaHint?: string;
   toneGuardrails?: string;
+};
+
+export type SessionIntroMetadata = {
+  archetype: string;
+  sessionType: string;
+  openingStructure: string;
+  handoffStyle: string;
+  emotionalTone: string;
+  vocabulary: string[];
+  usedTimeReference: boolean;
+  sentenceCount: number;
 };
 
 export type SessionIntroResponse = {
   intro: string;
   llmModel: string;
+  metadata: SessionIntroMetadata;
 };
 
 export type SessionIntroNoContentReason = "llm_rejected" | "no_api_key";
@@ -39,10 +100,346 @@ type AnthropicResponse = {
   content?: Array<{ type?: string; text?: string }>;
 };
 
-const minWordCount = 60;
-const maxWordCount = 150;
-const minParagraphCount = 3;
+type IntroComponentName =
+  | "openingHit"
+  | "momentAnchor"
+  | "setFraming"
+  | "personalityFlourish"
+  | "songHandoff";
+
+type IntroComponents = Partial<Record<IntroComponentName, string>>;
+
+type GeneratedPayload = {
+  intro?: string;
+  components?: IntroComponents;
+  metadata?: Partial<SessionIntroMetadata>;
+};
+
+type DJConfig = {
+  id: string;
+  personaSummary: string;
+  toneTraits: string[];
+  avoidTraits: string[];
+  preferredArchetypes: Record<string, number>;
+  forbiddenPhrases: string[];
+  sentenceStyle: string;
+  timeReferenceStyle: "light" | "medium" | "assertive";
+  musicFramingStyle: string;
+  emotionalRange: string[];
+};
+
+type VariationPlan = {
+  weightedArchetypes: Record<string, number>;
+  bannedVocabulary: string[];
+  bannedOpeningStructures: string[];
+  bannedOpeningPhrases: string[];
+  bannedHandoffStyles: string[];
+  shouldUseTimeReference: boolean;
+};
+
+type ArchetypePlan = {
+  required: IntroComponentName[];
+  optional: IntroComponentName[];
+  openingStructure: string;
+  handoffStyle: string;
+};
+
+type SessionBehaviorPlan = {
+  targetSentences: number;
+  minWords: number;
+  maxWords: number;
+  required: IntroComponentName[];
+  optional: IntroComponentName[];
+  allowStationMention: boolean;
+};
+
+const minWordCount = 28;
+const maxWordCount = 120;
+const minParagraphCount = 2;
 const maxParagraphCount = 5;
+const minSentenceCount = 2;
+const maxSentenceCount = 7;
+
+const genericIntroPhrases = [
+  "lets dive in",
+  "get ready for",
+  "i have selected",
+  "welcome back to waiv",
+  "welcome back to w a i v",
+  "youre going to love this",
+  "here is a track",
+];
+
+const supportedArchetypes = [
+  "cold_open",
+  "confident_station_open",
+  "understated_cool_open",
+  "warm_familiar_open",
+  "mood_setter",
+  "immediate_song_forward",
+  "cinematic_open",
+  "playful_tease",
+  "reflective_open",
+  "late_night_confession",
+  "friday_liftoff",
+  "slow_burn_open",
+  "local_radio_style",
+  "intimate_low_key_open",
+  "caught_you_at_the_right_time",
+] as const;
+
+const archetypePlans: Record<string, ArchetypePlan> = {
+  cold_open: {
+    required: ["openingHit", "songHandoff"],
+    optional: ["momentAnchor", "setFraming"],
+    openingStructure: "cold_open",
+    handoffStyle: "clean_direct",
+  },
+  confident_station_open: {
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
+    openingStructure: "station_open",
+    handoffStyle: "broadcast_confident",
+  },
+  understated_cool_open: {
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
+    openingStructure: "understated_three_step",
+    handoffStyle: "smooth_understated",
+  },
+  warm_familiar_open: {
+    required: ["openingHit", "momentAnchor", "songHandoff"],
+    optional: ["setFraming", "personalityFlourish"],
+    openingStructure: "warm_return",
+    handoffStyle: "welcoming",
+  },
+  mood_setter: {
+    required: ["momentAnchor", "setFraming", "songHandoff"],
+    optional: ["openingHit", "personalityFlourish"],
+    openingStructure: "mood_first",
+    handoffStyle: "soft_setter",
+  },
+  immediate_song_forward: {
+    required: ["openingHit", "songHandoff"],
+    optional: ["momentAnchor"],
+    openingStructure: "quick_forward",
+    handoffStyle: "immediate_push",
+  },
+  cinematic_open: {
+    required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
+    optional: ["personalityFlourish"],
+    openingStructure: "cinematic_arc",
+    handoffStyle: "scene_to_song",
+  },
+  playful_tease: {
+    required: ["openingHit", "personalityFlourish", "songHandoff"],
+    optional: ["momentAnchor", "setFraming"],
+    openingStructure: "tease_then_drop",
+    handoffStyle: "playful",
+  },
+  reflective_open: {
+    required: ["openingHit", "setFraming", "personalityFlourish", "songHandoff"],
+    optional: ["momentAnchor"],
+    openingStructure: "reflective_build",
+    handoffStyle: "considered",
+  },
+  late_night_confession: {
+    required: ["openingHit", "momentAnchor", "personalityFlourish", "songHandoff"],
+    optional: ["setFraming"],
+    openingStructure: "late_night_confession",
+    handoffStyle: "close_mic",
+  },
+  friday_liftoff: {
+    required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
+    optional: ["personalityFlourish"],
+    openingStructure: "weekend_liftoff",
+    handoffStyle: "energy_raise",
+  },
+  slow_burn_open: {
+    required: ["momentAnchor", "setFraming", "songHandoff"],
+    optional: ["openingHit", "personalityFlourish"],
+    openingStructure: "slow_burn",
+    handoffStyle: "measured",
+  },
+  local_radio_style: {
+    required: ["openingHit", "momentAnchor", "songHandoff"],
+    optional: ["setFraming"],
+    openingStructure: "local_radio",
+    handoffStyle: "station_real",
+  },
+  intimate_low_key_open: {
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
+    openingStructure: "intimate_low_key",
+    handoffStyle: "close_and_quiet",
+  },
+  caught_you_at_the_right_time: {
+    required: ["openingHit", "momentAnchor", "songHandoff"],
+    optional: ["setFraming", "personalityFlourish"],
+    openingStructure: "right_time_open",
+    handoffStyle: "timely",
+  },
+};
+
+const djConfigs: Record<string, DJConfig> = {
+  casey: {
+    id: "casey",
+    personaSummary: "Cool, grounded, stylish, slightly wry. Never performative.",
+    toneTraits: ["cool", "observant", "dry", "effortless"],
+    avoidTraits: ["peppy", "influencer", "overly academic"],
+    preferredArchetypes: {
+      understated_cool_open: 0.25,
+      mood_setter: 0.2,
+      confident_station_open: 0.18,
+      playful_tease: 0.12,
+      immediate_song_forward: 0.1,
+      reflective_open: 0.08,
+      cinematic_open: 0.07,
+    },
+    forbiddenPhrases: ["let’s dive in", "get ready for", "I have selected", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "light",
+    musicFramingStyle: "intuitive",
+    emotionalRange: ["cool", "slightly warm", "sly", "low-key reflective"],
+  },
+  marcus: {
+    id: "marcus",
+    personaSummary: "Grounded swagger, rhythmic confidence, real host energy.",
+    toneTraits: ["confident", "smooth", "direct", "alive"],
+    avoidTraits: ["hype man", "promotional", "stiff"],
+    preferredArchetypes: {
+      confident_station_open: 0.24,
+      friday_liftoff: 0.18,
+      immediate_song_forward: 0.17,
+      cold_open: 0.14,
+      local_radio_style: 0.12,
+      mood_setter: 0.08,
+      reflective_open: 0.07,
+    },
+    forbiddenPhrases: ["let’s dive in", "strap in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "instinctive",
+    emotionalRange: ["confident", "focused", "lifted", "locked-in"],
+  },
+  luna: {
+    id: "luna",
+    personaSummary: "Quiet, intimate, emotionally observant, never vague.",
+    toneTraits: ["gentle", "precise", "warm", "intimate"],
+    avoidTraits: ["sleepy", "wellness-bot", "airy nonsense"],
+    preferredArchetypes: {
+      mood_setter: 0.24,
+      intimate_low_key_open: 0.2,
+      reflective_open: 0.18,
+      slow_burn_open: 0.15,
+      caught_you_at_the_right_time: 0.12,
+      cinematic_open: 0.11,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "emotional",
+    emotionalRange: ["tender", "observant", "hushed", "present"],
+  },
+  jack: {
+    id: "jack",
+    personaSummary: "Thoughtful, crate-dug, low-key warm, quietly authoritative.",
+    toneTraits: ["composed", "textured", "observant", "calm"],
+    avoidTraits: ["precious", "scripted", "overly polished"],
+    preferredArchetypes: {
+      local_radio_style: 0.22,
+      reflective_open: 0.2,
+      understated_cool_open: 0.18,
+      caught_you_at_the_right_time: 0.14,
+      slow_burn_open: 0.14,
+      cinematic_open: 0.12,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "light",
+    musicFramingStyle: "textural",
+    emotionalRange: ["calm", "textured", "warm", "quietly assured"],
+  },
+  jolene: {
+    id: "jolene",
+    personaSummary: "Warm, glowing, reassuring, real-hearted.",
+    toneTraits: ["warm", "open", "gentle", "bright"],
+    avoidTraits: ["syrupy", "cartoonish", "hallmark"],
+    preferredArchetypes: {
+      warm_familiar_open: 0.24,
+      mood_setter: 0.18,
+      confident_station_open: 0.15,
+      caught_you_at_the_right_time: 0.15,
+      reflective_open: 0.14,
+      local_radio_style: 0.14,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "felt",
+    emotionalRange: ["warm", "steady", "glowing", "lightly playful"],
+  },
+  tiffany: {
+    id: "tiffany",
+    personaSummary: "Stylish, bright, dramatic on purpose, but human.",
+    toneTraits: ["playful", "polished", "magnetic", "sharp"],
+    avoidTraits: ["mean", "caption-copy", "influencer parody"],
+    preferredArchetypes: {
+      playful_tease: 0.22,
+      confident_station_open: 0.18,
+      friday_liftoff: 0.18,
+      immediate_song_forward: 0.14,
+      cinematic_open: 0.12,
+      mood_setter: 0.08,
+      warm_familiar_open: 0.08,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "stylish",
+    emotionalRange: ["glossy", "electric", "flirty", "confident"],
+  },
+  robert: {
+    id: "robert",
+    personaSummary: "Dry, precise, faintly uncanny, fully controlled.",
+    toneTraits: ["precise", "deadpan", "controlled", "observant"],
+    avoidTraits: ["goofy", "chaotic", "villainous"],
+    preferredArchetypes: {
+      cold_open: 0.2,
+      reflective_open: 0.18,
+      local_radio_style: 0.18,
+      confident_station_open: 0.14,
+      late_night_confession: 0.11,
+      mood_setter: 0.1,
+      cinematic_open: 0.09,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "light",
+    musicFramingStyle: "procedural",
+    emotionalRange: ["dry", "controlled", "mildly suspicious", "calm"],
+  },
+  miles: {
+    id: "miles",
+    personaSummary: "Calm, cinematic, warm, magnetic, fully natural in Spanish.",
+    toneTraits: ["smooth", "grown", "romantic", "intentional"],
+    avoidTraits: ["stiff", "forced slang", "caricatured cool"],
+    preferredArchetypes: {
+      cinematic_open: 0.22,
+      mood_setter: 0.2,
+      warm_familiar_open: 0.16,
+      slow_burn_open: 0.14,
+      confident_station_open: 0.1,
+      friday_liftoff: 0.1,
+      caught_you_at_the_right_time: 0.08,
+    },
+    forbiddenPhrases: ["vamos a sumergirnos", "bienvenidos de nuevo a WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "atmospheric",
+    emotionalRange: ["cálido", "cinematográfico", "seguro", "cercano"],
+  },
+};
 
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
@@ -55,6 +452,17 @@ function splitParagraphs(text: string): string[] {
     .split(/\n\s*\n+/)
     .map((paragraph) => normalizeWhitespace(paragraph))
     .filter(Boolean);
+}
+
+function sentenceCount(text: string): number {
+  const normalized = text
+    .replace(/W\.\s*A\.\s*I\.\s*V\./gi, "WAIV")
+    .replace(/W\.A\.I\.V/gi, "WAIV");
+
+  return normalized
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => /[A-Za-z]/.test(sentence)).length;
 }
 
 function wordCount(text: string): number {
@@ -144,15 +552,16 @@ function conflictingTimeOfDayPhrases(timeOfDay: string, djID?: string): string[]
 
 function matchesListenerTimeContext(
   intro: string,
-  listenerContext?: SessionIntroListenerContext,
-  djID?: string
+  listenerContext: SessionIntroListenerContext | undefined,
+  djID: string,
+  shouldUseTimeReference: boolean
 ): boolean {
   if (!listenerContext) {
     return true;
   }
 
   const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
-  if (allowed.length > 0 && !containsPhrase(intro, allowed)) {
+  if (shouldUseTimeReference && allowed.length > 0 && !containsPhrase(intro, allowed)) {
     return false;
   }
 
@@ -164,57 +573,64 @@ function matchesListenerTimeContext(
   return true;
 }
 
-function normalizeIntro(raw: string, request: SessionIntroRequest): string | null {
-  const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
-  if (
-    paragraphs.length === 0
-    || paragraphs.length < minParagraphCount
-    || paragraphs.length > maxParagraphCount
-  ) {
-    return null;
+function stableHash(seed: string): number {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function stableUnitFloat(seed: string): number {
+  return stableHash(seed) / 0xffffffff;
+}
+
+function stableVariantIndex(seed: string, count: number): number {
+  return count <= 0 ? 0 : stableHash(seed) % count;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function localizedTimeOfDayLabel(timeOfDay: string, djID?: string): string {
+  if (!isSpanishDJ(djID)) {
+    return timeOfDay;
   }
 
-  const intro = paragraphs.join("\n\n").trim();
-  if (!intro) {
-    return null;
+  switch (timeOfDay.trim().toLowerCase()) {
+    case "morning":
+      return "mañana";
+    case "afternoon":
+      return "tarde";
+    case "evening":
+    case "night":
+      return "noche";
+    default:
+      return timeOfDay;
   }
-  if (wordCount(intro) < minWordCount) {
-    return null;
-  }
-  if (wordCount(intro) > maxWordCount) {
-    return null;
-  }
-  if (!/[A-Za-z]/.test(intro)) {
-    return null;
-  }
-  if (/<\/?(speak|break|audio|phoneme|say-as)\b/i.test(intro)) {
-    return null;
-  }
-  if (/```|https?:\/\/|www\./i.test(intro)) {
-    return null;
-  }
-  if (/(.)\1{5,}/.test(intro)) {
-    return null;
-  }
-  if (/\b([a-z][a-z'’-]{1,})\b(?:\s+\1\b){3,}/i.test(intro)) {
-    return null;
-  }
-  if (/\b[bcdfghjklmnpqrstvwxyz]{8,}\b/i.test(intro)) {
-    return null;
-  }
+}
 
-  const normalizedIntro = normalizedContainment(intro);
-  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.title))) {
-    return null;
-  }
-  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.artist))) {
-    return null;
-  }
-  if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID)) {
-    return null;
-  }
-
-  return intro;
+function djConfigFor(djID: string): DJConfig {
+  return djConfigs[djID.trim().toLowerCase()] ?? {
+    id: djID,
+    personaSummary: "Warm, natural, radio-real.",
+    toneTraits: ["warm", "natural"],
+    avoidTraits: ["assistant-like"],
+    preferredArchetypes: {
+      confident_station_open: 0.2,
+      mood_setter: 0.2,
+      immediate_song_forward: 0.15,
+      warm_familiar_open: 0.15,
+      local_radio_style: 0.15,
+      reflective_open: 0.15,
+    },
+    forbiddenPhrases: ["let’s dive in", "welcome back to WAIV"],
+    sentenceStyle: "short_to_medium",
+    timeReferenceStyle: "medium",
+    musicFramingStyle: "intuitive",
+    emotionalRange: ["warm", "present"],
+  };
 }
 
 function djPersonalityPrompt(djID: string): string {
@@ -228,6 +644,7 @@ function djPersonalityPrompt(djID: string): string {
         "You are not performing or trying to entertain. You are curating.",
         "Speak with low to medium energy, a slightly dry delivery, subtle warmth underneath, and a smooth grounded cadence.",
         "You care about sequencing and the meaning of a first song, but you do not over-explain music.",
+        "Favor smooth sentence endings over too many trailing fragments or ellipses.",
         "Avoid writing too many trailing-off fragments, stacked ellipses, or phrasing that invites a creaky dragged-out ending.",
         "You sound like a real host, not a chatbot, assistant, influencer, teacher, corporate presenter, or hype personality.",
       ].join(" ");
@@ -306,14 +723,14 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
     "Write for the ear first, not the screen.",
     "Sound like a real radio host opening a session naturally in one take, not a chatbot or assistant.",
     "Favor clear spoken cadence, complete thoughts, and smooth conversational rhythm.",
-    "Avoid stacked clipped fragments, slogan-like phrasing, ad-copy language, and lines that feel over-written for effect.",
+    "Avoid clipped fragments, slogan-like phrasing, ad-copy language, and lines that feel over-written for effect.",
     "If a phrase sounds too polished, too theatrical, or too clever when spoken aloud, rewrite it simpler.",
     "Let personality come from viewpoint, warmth, restraint, and what the DJ notices, not from repeated bits or catchphrases.",
   ];
 
   const byDJ: Record<string, string> = {
     casey:
-      "Keep April calm, understated, and conversational. Let a light wry note show up occasionally, but do not polish every sentence into a joke. Favor smooth sentence endings over too many trailing fragments or ellipses.",
+      "Keep April calm, understated, and conversational. Let a light wry note show up occasionally, but do not polish every sentence into a joke.",
     luna:
       "Keep Luna intimate and lightly poetic, but grounded, concrete, and easy to speak aloud.",
     marcus:
@@ -321,242 +738,16 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
     jolene:
       "Keep Jolene warm, affectionate, and lightly luminous, but never syrupy, theatrical, or unreal.",
     jack:
-      "Keep John calm, articulate, and naturally cool, but never so polished that he sounds scripted, precious, or detached. Let his sports fandom, especially baseball, surface only when it feels organic and subtle.",
+      "Keep John calm, articulate, and naturally cool, but never so polished that he sounds scripted, precious, or detached.",
     tiffany:
-      "Keep Tiffany stylish, playful, and deliciously over-the-top, but still human and speakable. Let her be extra without sounding like a caption, a slogan machine, or a brand deck.",
+      "Keep Tiffany stylish, playful, and deliciously over-the-top, but still human and speakable.",
     robert:
-      "Keep Robert uncanny through precision, defensiveness, and suspiciously accurate observations, not through gibberish, broken grammar, or random synthetic noise.",
+      "Keep Robert uncanny through precision, defensiveness, and suspiciously accurate observations, not through gibberish or broken grammar.",
     miles:
       "Keep Juan smooth, cinematic, and fully natural in Spanish, but not self-consciously cool, stiff, or overwritten.",
   };
 
-  const specific = byDJ[djID.trim().toLowerCase()];
-  return [...shared, specific].filter(Boolean).join(" ");
-}
-
-function introKindGuidance(introKind: string, request: SessionIntroRequest): string {
-  if (introKind === "first_listen_ever") {
-    return [
-      "This is the listener's very first session on WAIV.",
-      "Welcome them briefly to W.A.I.V.",
-      "You may mention that WAIV shapes a radio-style listening session from their music taste.",
-      "You may mention they can switch DJs later, but do it lightly and only once.",
-      "Make the opening feel like a real show beginning, not a one-line product explanation or a cold song setup.",
-      "Build a little anticipation and scene before you name the first song.",
-      `End by naturally introducing the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
-    ].join(" ");
-  }
-
-  return [
-    "This is a normal session open, not a first-time product onboarding moment.",
-    "Do not explain the app or over-introduce yourself.",
-    "Make it feel like the opening breath of a fresh set and the first minute of a real radio show.",
-    "Open with a sense of occasion, shape, and atmosphere rather than jumping straight to the song in one sentence.",
-    "Let the intro earn the first song with at least two beats before the handoff: a point of view, a local-moment cue, or a set-shaping observation.",
-    `Naturally introduce the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}, inside the intro itself.`,
-  ].join(" ");
-}
-
-function stableVariantIndex(seed: string, count: number): number {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
-  }
-  return count <= 0 ? 0 : hash % count;
-}
-
-function localizedTimeOfDayLabel(timeOfDay: string, djID?: string): string {
-  if (!isSpanishDJ(djID)) {
-    return timeOfDay;
-  }
-
-  switch (timeOfDay.trim().toLowerCase()) {
-    case "morning":
-      return "mañana";
-    case "afternoon":
-      return "tarde";
-    case "evening":
-      return "noche";
-    case "night":
-      return "noche";
-    default:
-      return timeOfDay;
-  }
-}
-
-function timeContextVariationGuidance(request: SessionIntroRequest): string {
-  if (isSpanishDJ(request.djID)) {
-    if (!request.listenerContext) {
-      return "Si mencionas el momento del dia, varialo y no arranques siempre con la misma frase de calendario.";
-    }
-
-    const listenerContext = request.listenerContext;
-    const variants = [
-      "Haz una referencia clara pero natural al momento local, pero no abras con una etiqueta de calendario. Deja que esa referencia llegue despues de la primera idea.",
-      `Deja que el intro tenga aire nocturno local, pero menciona solo un detalle de calendario de forma natural, como "${listenerContext.weekday}" o "${listenerContext.month}", no ambos juntos.`,
-      "Lleva la referencia horaria al segundo pensamiento o al momento de presentar la cancion, en lugar de usarla como titular del intro.",
-      "Usa una referencia mas suave al momento, como esta noche o a esta hora, dentro de una oracion completa y natural, no como fragmento suelto.",
-    ];
-
-    const seed = [
-      request.djID,
-      request.firstTrack.title,
-      request.firstTrack.artist,
-      request.introKind,
-      listenerContext.localTimestamp,
-    ].join("|");
-
-    return variants[stableVariantIndex(seed, variants.length)];
-  }
-
-  const listenerContext = request.listenerContext;
-  if (!listenerContext) {
-    return "If you mention time context, vary where it lands in the intro and avoid repetitive openings.";
-  }
-
-  const variants = [
-    "Reference the local time of day clearly but naturally, and do not open the intro with the weekday or calendar phrase. Let the time cue arrive after the first thought.",
-    `Let the intro carry a local-night feel, but mention only one calendar detail naturally, such as "${listenerContext.weekday}" or "${listenerContext.month}", not both together.`,
-    "Work the time cue into the song setup or second paragraph instead of making it the opening label for the whole intro.",
-    "Use a softer local-time nod, like tonight or at this hour, and fold it into a full sentence rather than a chopped time-stamp opener.",
-  ];
-
-  const seed = [
-    request.djID,
-    request.firstTrack.title,
-    request.firstTrack.artist,
-    request.introKind,
-    listenerContext.localTimestamp,
-  ].join("|");
-
-  return variants[stableVariantIndex(seed, variants.length)];
-}
-
-function listenerTimeGuidance(listenerContext?: SessionIntroListenerContext): string {
-  return listenerTimeGuidanceForDJ(listenerContext);
-}
-
-function listenerTimeGuidanceForDJ(listenerContext?: SessionIntroListenerContext, djID?: string): string {
-  if (!listenerContext) {
-    return isSpanishDJ(djID)
-      ? "No inventes la hora local del oyente."
-      : "Do not guess the listener's time of day.";
-  }
-
-  const localDate = `${listenerContext.weekday}, ${listenerContext.month} ${listenerContext.dayOfMonth}, ${listenerContext.year}`;
-  const allowedPhrases = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
-  if (isSpanishDJ(djID)) {
-    return [
-      `La hora local del oyente es ${listenerContext.localTimestamp} en ${listenerContext.timeZoneIdentifier}.`,
-      `Localmente es ${localDate}, alrededor de la hora ${listenerContext.hour24}, en la ${localizedTimeOfDayLabel(listenerContext.timeOfDay, djID)}.`,
-      `Haz una referencia natural al momento local correcto usando una frase como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
-      "En la mayoria de los intros, ancla claramente el set en ese momento local para que suene vivo y presente.",
-      "Abre como un locutor real: con una observacion, una sensacion, una reaccion o una idea sobre el set, no con una etiqueta suelta de tiempo.",
-      "Tambien puedes mencionar el dia de la semana, el mes o la fecha si sale natural.",
-      "No abras todos los intros con la misma formula repetida de dia y momento.",
-      "No empieces con fragmentos cortados como 'Esta noche,' 'Jueves por la noche,' o 'A esta hora,' por si solos.",
-      "Nunca adivines otro momento del dia ni saludes con una hora equivocada.",
-    ].join(" ");
-  }
-
-  return [
-    `The listener's local time is ${listenerContext.localTimestamp} in ${listenerContext.timeZoneIdentifier}.`,
-    `Locally, it is ${localDate}, around hour ${listenerContext.hour24} in the ${listenerContext.timeOfDay}.`,
-    `Naturally reference the correct local time of day in the intro using a phrase that fits this moment, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
-    "In most intros, clearly anchor the set in that local moment so it feels live, current, and specific.",
-    "Open like a real radio host: with an observation, a feeling, a reaction, or a thought about the set, not a bare time label.",
-    "You may also mention the weekday, month, or date when it feels effortless and human.",
-    "Do not default to opening every intro with the same weekday-plus-time phrase.",
-    "Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.",
-    "Never guess a different time of day or greet the listener with the wrong local moment.",
-  ].join(" ");
-}
-
-async function generateWithAnthropic(
-  request: SessionIntroRequest
-): Promise<{ intro: string; model: string } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) {
-    return null;
-  }
-
-  const model =
-    process.env.ANTHROPIC_SESSION_INTRO_MODEL?.trim()
-    || process.env.ANTHROPIC_MODEL?.trim()
-    || "claude-haiku-4-5";
-
-  const systemPrompt = `${djPersonalityPrompt(request.djID)}
-
-${spokenDeliveryDisciplinePrompt(request.djID)}
-
-${request.personaHint ? `Additional persona guidance: ${request.personaHint}` : ""}
-
-${request.toneGuardrails ? `Additional tone guardrails: ${request.toneGuardrails}` : ""}
-
-Write a session-opening radio intro in plain text.
-
-Rules:
-- Return plain text only, not JSON
-- 3 to 5 short paragraphs
-- 60 to 150 words total
-- No markdown, no bullet points, no stage directions, no SSML
-- No URLs, no hashtags, no emojis
-- Sound natural when spoken aloud
-- Do not invent facts about the song or artist
-- Do not use placeholder text
-- Do not end with generic radio lines like "stay tuned" or "don't go anywhere"
-- Avoid generic AI-assistant phrasing
-- Make it feel like a real radio-show opening with a little runway and shape, not a one-sentence song setup
-- Give the intro at least two real beats before the final handoff into the song
-- The intro must include the song title "${request.firstTrack.title}" and artist "${request.firstTrack.artist}"
-- Mention the song and artist naturally inside the intro, not as a separate labeled field
-- You may mention W.A.I.V. when it helps, but do not force a station tag ending
-- ${listenerTimeGuidanceForDJ(request.listenerContext, request.djID)}
-- ${timeContextVariationGuidance(request)}
-- ${introKindGuidance(request.introKind, request)}`.trim();
-
-  const userPrompt = `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}
-DJ id: ${request.djID}
-Intro kind: ${request.introKind}
-Listener local time: ${request.listenerContext?.localTimestamp ?? "unknown"}
-Listener timezone: ${request.listenerContext?.timeZoneIdentifier ?? "unknown"}
-Listener weekday: ${request.listenerContext?.weekday ?? "unknown"}
-Listener date: ${request.listenerContext?.month ?? "unknown"} ${request.listenerContext?.dayOfMonth ?? "unknown"}, ${request.listenerContext?.year ?? "unknown"}
-Listener time of day: ${request.listenerContext?.timeOfDay ?? "unknown"}`;
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.75,
-      max_tokens: 260,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(`anthropic_request_failed_${response.status}`);
-  }
-
-  const payload = (await response.json()) as AnthropicResponse;
-  const text = payload.content?.find((item) => item.type === "text")?.text?.trim();
-  if (!text) {
-    return null;
-  }
-
-  const intro = normalizeIntro(text, request);
-  if (!intro) {
-    return null;
-  }
-
-  return { intro, model };
+  return [...shared, byDJ[djID.trim().toLowerCase()]].filter(Boolean).join(" ");
 }
 
 function normalizeTrack(input: unknown): SessionIntroTrack | null {
@@ -582,14 +773,14 @@ function normalizeListenerContext(input: unknown): SessionIntroListenerContext |
   const hour24 = Number(payload.hour24);
 
   if (
-    !localTimestamp ||
-    !timeZoneIdentifier ||
-    !weekday ||
-    !month ||
-    !timeOfDay ||
-    !Number.isFinite(dayOfMonth) ||
-    !Number.isFinite(year) ||
-    !Number.isFinite(hour24)
+    !localTimestamp
+    || !timeZoneIdentifier
+    || !weekday
+    || !month
+    || !timeOfDay
+    || !Number.isFinite(dayOfMonth)
+    || !Number.isFinite(year)
+    || !Number.isFinite(hour24)
   ) {
     return null;
   }
@@ -606,6 +797,885 @@ function normalizeListenerContext(input: unknown): SessionIntroListenerContext |
   };
 }
 
+function defaultShowContext(request: SessionIntroRequest): SessionIntroShowContext {
+  const listenerContext = request.listenerContext;
+  const dayOfWeek = listenerContext?.weekday?.toLowerCase() || "unknown";
+  const timeOfDay = listenerContext?.timeOfDay || "night";
+  const label = listenerContext
+    ? `${listenerContext.weekday} ${timeOfDay === "night" ? "night" : timeOfDay}`
+    : timeOfDay;
+  const isWeekend = ["friday", "saturday", "sunday"].includes(dayOfWeek);
+
+  return {
+    djId: request.djID,
+    sessionType: request.introKind === "first_listen_ever" ? "first_ever_session" : "fresh_start",
+    timeContext: {
+      timeOfDay,
+      dayOfWeek,
+      isWeekend,
+      label,
+    },
+    setContext: {
+      openingTrackRole: "confident_opener",
+      openingTrackMood: ["intentional", "present", "alive"],
+      openingTrackEnergy: 0.58,
+      openingTrackTexture: ["familiar", "curated", "opening_track"],
+    },
+    listenerContext: {
+      isFirstSessionToday: request.introKind === "first_listen_ever",
+      returningAfterGap: false,
+      changedDjsRecently: false,
+      skipsIntrosOften: false,
+    },
+    environmentContext: {
+      season: "unknown",
+      weatherVibe: null,
+      localeVibe: null,
+    },
+    recentHistory: {
+      recentArchetypes: [],
+      recentOpeningStructures: [],
+      recentOpeningPhrases: [],
+      recentSentenceCounts: [],
+      recentHandoffStyles: [],
+      recentVocabulary: [],
+      recentEmotionalTones: [],
+      usedTimeReferenceRecently: false,
+    },
+  };
+}
+
+function normalizeShowContext(input: unknown, request: SessionIntroRequest): SessionIntroShowContext {
+  const fallback = defaultShowContext(request);
+  const payload = (input ?? {}) as Partial<Record<keyof SessionIntroShowContext, unknown>>;
+  const timeContext = (payload.timeContext ?? {}) as Partial<SessionIntroTimeContext>;
+  const setContext = (payload.setContext ?? {}) as Partial<SessionIntroSetContext>;
+  const listenerContext = (payload.listenerContext ?? {}) as Partial<SessionIntroShowListenerContext>;
+  const environmentContext = (payload.environmentContext ?? {}) as Partial<SessionIntroEnvironmentContext>;
+  const recentHistory = (payload.recentHistory ?? {}) as Partial<SessionIntroRecentHistory>;
+
+  return {
+    djId: typeof payload.djId === "string" && payload.djId.trim() ? payload.djId.trim() : fallback.djId,
+    sessionType:
+      typeof payload.sessionType === "string" && payload.sessionType.trim()
+        ? payload.sessionType.trim()
+        : fallback.sessionType,
+    timeContext: {
+      timeOfDay:
+        typeof timeContext.timeOfDay === "string" && timeContext.timeOfDay.trim()
+          ? timeContext.timeOfDay.trim()
+          : fallback.timeContext.timeOfDay,
+      dayOfWeek:
+        typeof timeContext.dayOfWeek === "string" && timeContext.dayOfWeek.trim()
+          ? timeContext.dayOfWeek.trim()
+          : fallback.timeContext.dayOfWeek,
+      isWeekend: typeof timeContext.isWeekend === "boolean" ? timeContext.isWeekend : fallback.timeContext.isWeekend,
+      label:
+        typeof timeContext.label === "string" && timeContext.label.trim()
+          ? timeContext.label.trim()
+          : fallback.timeContext.label,
+    },
+    setContext: {
+      openingTrackRole:
+        typeof setContext.openingTrackRole === "string" && setContext.openingTrackRole.trim()
+          ? setContext.openingTrackRole.trim()
+          : fallback.setContext.openingTrackRole,
+      openingTrackMood: Array.isArray(setContext.openingTrackMood)
+        ? setContext.openingTrackMood.filter((value): value is string => typeof value === "string").slice(0, 4)
+        : fallback.setContext.openingTrackMood,
+      openingTrackEnergy: Number.isFinite(Number(setContext.openingTrackEnergy))
+        ? clamp(Number(setContext.openingTrackEnergy), 0, 1)
+        : fallback.setContext.openingTrackEnergy,
+      openingTrackTexture: Array.isArray(setContext.openingTrackTexture)
+        ? setContext.openingTrackTexture.filter((value): value is string => typeof value === "string").slice(0, 4)
+        : fallback.setContext.openingTrackTexture,
+    },
+    listenerContext: {
+      isFirstSessionToday:
+        typeof listenerContext.isFirstSessionToday === "boolean"
+          ? listenerContext.isFirstSessionToday
+          : fallback.listenerContext.isFirstSessionToday,
+      returningAfterGap:
+        typeof listenerContext.returningAfterGap === "boolean"
+          ? listenerContext.returningAfterGap
+          : fallback.listenerContext.returningAfterGap,
+      changedDjsRecently:
+        typeof listenerContext.changedDjsRecently === "boolean"
+          ? listenerContext.changedDjsRecently
+          : fallback.listenerContext.changedDjsRecently,
+      skipsIntrosOften:
+        typeof listenerContext.skipsIntrosOften === "boolean"
+          ? listenerContext.skipsIntrosOften
+          : fallback.listenerContext.skipsIntrosOften,
+    },
+    environmentContext: {
+      season:
+        typeof environmentContext.season === "string" && environmentContext.season.trim()
+          ? environmentContext.season.trim()
+          : fallback.environmentContext.season,
+      weatherVibe:
+        typeof environmentContext.weatherVibe === "string" ? environmentContext.weatherVibe : fallback.environmentContext.weatherVibe,
+      localeVibe:
+        typeof environmentContext.localeVibe === "string" ? environmentContext.localeVibe : fallback.environmentContext.localeVibe,
+    },
+    recentHistory: {
+      recentArchetypes: Array.isArray(recentHistory.recentArchetypes)
+        ? recentHistory.recentArchetypes.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentArchetypes,
+      recentOpeningStructures: Array.isArray(recentHistory.recentOpeningStructures)
+        ? recentHistory.recentOpeningStructures.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentOpeningStructures,
+      recentOpeningPhrases: Array.isArray(recentHistory.recentOpeningPhrases)
+        ? recentHistory.recentOpeningPhrases.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentOpeningPhrases,
+      recentSentenceCounts: Array.isArray(recentHistory.recentSentenceCounts)
+        ? recentHistory.recentSentenceCounts.filter((value): value is number => Number.isFinite(value)).slice(0, 8)
+        : fallback.recentHistory.recentSentenceCounts,
+      recentHandoffStyles: Array.isArray(recentHistory.recentHandoffStyles)
+        ? recentHistory.recentHandoffStyles.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentHandoffStyles,
+      recentVocabulary: Array.isArray(recentHistory.recentVocabulary)
+        ? recentHistory.recentVocabulary.filter((value): value is string => typeof value === "string").slice(0, 20)
+        : fallback.recentHistory.recentVocabulary,
+      recentEmotionalTones: Array.isArray(recentHistory.recentEmotionalTones)
+        ? recentHistory.recentEmotionalTones.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentEmotionalTones,
+      usedTimeReferenceRecently:
+        typeof recentHistory.usedTimeReferenceRecently === "boolean"
+          ? recentHistory.usedTimeReferenceRecently
+          : fallback.recentHistory.usedTimeReferenceRecently,
+    },
+  };
+}
+
+function applyVariationRules(context: SessionIntroShowContext, config: DJConfig): VariationPlan {
+  const weightedArchetypes = { ...config.preferredArchetypes };
+  const recentArchetypes = context.recentHistory.recentArchetypes.slice(0, 4);
+  recentArchetypes.forEach((archetype, index) => {
+    if (weightedArchetypes[archetype]) {
+      const penalty = index === 0 ? 0.18 : index === 1 ? 0.38 : 0.6;
+      weightedArchetypes[archetype] *= penalty;
+    }
+  });
+
+  if (context.timeContext.dayOfWeek === "friday" && context.timeContext.timeOfDay !== "morning") {
+    weightedArchetypes.friday_liftoff = (weightedArchetypes.friday_liftoff ?? 0.04) * 2.2;
+  }
+  if (context.timeContext.dayOfWeek === "sunday" && context.timeContext.timeOfDay !== "morning") {
+    weightedArchetypes.reflective_open = (weightedArchetypes.reflective_open ?? 0.08) * 1.8;
+    weightedArchetypes.slow_burn_open = (weightedArchetypes.slow_burn_open ?? 0.08) * 1.5;
+  }
+  if (context.listenerContext.returningAfterGap) {
+    weightedArchetypes.warm_familiar_open = (weightedArchetypes.warm_familiar_open ?? 0.06) * 1.8;
+  }
+  if (context.listenerContext.changedDjsRecently) {
+    weightedArchetypes.immediate_song_forward = (weightedArchetypes.immediate_song_forward ?? 0.06) * 1.6;
+  }
+  if (context.sessionType === "first_ever_session") {
+    weightedArchetypes.confident_station_open = (weightedArchetypes.confident_station_open ?? 0.06) * 1.5;
+    weightedArchetypes.warm_familiar_open = (weightedArchetypes.warm_familiar_open ?? 0.06) * 1.4;
+  }
+
+  const shouldUseTimeReference =
+    config.timeReferenceStyle === "assertive"
+    || !context.recentHistory.usedTimeReferenceRecently
+    || context.sessionType === "first_show_today"
+    || context.sessionType === "returning_after_gap"
+    || (context.timeContext.dayOfWeek === "friday" && context.timeContext.timeOfDay !== "morning");
+
+  if (!shouldUseTimeReference) {
+    weightedArchetypes.caught_you_at_the_right_time = (weightedArchetypes.caught_you_at_the_right_time ?? 0.04) * 0.4;
+    weightedArchetypes.local_radio_style = (weightedArchetypes.local_radio_style ?? 0.08) * 0.7;
+  }
+
+  return {
+    weightedArchetypes,
+    bannedVocabulary: context.recentHistory.recentVocabulary.slice(0, 12).map((token) => token.toLowerCase()),
+    bannedOpeningStructures: context.recentHistory.recentOpeningStructures.slice(0, 3),
+    bannedOpeningPhrases: context.recentHistory.recentOpeningPhrases
+      .map((phrase) => normalizedContainment(phrase))
+      .filter(Boolean)
+      .slice(0, 4),
+    bannedHandoffStyles: context.recentHistory.recentHandoffStyles.slice(0, 3),
+    shouldUseTimeReference,
+  };
+}
+
+function selectArchetype(context: SessionIntroShowContext, variation: VariationPlan, config: DJConfig): string {
+  const weights = Object.entries(variation.weightedArchetypes).filter(([, weight]) => weight > 0.0001);
+  if (weights.length === 0) {
+    return "confident_station_open";
+  }
+
+  const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
+  const seed = [
+    config.id,
+    context.sessionType,
+    context.timeContext.label,
+    context.setContext.openingTrackRole,
+    context.recentHistory.recentArchetypes.join(","),
+  ].join("|");
+  const pick = stableUnitFloat(seed) * total;
+  let cursor = 0;
+  for (const [archetype, weight] of weights) {
+    cursor += weight;
+    if (pick <= cursor) {
+      return archetype;
+    }
+  }
+  return weights[weights.length - 1][0];
+}
+
+function applySessionTypeBehavior(
+  archetype: string,
+  sessionType: string,
+  context: SessionIntroShowContext
+): SessionBehaviorPlan {
+  const basePlan = archetypePlans[archetype] ?? archetypePlans.confident_station_open;
+  switch (sessionType) {
+    case "resume_playback":
+      return {
+        targetSentences: 2,
+        minWords: 18,
+        maxWords: 40,
+        required: ["openingHit", "songHandoff"],
+        optional: context.timeContext.timeOfDay === "night" ? ["momentAnchor"] : [],
+        allowStationMention: false,
+      };
+    case "switched_dj":
+      return {
+        targetSentences: 3,
+        minWords: 28,
+        maxWords: 72,
+        required: ["openingHit", "setFraming", "songHandoff"],
+        optional: ["momentAnchor"],
+        allowStationMention: false,
+      };
+    case "returning_after_gap":
+      return {
+        targetSentences: 4,
+        minWords: 34,
+        maxWords: 90,
+        required: ["openingHit", "momentAnchor", "songHandoff"],
+        optional: ["setFraming", "personalityFlourish"],
+        allowStationMention: false,
+      };
+    case "first_ever_session":
+      return {
+        targetSentences: 5,
+        minWords: 44,
+        maxWords: 110,
+        required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
+        optional: ["personalityFlourish"],
+        allowStationMention: true,
+      };
+    case "first_show_today":
+      return {
+        targetSentences: 4,
+        minWords: 36,
+        maxWords: 96,
+        required: basePlan.required,
+        optional: basePlan.optional,
+        allowStationMention: false,
+      };
+    default:
+      return {
+        targetSentences: 4,
+        minWords: 34,
+        maxWords: 90,
+        required: basePlan.required,
+        optional: basePlan.optional,
+        allowStationMention: false,
+      };
+  }
+}
+
+function buildSystemPrompt(): string {
+  return [
+    "You are writing the opening lines for a live-feeling music radio show.",
+    "Sound like a real DJ opening a set. Be natural, specific, and in-the-moment.",
+    "Do not sound like an AI assistant or onboarding copy. Imply mood rather than explain it.",
+    "Never return analysis. Never narrate the process. Return only the requested output.",
+  ].join(" ");
+}
+
+function buildDJPrompt(config: DJConfig, request: SessionIntroRequest): string {
+  return [
+    djPersonalityPrompt(request.djID),
+    spokenDeliveryDisciplinePrompt(request.djID),
+    `Persona summary: ${config.personaSummary}.`,
+    `Tone traits: ${config.toneTraits.join(", ")}.`,
+    `Avoid traits: ${config.avoidTraits.join(", ")}.`,
+    `Forbidden phrases: ${config.forbiddenPhrases.join(", ")}.`,
+    `Sentence style: ${config.sentenceStyle}. Time reference style: ${config.timeReferenceStyle}. Music framing style: ${config.musicFramingStyle}.`,
+    request.personaHint ? `Additional persona guidance: ${request.personaHint}` : "",
+    request.toneGuardrails ? `Additional tone guardrails: ${request.toneGuardrails}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildListenerMomentPrompt(
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  variation: VariationPlan
+): string {
+  const localTimeLine = request.listenerContext
+    ? `The listener's local time is ${request.listenerContext.localTimestamp} in ${request.listenerContext.timeZoneIdentifier}.`
+    : "";
+
+  const firstSessionLine =
+    context.sessionType === "first_ever_session" ? "This is the listener's very first session on WAIV." : "";
+
+  const allowedPhrases = allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID);
+  const clippedRule = isSpanishDJ(request.djID)
+    ? "No empieces con fragmentos cortados como 'Esta noche,' 'Jueves por la noche,' o 'A esta hora,' por si solos."
+    : "Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.";
+
+  const timeReferenceRule = variation.shouldUseTimeReference
+    ? isSpanishDJ(request.djID)
+      ? `Usa una referencia temporal natural para ${context.timeContext.label}, una frase como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`
+      : `Use a natural local-moment reference for ${context.timeContext.label}, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`
+    : isSpanishDJ(request.djID)
+      ? "La referencia temporal es opcional aquí. No la fuerces si se siente repetida."
+      : "A time reference is optional here. Do not force one if it feels recycled.";
+
+  const repetitionRule = isSpanishDJ(request.djID)
+    ? "No repitas la misma estructura de apertura ni la misma frase de día y hora en intros seguidas."
+    : "Do not default to opening every intro with the same weekday-plus-time phrase.";
+
+  return [firstSessionLine, localTimeLine, timeReferenceRule, repetitionRule, clippedRule].filter(Boolean).join(" ");
+}
+
+function buildContextPrompt(
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  variation: VariationPlan,
+  archetype: string,
+  sessionBehavior: SessionBehaviorPlan
+): string {
+  const requiredComponents = sessionBehavior.required.join(", ");
+  const optionalComponents = sessionBehavior.optional.join(", ");
+  const allowedPhrases = allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID);
+  return [
+    `Show context: ${JSON.stringify(context)}.`,
+    `Primary archetype: ${archetype}.`,
+    `Session type behavior: ${context.sessionType}.`,
+    `Required components: ${requiredComponents}. Optional components: ${optionalComponents || "none"}.`,
+    `Target: ${sessionBehavior.targetSentences} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across 2 to 5 short paragraphs.`,
+    `Variation constraints: avoid opening structures ${variation.bannedOpeningStructures.join(", ") || "none"}, avoid opening phrases ${variation.bannedOpeningPhrases.join(", ") || "none"}, avoid handoff styles ${variation.bannedHandoffStyles.join(", ") || "none"}, avoid repeating vocabulary ${variation.bannedVocabulary.join(", ") || "none"}.`,
+    variation.shouldUseTimeReference
+      ? `Use a natural local-moment reference that fits ${context.timeContext.label}, such as ${allowedPhrases.join(", ")}.`
+      : "A time reference is optional here. Do not force one if it feels recycled.",
+    `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
+    "Make this feel like a living station already in motion. Imply continuity, set direction, and land the handoff cleanly into the first song.",
+  ].join(" ");
+}
+
+function buildComponentPrompt(
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  archetype: string,
+  sessionBehavior: SessionBehaviorPlan
+): string {
+  return [
+    "Return strict JSON with these top-level keys only:",
+    '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false}}',
+    "Each populated component must be at most one sentence.",
+    "Use empty strings only for truly omitted optional components.",
+    "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
+    "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
+    `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
+    `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
+    request.introKind === "first_listen_ever"
+      ? "For a first-ever session, be invitational but never tutorial. One light WAIV cue is enough."
+      : "For a normal session open, do not explain the app or over-introduce the DJ.",
+    `Archetype ${archetype} should drive the structure more than session type, unless session type clearly asks for shorter behavior.`,
+    `Required components in order of importance: ${sessionBehavior.required.join(", ")}.`,
+  ].join(" ");
+}
+
+function extractJSONObject(text: string): string | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    return null;
+  }
+  return text.slice(start, end + 1);
+}
+
+function parseGeneratedPayload(rawText: string): GeneratedPayload {
+  const trimmed = rawText.trim();
+  const jsonBlock = extractJSONObject(trimmed);
+  if (jsonBlock) {
+    try {
+      const parsed = JSON.parse(jsonBlock) as Record<string, unknown>;
+      const components: IntroComponents = {
+        openingHit: typeof parsed.openingHit === "string" ? parsed.openingHit.trim() : undefined,
+        momentAnchor: typeof parsed.momentAnchor === "string" ? parsed.momentAnchor.trim() : undefined,
+        setFraming: typeof parsed.setFraming === "string" ? parsed.setFraming.trim() : undefined,
+        personalityFlourish:
+          typeof parsed.personalityFlourish === "string" ? parsed.personalityFlourish.trim() : undefined,
+        songHandoff: typeof parsed.songHandoff === "string" ? parsed.songHandoff.trim() : undefined,
+      };
+      const metadataPayload = (parsed.metadata ?? {}) as Partial<Record<keyof SessionIntroMetadata, unknown>>;
+      return {
+        intro: typeof parsed.intro === "string" ? parsed.intro.trim() : undefined,
+        components,
+        metadata: {
+          archetype: typeof metadataPayload.archetype === "string" ? metadataPayload.archetype : undefined,
+          sessionType: typeof metadataPayload.sessionType === "string" ? metadataPayload.sessionType : undefined,
+          openingStructure:
+            typeof metadataPayload.openingStructure === "string" ? metadataPayload.openingStructure : undefined,
+          handoffStyle: typeof metadataPayload.handoffStyle === "string" ? metadataPayload.handoffStyle : undefined,
+          emotionalTone: typeof metadataPayload.emotionalTone === "string" ? metadataPayload.emotionalTone : undefined,
+          vocabulary: Array.isArray(metadataPayload.vocabulary)
+            ? metadataPayload.vocabulary.filter((value): value is string => typeof value === "string")
+            : undefined,
+          usedTimeReference:
+            typeof metadataPayload.usedTimeReference === "boolean" ? metadataPayload.usedTimeReference : undefined,
+          sentenceCount:
+            typeof metadataPayload.sentenceCount === "number" && Number.isFinite(metadataPayload.sentenceCount)
+              ? metadataPayload.sentenceCount
+              : undefined,
+        },
+      };
+    } catch {
+      // fall through to legacy plain-text mode
+    }
+  }
+
+  return { intro: trimmed };
+}
+
+function cleanSentence(text: string): string {
+  let normalized = normalizeWhitespace(text.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
+  if (!normalized) {
+    return "";
+  }
+  if (!/[.!?]["')\]]?$/.test(normalized)) {
+    normalized += ".";
+  }
+  return normalized;
+}
+
+function composeIntro(
+  payload: GeneratedPayload,
+  archetype: string,
+  sessionBehavior: SessionBehaviorPlan
+): string | null {
+  if (payload.intro) {
+    return payload.intro.trim();
+  }
+
+  const components = payload.components;
+  if (!components) {
+    return null;
+  }
+
+  const ordered: IntroComponentName[] = [
+    "openingHit",
+    "momentAnchor",
+    "setFraming",
+    "personalityFlourish",
+    "songHandoff",
+  ];
+
+  const requiredSet = new Set(sessionBehavior.required);
+  const optionalSet = new Set(sessionBehavior.optional);
+  const sentences: string[] = [];
+
+  ordered.forEach((name) => {
+    const raw = components[name];
+    if (!raw) return;
+    if (!requiredSet.has(name) && !optionalSet.has(name) && name !== "songHandoff") {
+      return;
+    }
+    const cleaned = cleanSentence(raw);
+    if (!cleaned) return;
+    sentences.push(cleaned);
+  });
+
+  if (!sentences.length) {
+    return null;
+  }
+
+  const songHandoff = cleanSentence(components.songHandoff ?? "");
+  const withoutHandoff = sentences.filter((sentence) => sentence !== songHandoff);
+  const finalSentences = [...withoutHandoff.slice(0, Math.max(0, sessionBehavior.targetSentences - 1)), songHandoff].filter(Boolean);
+  const deduped = finalSentences.filter((sentence, index, collection) => collection.indexOf(sentence) === index);
+  if (!deduped.length) {
+    return null;
+  }
+
+  const bodySentences = deduped.slice(0, -1);
+  const handoff = deduped[deduped.length - 1];
+  const paragraphs: string[] = [];
+
+  if (bodySentences.length >= 3) {
+    paragraphs.push(bodySentences.slice(0, 2).join(" "));
+    if (bodySentences.length > 2) {
+      paragraphs.push(bodySentences.slice(2).join(" "));
+    }
+  } else if (bodySentences.length > 0) {
+    paragraphs.push(bodySentences.join(" "));
+  }
+
+  paragraphs.push(handoff);
+
+  const maxParagraphsForIntro = clamp(sessionBehavior.targetSentences >= 4 ? 3 : 2, 2, maxParagraphCount);
+  return paragraphs
+    .filter(Boolean)
+    .slice(0, maxParagraphsForIntro)
+    .join("\n\n")
+    .trim();
+}
+
+function extractVocabularyTokens(text: string): string[] {
+  const stopwords = new Set([
+    "this",
+    "that",
+    "with",
+    "from",
+    "into",
+    "your",
+    "about",
+    "because",
+    "song",
+    "track",
+    "night",
+    "today",
+    "tonight",
+    "esta",
+    "noche",
+    "para",
+    "como",
+    "pero",
+  ]);
+
+  return Array.from(
+    new Set(
+      normalizedContainment(text)
+        .split(/\s+/)
+        .filter((token) => token.length >= 4 && !stopwords.has(token))
+    )
+  ).slice(0, 8);
+}
+
+function openingPhraseSignature(text: string): string {
+  const firstParagraph = splitParagraphs(text)[0] || text;
+  const firstSentence = firstParagraph.split(/(?<=[.!?])\s+/)[0] || firstParagraph;
+  return normalizedContainment(firstSentence);
+}
+
+function inferMetadata(
+  intro: string,
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  archetype: string,
+  metadata: Partial<SessionIntroMetadata> | undefined,
+  sessionBehavior: SessionBehaviorPlan
+): SessionIntroMetadata {
+  const usedTimeReference = containsPhrase(intro, allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID))
+    || containsPhrase(intro, [context.timeContext.dayOfWeek, context.timeContext.label]);
+
+  return {
+    archetype: metadata?.archetype || archetype,
+    sessionType: metadata?.sessionType || context.sessionType,
+    openingStructure: metadata?.openingStructure || archetypePlans[archetype]?.openingStructure || "custom",
+    handoffStyle: metadata?.handoffStyle || archetypePlans[archetype]?.handoffStyle || "clean_direct",
+    emotionalTone: metadata?.emotionalTone || djConfigFor(request.djID).toneTraits[0] || "natural",
+    vocabulary: metadata?.vocabulary?.length ? metadata.vocabulary : extractVocabularyTokens(intro),
+    usedTimeReference:
+      typeof metadata?.usedTimeReference === "boolean" ? metadata.usedTimeReference : usedTimeReference,
+    sentenceCount:
+      typeof metadata?.sentenceCount === "number" ? metadata.sentenceCount : clamp(sentenceCount(intro), 1, sessionBehavior.targetSentences + 1),
+  };
+}
+
+function evaluateIntro(
+  intro: string,
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  config: DJConfig,
+  variation: VariationPlan,
+  archetype: string,
+  sessionBehavior: SessionBehaviorPlan,
+  metadata: SessionIntroMetadata
+): { score: number; weakComponents: IntroComponentName[]; metadata: SessionIntroMetadata } {
+  let score = 1;
+  const weakComponents = new Set<IntroComponentName>();
+  const normalized = normalizedContainment(intro);
+  const openingSignature = openingPhraseSignature(intro);
+  const sentences = sentenceCount(intro);
+  const words = wordCount(intro);
+
+  if (!normalized.includes(normalizedContainment(request.firstTrack.title)) || !normalized.includes(normalizedContainment(request.firstTrack.artist))) {
+    score -= 0.5;
+    weakComponents.add("songHandoff");
+  }
+  if (sentences < minSentenceCount || sentences > maxSentenceCount) {
+    score -= 0.22;
+    weakComponents.add("setFraming");
+  }
+  if (words < sessionBehavior.minWords || words > sessionBehavior.maxWords) {
+    score -= 0.18;
+    weakComponents.add("setFraming");
+  }
+  if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, variation.shouldUseTimeReference)) {
+    score -= 0.22;
+    weakComponents.add("momentAnchor");
+  }
+  if (variation.bannedOpeningStructures.includes(metadata.openingStructure)) {
+    score -= 0.14;
+    weakComponents.add("openingHit");
+  }
+  if (variation.bannedOpeningPhrases.includes(openingSignature)) {
+    score -= 0.2;
+    weakComponents.add("openingHit");
+  }
+  if (variation.bannedHandoffStyles.includes(metadata.handoffStyle)) {
+    score -= 0.12;
+    weakComponents.add("songHandoff");
+  }
+  if (variation.bannedVocabulary.some((token) => normalized.includes(token))) {
+    score -= 0.12;
+    weakComponents.add("personalityFlourish");
+  }
+  if (config.forbiddenPhrases.some((phrase) => normalized.includes(normalizedContainment(phrase)))) {
+    score -= 0.28;
+    weakComponents.add("openingHit");
+  }
+  if (genericIntroPhrases.some((phrase) => normalized.includes(phrase))) {
+    score -= 0.28;
+    weakComponents.add("openingHit");
+  }
+  if (!intro.trim().endsWith(".") && !intro.trim().endsWith("!") && !intro.trim().endsWith("?")) {
+    score -= 0.08;
+    weakComponents.add("songHandoff");
+  }
+
+  return {
+    score,
+    weakComponents: Array.from(weakComponents),
+    metadata: {
+      ...metadata,
+      sentenceCount: sentences,
+    },
+  };
+}
+
+function normalizeIntro(
+  raw: string,
+  request: SessionIntroRequest,
+  shouldUseTimeReference: boolean
+): string | null {
+  const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
+  if (
+    paragraphs.length < minParagraphCount
+    || paragraphs.length > maxParagraphCount
+  ) {
+    return null;
+  }
+
+  const intro = paragraphs.join("\n\n").trim();
+  if (!intro) {
+    return null;
+  }
+  if (wordCount(intro) < minWordCount || wordCount(intro) > maxWordCount) {
+    return null;
+  }
+  if (sentenceCount(intro) < minSentenceCount || sentenceCount(intro) > maxSentenceCount) {
+    return null;
+  }
+  if (!/[A-Za-z]/.test(intro)) {
+    return null;
+  }
+  if (/<\/?(speak|break|audio|phoneme|say-as)\b/i.test(intro)) {
+    return null;
+  }
+  if (/```|https?:\/\/|www\./i.test(intro)) {
+    return null;
+  }
+  if (/(.)\1{5,}/.test(intro)) {
+    return null;
+  }
+  if (/\b([a-z][a-z'’-]{1,})\b(?:\s+\1\b){3,}/i.test(intro)) {
+    return null;
+  }
+  if (/\b[bcdfghjklmnpqrstvwxyz]{8,}\b/i.test(intro)) {
+    return null;
+  }
+
+  const normalizedIntro = normalizedContainment(intro);
+  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.title))) {
+    return null;
+  }
+  if (!normalizedIntro.includes(normalizedContainment(request.firstTrack.artist))) {
+    return null;
+  }
+  if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, shouldUseTimeReference)) {
+    return null;
+  }
+
+  return intro;
+}
+
+async function requestAnthropicText(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string | null> {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.7,
+      max_tokens: 360,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`anthropic_request_failed_${response.status}`);
+  }
+
+  const payload = (await response.json()) as AnthropicResponse;
+  return payload.content?.find((item) => item.type === "text")?.text?.trim() || null;
+}
+
+async function regenerateWeakComponents(
+  apiKey: string,
+  model: string,
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  variation: VariationPlan,
+  archetype: string,
+  sessionBehavior: SessionBehaviorPlan,
+  existingComponents: IntroComponents,
+  weakComponents: IntroComponentName[]
+): Promise<IntroComponents | null> {
+  if (!weakComponents.length) {
+    return null;
+  }
+
+  const systemPrompt = `${buildSystemPrompt()} ${buildDJPrompt(djConfigFor(request.djID), request)} ${buildListenerMomentPrompt(request, context, variation)}`.trim();
+  const userPrompt = [
+    buildContextPrompt(request, context, variation, archetype, sessionBehavior),
+    "Regenerate only the weak components listed below and return strict JSON with only those keys.",
+    `Weak components: ${weakComponents.join(", ")}.`,
+    `Existing components: ${JSON.stringify(existingComponents)}.`,
+    "Keep anything not regenerated conceptually compatible with the rest of the intro.",
+  ].join(" ");
+
+  const raw = await requestAnthropicText(apiKey, model, systemPrompt, userPrompt).catch(() => null);
+  if (!raw) {
+    return null;
+  }
+
+  const payload = parseGeneratedPayload(raw);
+  return payload.components || null;
+}
+
+async function generateStructuredIntro(
+  request: SessionIntroRequest
+): Promise<{ intro: string; model: string; metadata: SessionIntroMetadata } | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    return null;
+  }
+
+  const model =
+    process.env.ANTHROPIC_SESSION_INTRO_MODEL?.trim()
+    || process.env.ANTHROPIC_MODEL?.trim()
+    || "claude-haiku-4-5";
+
+  const context = request.showContext ?? defaultShowContext(request);
+  const config = djConfigFor(request.djID);
+  const variation = applyVariationRules(context, config);
+  const archetype = selectArchetype(context, variation, config);
+  const sessionBehavior = applySessionTypeBehavior(archetype, context.sessionType, context);
+
+  const systemPrompt = `${buildSystemPrompt()} ${buildDJPrompt(config, request)} ${buildListenerMomentPrompt(request, context, variation)}`.trim();
+  const userPrompt = `${buildContextPrompt(request, context, variation, archetype, sessionBehavior)} ${buildComponentPrompt(request, context, archetype, sessionBehavior)}`;
+
+  const raw = await requestAnthropicText(apiKey, model, systemPrompt, userPrompt).catch(() => null);
+  if (!raw) {
+    return null;
+  }
+
+  let payload = parseGeneratedPayload(raw);
+  let intro = composeIntro(payload, archetype, sessionBehavior);
+  if (!intro) {
+    return null;
+  }
+  const usedStructuredComponents = Boolean(
+    payload.components && Object.values(payload.components).some((value) => typeof value === "string" && value.trim().length > 0)
+  );
+
+  let metadata = inferMetadata(intro, request, context, archetype, payload.metadata, sessionBehavior);
+  let evaluation = evaluateIntro(intro, request, context, config, variation, archetype, sessionBehavior, metadata);
+
+  if (evaluation.score < 0.74 && usedStructuredComponents && payload.components) {
+    const regenerated = await regenerateWeakComponents(
+      apiKey,
+      model,
+      request,
+      context,
+      variation,
+      archetype,
+      sessionBehavior,
+      payload.components,
+      evaluation.weakComponents
+    );
+
+    if (regenerated) {
+      payload = {
+        ...payload,
+        components: { ...payload.components, ...regenerated },
+      };
+      const recomposed = composeIntro(payload, archetype, sessionBehavior);
+      if (recomposed) {
+        intro = recomposed;
+        metadata = inferMetadata(intro, request, context, archetype, payload.metadata, sessionBehavior);
+        evaluation = evaluateIntro(intro, request, context, config, variation, archetype, sessionBehavior, metadata);
+      }
+    }
+  }
+
+  const normalized = normalizeIntro(intro, request, variation.shouldUseTimeReference);
+  if (!normalized) {
+    return null;
+  }
+
+  const rejectionThreshold = usedStructuredComponents ? 0.62 : 0.48;
+  if (evaluation.score < rejectionThreshold) {
+    return null;
+  }
+
+  return {
+    intro: normalized,
+    model,
+    metadata: {
+      ...metadata,
+      sentenceCount: sentenceCount(normalized),
+      usedTimeReference:
+        metadata.usedTimeReference
+        || containsPhrase(normalized, allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID)),
+      sessionType: context.sessionType,
+      archetype,
+    },
+  };
+}
+
 export function normalizeSessionIntroRequest(input: unknown): SessionIntroRequest | null {
   const payload = (input ?? {}) as Partial<Record<string, unknown>>;
   const djID = typeof payload.djID === "string" ? payload.djID.trim() : "";
@@ -619,13 +1689,18 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     return null;
   }
 
-  return {
+  const request: SessionIntroRequest = {
     djID,
     firstTrack,
     introKind: introKind || "standard",
     listenerContext: listenerContext ?? undefined,
     personaHint: personaHint || undefined,
     toneGuardrails: toneGuardrails || undefined,
+  };
+
+  return {
+    ...request,
+    showContext: normalizeShowContext(payload.showContext, request),
   };
 }
 
@@ -635,7 +1710,7 @@ export async function generateSessionIntro(request: SessionIntroRequest): Promis
     return { kind: "no_content", reason: "no_api_key" };
   }
 
-  const result = await generateWithAnthropic(request).catch(() => null);
+  const result = await generateStructuredIntro(request).catch(() => null);
   if (!result) {
     return { kind: "no_content", reason: "llm_rejected" };
   }
@@ -645,6 +1720,7 @@ export async function generateSessionIntro(request: SessionIntroRequest): Promis
     response: {
       intro: result.intro,
       llmModel: result.model,
+      metadata: result.metadata,
     },
   };
 }
