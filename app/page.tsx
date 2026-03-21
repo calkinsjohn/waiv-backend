@@ -315,6 +315,7 @@ export default function Home() {
     const controller = new WaivPlaybackController({
       onToast: showToast,
       onTelemetry: trackClientAnalyticsEvent,
+      apiToken: process.env.NEXT_PUBLIC_WAIV_APP_TOKEN,
       onStateChange: (snapshot) => {
         if (
           isSessionConnectingRef.current &&

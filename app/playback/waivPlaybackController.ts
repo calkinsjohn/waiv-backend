@@ -12,6 +12,7 @@ import caseyIntroLibraryRaw from "../introScripts/casey.json";
 import marcusIntroLibraryRaw from "../introScripts/marcus.json";
 import robertIntroLibraryRaw from "../introScripts/robert.json";
 import { buildCanonicalTrackKey } from "../trackIdentity";
+import { getPlaybackHistoryEvents } from "../listeningHistoryStore";
 import { AudioOrchestrator } from "./audioOrchestrator";
 import { sanitizeSpokenArtist, sanitizeSpokenTitle } from "./sanitization";
 import { PlayerStateMachine, type PlayerStateSnapshot } from "./playerStateMachine";
@@ -46,6 +47,7 @@ type ControllerDeps = {
     progress: number;
     isPlaying: boolean;
   } | null) => void;
+  apiToken?: string;
 };
 
 type SessionIntroScript = {
@@ -72,19 +74,19 @@ const UNAVAILABLE_TOAST_VARIANTS = [
 ] as const;
 
 const CASEY_TRACK_INTRO_TEMPLATES_LIBRARY = [
-  "Up next: “[SONG TITLE]” by [ARTIST].",
-  "Coming in now, “[SONG TITLE]” by [ARTIST].",
-  "Now spinning “[SONG TITLE]” from [ARTIST].",
-  "Keeping it moving with “[SONG TITLE]” by [ARTIST].",
-  "Next in rotation: “[SONG TITLE]” by [ARTIST].",
+  "Up next: \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Coming in now, \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Now spinning \u201c[SONG TITLE]\u201d from [ARTIST].",
+  "Keeping it moving with \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Next in rotation: \u201c[SONG TITLE]\u201d by [ARTIST].",
 ] as const;
 
 const CASEY_TRACK_INTRO_TEMPLATES_SUGGESTION = [
-  "Quick suggestion for you: “[SONG TITLE]” by [ARTIST].",
-  "Not in your library yet, but it fits — “[SONG TITLE]” by [ARTIST].",
-  "Fresh pick based on your taste: “[SONG TITLE]” by [ARTIST].",
-  "Suggestion coming in now — “[SONG TITLE]” by [ARTIST].",
-  "Here’s a recommendation for this run: “[SONG TITLE]” by [ARTIST].",
+  "Quick suggestion for you: \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Not in your library yet, but it fits \u2014 \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Fresh pick based on your taste: \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Suggestion coming in now \u2014 \u201c[SONG TITLE]\u201d by [ARTIST].",
+  "Here’s a recommendation for this run: \u201c[SONG TITLE]\u201d by [ARTIST].",
 ] as const;
 
 const PLAYBACK_STALL_THRESHOLD_MS = 5200;
@@ -133,6 +135,9 @@ export class WaivPlaybackController {
   private trackIntroInFlight = false;
   private pendingTrackIntros: PlaybackTrack[] = [];
   private allowTrackIntros = false;
+  private sessionTrackPosition = 0;
+  private lastCompletedTrack: PlaybackTrack | null = null;
+  private recentBridgeLines: string[] = [];
 
   constructor(deps: ControllerDeps) {
     this.deps = deps;
@@ -186,6 +191,9 @@ export class WaivPlaybackController {
       this.trackIntroInFlight = false;
       this.pendingTrackIntros = [];
       this.allowTrackIntros = false;
+      this.sessionTrackPosition = 0;
+      this.lastCompletedTrack = null;
+      this.recentBridgeLines = [];
 
       this.state.beginSession(sessionId);
       this.emitState();
@@ -316,7 +324,7 @@ export class WaivPlaybackController {
       this.firstTrackIdForSession = primedTrack.id;
       this.firstTrackSourceForSession = firstTrackSource;
 
-      const intro = this.buildSessionIntroScript(input.dj, primedTrack);
+      const intro = await this.buildSessionIntroScript(input.dj, primedTrack);
       this.deps.onTelemetry("tune_in_intro_selected", {
         session_id: sessionId,
         dj_id: input.dj.id,
@@ -668,6 +676,11 @@ export class WaivPlaybackController {
       return;
     }
 
+    const prevId = this.lastReportedNowPlayingTrackId;
+    if (prevId) {
+      this.lastCompletedTrack = this.sessionTrackById.get(prevId) ?? null;
+    }
+    this.sessionTrackPosition += 1;
     this.lastReportedNowPlayingTrackId = nowPlaying.id;
 
     const sessionTrack =
@@ -829,7 +842,136 @@ export class WaivPlaybackController {
     );
   }
 
-  private buildSessionIntroScript(
+  private deriveListenerProfile(): { topArtists: string[]; recentArtists: string[] } {
+    const events = getPlaybackHistoryEvents({ maxEvents: 300, sinceDays: 90 });
+
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      const name = event.artistName.trim();
+      if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+
+    const topArtists = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name);
+
+    const topSet = new Set(topArtists);
+    const recentArtists: string[] = [];
+    const seen = new Set<string>();
+    for (const event of [...events].reverse().slice(0, 40)) {
+      const name = event.artistName.trim();
+      if (name && !topSet.has(name) && !seen.has(name)) {
+        recentArtists.push(name);
+        seen.add(name);
+        if (recentArtists.length >= 3) break;
+      }
+    }
+
+    return { topArtists, recentArtists };
+  }
+
+  private async buildSessionIntroScript(
+    dj: ControllerDj,
+    track: PlaybackTrack
+  ): Promise<{ introId: string; script: string }> {
+    const apiResult = await this.fetchSessionIntroFromAPI(dj, track).catch(() => null);
+    if (apiResult) {
+      return { introId: "llm_generated", script: apiResult };
+    }
+    return this.selectStaticSessionIntro(dj, track);
+  }
+
+  private async fetchSessionIntroFromAPI(dj: ControllerDj, track: PlaybackTrack): Promise<string | null> {
+    const token = this.deps.apiToken?.trim();
+    if (!token) return null;
+
+    const now = new Date();
+    const hour24 = now.getHours();
+    const timeOfDay =
+      hour24 < 5 ? "night" : hour24 < 12 ? "morning" : hour24 < 17 ? "afternoon" : hour24 < 21 ? "evening" : "night";
+
+    const body = {
+      djID: dj.id,
+      firstTrack: { title: track.title, artist: track.artistName, isrc: "" },
+      introKind: "standard",
+      listenerContext: {
+        localTimestamp: now.toISOString(),
+        timeZoneIdentifier: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        weekday: now.toLocaleDateString("en-US", { weekday: "long" }),
+        month: now.toLocaleDateString("en-US", { month: "long" }),
+        dayOfMonth: now.getDate(),
+        year: now.getFullYear(),
+        hour24,
+        timeOfDay,
+      },
+      listenerProfile: this.deriveListenerProfile(),
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    try {
+      const response = await fetch("/api/dj/session-intro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-waiv-app-token": token },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return null;
+      const data = (await response.json()) as { intro?: string };
+      const intro = typeof data.intro === "string" ? data.intro.trim() : "";
+      return intro || null;
+    } catch {
+      clearTimeout(timeoutId);
+      return null;
+    }
+  }
+
+  private async fetchTransitionLine(track: PlaybackTrack): Promise<string> {
+    const token = this.deps.apiToken?.trim();
+    const djId = this.activeDj?.id ?? "casey";
+    if (!token) return this.buildTrackLine(djId, track);
+
+    const body = {
+      djID: djId,
+      toTrack: { title: track.title, artist: track.artistName, isrc: "" },
+      fromTrack: this.lastCompletedTrack
+        ? { title: this.lastCompletedTrack.title, artist: this.lastCompletedTrack.artistName, isrc: "" }
+        : null,
+      sessionPosition: this.sessionTrackPosition,
+      trigger: "auto",
+      avoidRecentLines: this.recentBridgeLines.slice(-5),
+      listenerProfile: this.deriveListenerProfile(),
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    try {
+      const response = await fetch("/api/dj/transition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-waiv-app-token": token },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) return this.buildTrackLine(djId, track);
+      const data = (await response.json()) as { djLine?: string };
+      const line = typeof data.djLine === "string" ? data.djLine.trim() : "";
+      if (line) {
+        this.recentBridgeLines = [...this.recentBridgeLines, line].slice(-6);
+        return line;
+      }
+      return this.buildTrackLine(djId, track);
+    } catch {
+      clearTimeout(timeoutId);
+      return this.buildTrackLine(djId, track);
+    }
+  }
+
+  private selectStaticSessionIntro(
     dj: ControllerDj,
     track: PlaybackTrack
   ): { introId: string; script: string } {
@@ -837,7 +979,7 @@ export class WaivPlaybackController {
     const intros = Array.isArray(library?.intros) ? library.intros : [];
     const available = intros.filter((intro) => intro?.id && intro?.script_body);
     if (available.length === 0) {
-      const fallback = `You’re on W.A.I.V. I’m ${dj.name.split(",")[0] ?? "your DJ"}. Starting us off with “${sanitizeSpokenTitle(track.title)}” by ${sanitizeSpokenArtist(track.artistName)}.`;
+      const fallback = `You’re on W.A.I.V. I’m ${dj.name.split(",")[0] ?? "your DJ"}. Starting us off with \u201c${sanitizeSpokenTitle(track.title)}\u201d by ${sanitizeSpokenArtist(track.artistName)}.`;
       return { introId: `${dj.id}_fallback`, script: fallback };
     }
 
@@ -857,10 +999,7 @@ export class WaivPlaybackController {
       .split("[ARTIST]")
       .join(safeArtist)
       .trim();
-    return {
-      introId: chosen.id,
-      script,
-    };
+    return { introId: chosen.id, script };
   }
 
   private scheduleTrackIntro(track: PlaybackTrack): void {
@@ -891,7 +1030,7 @@ export class WaivPlaybackController {
       }
 
       const activeDjId = this.activeDj?.id ?? "casey";
-      const line = this.buildTrackLine(activeDjId, current);
+      const line = await this.fetchTransitionLine(current);
       let voiceStarted = false;
       let spokenLine = line;
 
@@ -906,8 +1045,8 @@ export class WaivPlaybackController {
         if (!voiceStarted) {
           const fallbackLine =
             current.source === "suggestion"
-              ? `Suggestion up next: “${sanitizeSpokenTitle(current.title)}” by ${sanitizeSpokenArtist(current.artistName)}.`
-              : `Up next: “${sanitizeSpokenTitle(current.title)}” by ${sanitizeSpokenArtist(current.artistName)}.`;
+              ? `Suggestion up next: "${sanitizeSpokenTitle(current.title)}" by ${sanitizeSpokenArtist(current.artistName)}.`
+              : `Up next: "${sanitizeSpokenTitle(current.title)}" by ${sanitizeSpokenArtist(current.artistName)}.`;
           const fallbackResult = await this.audio.playVoiceLine({
             djId: activeDjId,
             text: fallbackLine,
