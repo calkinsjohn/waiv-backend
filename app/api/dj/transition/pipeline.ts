@@ -4,6 +4,13 @@ export type TransitionTrack = {
   isrc: string;
 };
 
+export type ListenerProfile = {
+  topArtists?: string[];
+  recentArtists?: string[];
+  tasteKeywords?: string[];
+  listeningPattern?: string;
+};
+
 export type TransitionRequest = {
   djID: string;
   toTrack: TransitionTrack;
@@ -11,6 +18,7 @@ export type TransitionRequest = {
   sessionPosition: number;
   trigger: string;
   avoidRecentLines?: string[];
+  listenerProfile?: ListenerProfile | null;
 };
 
 export type TransitionResponse = {
@@ -47,6 +55,12 @@ const overusedOpeningPatterns = [
   /^there(?:'s| is)? something about\b/i,
   /^you know that feeling when\b/i,
   /^sometimes a song\b/i,
+  /^(that was a|that(?:'s| is) a)\b/i,
+  /^coming off (that|a)\b/i,
+  /^off the back of\b/i,
+  /^keeping (the |this )?(energy|momentum|vibe)\b/i,
+  /^carrying (that|the|this)\b/i,
+  /^perfect (timing|moment)\b/i,
 ] as const;
 
 function normalizeWhitespace(text: string): string {
@@ -283,68 +297,84 @@ function djBridgeStyleGuidance(djID: string): string {
 - Let the personality come through in calm understatement, not punchlines
 - Favor thoughtful pivots, simple human observations, or a low-key aside before the song lands
 - Keep the language restrained, natural, and easy to say aloud
+- When a previous track is provided, earn the connection from it — notice something specific about its sound or mood, then turn it into the next song
 - Good shapes include:
   "This felt like the right place for [song] by [artist]. This is W.A.I.V."
-  "Let’s let [song] by [artist] take this spot. You're listening to W.A.I.V."`;
+  "Let’s let [song] by [artist] take this spot. You’re listening to W.A.I.V."
+  "That [previous artist] record clears the room just right for this — [song] by [artist]. You’re listening to W.A.I.V."
+  "Off the weight of that, [song] by [artist] belongs right here. This is W.A.I.V."`;
     case "marcus":
       return `DJ-specific bridge guidance for Marcus:
 - Sound decisive, rhythmic, and momentum-first
 - A bridge can feel like a quick nod, a reset of energy, or a confident drop into the next record
 - Keep sentences strong and uncluttered
+- When a previous track is provided, use it as a momentum beat — notice where it left the energy, then move through it
 - Good shapes include:
   "That clears the lane for [song] by [artist]. This is W.A.I.V."
-  "Keeping the pressure right where it should be with [song] by [artist]. You're listening to W.A.I.V."`;
+  "[Previous artist] laid the groundwork — [song] by [artist] builds on it. You’re listening to W.A.I.V."
+  "Off that, [song] by [artist]. This is W.A.I.V."`;
     case "luna":
       return `DJ-specific bridge guidance for Luna:
 - Let the bridge feel intimate, observant, and slightly poetic without becoming vague
 - Favor softness, atmosphere, and emotional texture
 - Keep the line grounded in the music, not abstract reflection
+- When a previous track is provided, trace the emotional thread from it into the next song
 - Good shapes include:
   "This next one leaves a little more space around the edges: [song] by [artist]. This is W.A.I.V."
-  "There’s a quieter kind of pull in [song] by [artist]. You're listening to W.A.I.V."`;
+  "There’s a quieter kind of pull in [song] by [artist]. You’re listening to W.A.I.V."
+  "Something in that [previous artist] track opens directly into this — [song] by [artist]. This is W.A.I.V."`;
     case "miles":
       return `DJ-specific bridge guidance for Rafa:
 - Make the bridge feel cinematic, late-night, and smooth without sounding sleepy
 - Favor mood, momentum, glow, shape, presence, and after-hours confidence
 - If you use Spanish, fold it naturally into the sentence. Never drop isolated one-word lines as the whole move
-- A brief sequencing observation or a calm AI-aware aside is welcome when it feels earned
+- When a previous track is provided, treat it as a scene that the next song walks out of — cinematic, connected, unhurried
 - Good shapes include:
-  "A little more glow on this turn, vamos: [song] by [artist]. This is W.A.I.V."
-  "This one carries the right kind of weight, [song] by [artist]. You're listening to W.A.I.V."`;
+  "A little more glow on this turn — [song] by [artist]. This is W.A.I.V."
+  "This one carries the right kind of weight, [song] by [artist]. You’re listening to W.A.I.V."
+  "[Previous artist] set the room — now [song] by [artist] holds it. This is W.A.I.V."`;
     case "jack":
       return `DJ-specific bridge guidance for John:
 - Keep the bridge calm, tasteful, and effortlessly cool
 - Favor record-store intuition, sequencing feel, and lightly textured observations over jokes or overt cleverness
 - Sound like a modern public-radio music host with a little more edge and a little more ease
 - John is also a big sports fan, especially baseball, so an occasional understated baseball lens is welcome when it genuinely fits the moment
+- When a previous track is provided, notice what it does — texture, weight, atmosphere — and use that to explain why this one follows
 - Good shapes include:
-  "This one slides in beautifully here, [song] by [artist]. This is W.A.I.V."
-  "There is a little more texture in this turn: [song] by [artist]. You're listening to W.A.I.V."`;
+  "This one slides in beautifully here — [song] by [artist]. This is W.A.I.V."
+  "There’s a little more texture in this turn: [song] by [artist]. You’re listening to W.A.I.V."
+  "[Previous artist] set up this sequence perfectly — [song] by [artist]. This is W.A.I.V."`;
     case "tiffany":
       return `DJ-specific bridge guidance for Tiffany:
 - Set the mood first, then add a playful influencer-style observation, then land the song
 - Think in terms of vibe, moment, energy, aura, or cinematic lifestyle framing
 - You can occasionally mention the algorithm like a coworker, but do not force it every time
 - Stay charming and curated, never mean
+- When a previous track is provided, use it as a style or vibe contrast or continuation — make the sequence feel intentional and curated
 - Good shapes include:
   "Okay, this next one is very rooftop-after-midnight energy: [song] by [artist]. This is W.A.I.V."
-  "The algorithm actually delivered a moment here, [song] by [artist]. You're listening to W.A.I.V."`;
+  "The algorithm actually delivered a moment here, [song] by [artist]. You’re listening to W.A.I.V."
+  "After [previous artist]? Yeah, [song] by [artist] is the only logical move. This is W.A.I.V."`;
     case "jolene":
       return `DJ-specific bridge guidance for Jolene:
 - Keep the bridge warm, open-hearted, and gently encouraging
 - Favor natural charm over big flourishes
 - A soft affectionate note is fine, but keep it believable and light
+- When a previous track is provided, connect it warmly — notice what it did and let the next song carry that forward
 - Good shapes include:
   "This one feels just right coming in: [song] by [artist]. This is W.A.I.V."
-  "A little warmth for the room now with [song] by [artist]. You're listening to W.A.I.V."`;
+  "A little warmth for the room now with [song] by [artist]. You’re listening to W.A.I.V."
+  "That [previous artist] track opened the door — [song] by [artist] walks right through it. This is W.A.I.V."`;
     case "robert":
       return `DJ-specific bridge guidance for Robert:
 - Let the humor come from deadpan precision and faintly uncanny confidence
 - Sound serious about the sequence, not like you are telling a joke
 - A bridge can be matter-of-fact, procedural, or slightly over-controlled
+- When a previous track is provided, treat the connection as something you observed with unsettling specificity — as if you already knew this was next
 - Good shapes include:
   "This transition appears to point directly at [song] by [artist]. This is W.A.I.V."
-  "A reasonably controlled move into [song] by [artist]. You're listening to W.A.I.V."`;
+  "A reasonably controlled move into [song] by [artist]. You’re listening to W.A.I.V."
+  "The previous track appears to have set this up. [Song] by [artist] was the correct next step. This is W.A.I.V."`;
     default:
       return "";
   }
@@ -479,6 +509,56 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
   return [...shared, specific].filter(Boolean).join(" ");
 }
 
+function djListenerReferenceStyle(djID: string): string {
+  switch (djID.toLowerCase()) {
+    case "casey":
+      return "When referencing listener taste, April is offhand and dry: \"you've been deep in [artist] lately — this feels like the same territory.\"";
+    case "marcus":
+      return "When referencing listener taste, Marcus co-signs with easy confidence: \"you've been running [artist] heavy — this fits that energy.\"";
+    case "luna":
+      return "When referencing listener taste, Luna surfaces patterns softly: \"[artist] keeps coming up in your rotation. There's a reason this belongs here.\"";
+    case "miles":
+      return "When referencing listener taste, Rafa is cinematic and unhurried: \"you've been spending time in [artist] space — this lives close to that.\"";
+    case "jack":
+      return "When referencing listener taste, John treats it like a record-store selector noticing what someone keeps pulling — specific, understated, earned.";
+    case "tiffany":
+      return "When referencing listener taste, Tiffany makes it aesthetic: \"your library is very [artist] right now and I'm completely here for it.\"";
+    case "jolene":
+      return "When referencing listener taste, Jolene is warm and recognizing: \"I see you keep coming back to [artist] — those records know what they're doing.\"";
+    case "robert":
+      return "When referencing listener taste, Robert is precise to the point of unsettling: \"your play count for [artist] is... statistically significant. This selection appears consistent with that pattern.\"";
+    default:
+      return "";
+  }
+}
+
+function buildListenerProfilePrompt(profile: ListenerProfile, djID: string): string {
+  const parts: string[] = [];
+  const topArtists = (profile.topArtists ?? []).slice(0, 4).filter(Boolean);
+  const recentArtists = (profile.recentArtists ?? [])
+    .filter((a) => !topArtists.includes(a))
+    .slice(0, 3);
+  const tasteKeywords = (profile.tasteKeywords ?? []).slice(0, 4).filter(Boolean);
+  const listeningPattern = profile.listeningPattern?.trim();
+
+  if (topArtists.length) parts.push(`Top artists: ${topArtists.join(", ")}.`);
+  if (recentArtists.length) parts.push(`Recently playing: ${recentArtists.join(", ")}.`);
+  if (tasteKeywords.length) parts.push(`Taste: ${tasteKeywords.join(", ")}.`);
+  if (listeningPattern) parts.push(`Pattern: ${listeningPattern}.`);
+
+  if (!parts.length) return "";
+
+  return [
+    `Listener taste context — ${parts.join(" ")}`,
+    "You may weave in one natural reference to this when it genuinely fits — as a casual aside, not a data readout.",
+    "Never list multiple artists back to back. Never say 'based on your listening' or 'your taste suggests'.",
+    "Sound like the DJ noticed it, not like an algorithm flagging a match.",
+    djListenerReferenceStyle(djID),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function normalizeTrack(input: unknown): TransitionTrack | null {
   const payload = (input ?? {}) as Partial<TransitionTrack>;
   const title = typeof payload.title === "string" ? payload.title.trim() : "";
@@ -505,7 +585,26 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
         .slice(0, 6)
     : [];
 
-  return { djID, toTrack, fromTrack, sessionPosition, trigger, avoidRecentLines };
+  const listenerProfileRaw = (payload.listenerProfile ?? null) as Partial<ListenerProfile> | null;
+  const listenerProfile: ListenerProfile | null = listenerProfileRaw
+    ? {
+        topArtists: Array.isArray(listenerProfileRaw.topArtists)
+          ? listenerProfileRaw.topArtists.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        recentArtists: Array.isArray(listenerProfileRaw.recentArtists)
+          ? listenerProfileRaw.recentArtists.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        tasteKeywords: Array.isArray(listenerProfileRaw.tasteKeywords)
+          ? listenerProfileRaw.tasteKeywords.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        listeningPattern:
+          typeof listenerProfileRaw.listeningPattern === "string"
+            ? listenerProfileRaw.listeningPattern.trim() || undefined
+            : undefined,
+      }
+    : null;
+
+  return { djID, toTrack, fromTrack, sessionPosition, trigger, avoidRecentLines, listenerProfile };
 }
 
 async function generateWithAnthropic(request: TransitionRequest): Promise<{ line: string; model: string } | null> {
@@ -520,11 +619,14 @@ async function generateWithAnthropic(request: TransitionRequest): Promise<{ line
   const personality = djPersonalityPrompt(request.djID);
   const depthContext = sessionDepthLabel(request.sessionPosition);
   const bridgeStyleGuidance = djBridgeStyleGuidance(request.djID);
+  const listenerProfilePrompt = request.listenerProfile
+    ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
+    : "";
 
   const systemPrompt = `${personality}
 
 ${spokenDeliveryDisciplinePrompt(request.djID)}
-
+${listenerProfilePrompt ? `\n${listenerProfilePrompt}\n` : ""}
 Write a single track introduction for radio broadcast.
 
 Rules:
@@ -535,8 +637,8 @@ Rules:
 - Keep it conversational and natural for spoken audio
 - Write like the middle of a bridge, not the setup or sign-off
 - Mention the next song at most once. Do not restate or re-introduce the song title or artist in the final clause
-- Do not default to a "that was X, this is Y" structure
-- If a previous track is provided, you may reference it lightly, but only when it helps. Do not force a back-reference in every bridge
+- Avoid defaulting to a bare "that was X, this is Y" structure — if you use that shape, earn both halves with something specific
+- When a previous track is provided, build a real bridge. Don't vary between "reference lightly" and "force a connection" — just say something specific and true about the previous song that earns the turn into the next one
 - Vary your bridge structures so they feel like a real live DJ:
   sometimes a quick reaction,
   sometimes a scene-setting observation,
@@ -557,7 +659,8 @@ Rules:
 - If your first instinct is "There's something about...", rewrite it into a different shape before answering
 - Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
-- Prefer fresher acknowledgments like "fair enough", "got it", "I see it", "understood", or simply move forward without approval language
+- Avoid lazy back-reference forms: do not open with "That was a...", "Coming off that", "Off the back of that", "That felt [adjective]", "Keeping the energy going", or any phrase that reduces the previous track to a single adjective without saying anything about it
+- When a previous track is provided, build a real bridge — notice something specific about its sound, mood, weight, or atmosphere and use it to set up the next song. The back-reference should do work, not just acknowledge the previous track existed
 - Frequently end the line with a short station tag. Rotate naturally among variations such as "This is W.A.I.V.", "You're listening to W.A.I.V.", "Only on W.A.I.V.", "This is W.A.I.V. Radio.", "Right here with W.A.I.V.", and "Only here on W.A.I.V."
 - Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
 - Use one of those station-tag phrases exactly as written. Do not improvise a new station-tag wording or add extra words before or after it

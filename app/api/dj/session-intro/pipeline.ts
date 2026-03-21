@@ -4,6 +4,13 @@ export type SessionIntroTrack = {
   isrc: string;
 };
 
+export type ListenerProfile = {
+  topArtists?: string[];
+  recentArtists?: string[];
+  tasteKeywords?: string[];
+  listeningPattern?: string;
+};
+
 export type SessionIntroListenerContext = {
   localTimestamp: string;
   timeZoneIdentifier: string;
@@ -71,6 +78,7 @@ export type SessionIntroRequest = {
   showContext?: SessionIntroShowContext;
   personaHint?: string;
   toneGuardrails?: string;
+  listenerProfile?: ListenerProfile | null;
 };
 
 export type SessionIntroMetadata = {
@@ -169,6 +177,12 @@ const genericIntroPhrases = [
   "welcome back to w a i v",
   "youre going to love this",
   "here is a track",
+  "based on your listening",
+  "based on your taste",
+  "your music taste",
+  "you have great taste",
+  "i can tell you love",
+  "i can see that you",
 ];
 
 const supportedArchetypes = [
@@ -1122,6 +1136,57 @@ function buildDJPrompt(config: DJConfig, request: SessionIntroRequest): string {
     .join(" ");
 }
 
+function djListenerReferenceStyle(djID: string): string {
+  switch (djID.trim().toLowerCase()) {
+    case "casey":
+      return "When referencing listener taste, April is offhand and dry — a casual aside that sounds like she noticed, not like she's running an analysis.";
+    case "marcus":
+      return "When referencing listener taste, Marcus co-signs with easy confidence — a quick acknowledgment that this choice fits what the listener already knows they're about.";
+    case "luna":
+      return "When referencing listener taste, Luna surfaces patterns softly — she notices what keeps coming back without over-explaining why.";
+    case "jack":
+      return "When referencing listener taste, John treats it like a crate-digger noticing what someone keeps pulling — specific, understated, never performative.";
+    case "jolene":
+      return "When referencing listener taste, Jolene is warm and recognizing — she makes the listener feel seen without making a production of it.";
+    case "tiffany":
+      return "When referencing listener taste, Tiffany makes it aesthetic — she treats the listener's library as a style statement she's here to affirm and amplify.";
+    case "robert":
+      return "When referencing listener taste, Robert is unsettlingly precise — he references listener data with a calm certainty that implies he's been tracking it for some time.";
+    case "miles":
+      return "When referencing listener taste, Rafa is cinematic and unhurried — he connects listener taste to mood and atmosphere, not to facts about play counts.";
+    default:
+      return "";
+  }
+}
+
+function buildListenerProfilePrompt(profile: ListenerProfile, djID: string): string {
+  const parts: string[] = [];
+  const topArtists = (profile.topArtists ?? []).slice(0, 4).filter(Boolean);
+  const recentArtists = (profile.recentArtists ?? [])
+    .filter((a) => !topArtists.includes(a))
+    .slice(0, 3);
+  const tasteKeywords = (profile.tasteKeywords ?? []).slice(0, 4).filter(Boolean);
+  const listeningPattern = profile.listeningPattern?.trim();
+
+  if (topArtists.length) parts.push(`Top artists: ${topArtists.join(", ")}.`);
+  if (recentArtists.length) parts.push(`Recently playing: ${recentArtists.join(", ")}.`);
+  if (tasteKeywords.length) parts.push(`Taste: ${tasteKeywords.join(", ")}.`);
+  if (listeningPattern) parts.push(`Pattern: ${listeningPattern}.`);
+
+  if (!parts.length) return "";
+
+  return [
+    `Listener taste context — ${parts.join(" ")}`,
+    "You may weave in one natural reference to this when it genuinely fits — as a casual aside, not a data readout.",
+    "Never list multiple artists back to back. Never say 'based on your listening' or 'your taste suggests' or 'I can tell you love'.",
+    "The reference should feel like the DJ noticed something, not like a recommendation engine flagging a match.",
+    "If you reference a specific artist from the listener's taste, it should explain something about why this first song belongs here for this listener — not just signal that you know their library.",
+    djListenerReferenceStyle(djID),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function buildListenerMomentPrompt(
   request: SessionIntroRequest,
   context: SessionIntroShowContext,
@@ -1151,7 +1216,11 @@ function buildListenerMomentPrompt(
     ? "No repitas la misma estructura de apertura ni la misma frase de día y hora en intros seguidas."
     : "Do not default to opening every intro with the same weekday-plus-time phrase.";
 
-  return [firstSessionLine, localTimeLine, timeReferenceRule, repetitionRule, clippedRule].filter(Boolean).join(" ");
+  const listenerProfilePart = request.listenerProfile
+    ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
+    : "";
+
+  return [firstSessionLine, localTimeLine, timeReferenceRule, repetitionRule, clippedRule, listenerProfilePart].filter(Boolean).join(" ");
 }
 
 function archetypeDirective(archetype: string): string {
@@ -1753,6 +1822,25 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     return null;
   }
 
+  const listenerProfileRaw = (payload.listenerProfile ?? null) as Partial<ListenerProfile> | null;
+  const listenerProfile: ListenerProfile | null = listenerProfileRaw
+    ? {
+        topArtists: Array.isArray(listenerProfileRaw.topArtists)
+          ? listenerProfileRaw.topArtists.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        recentArtists: Array.isArray(listenerProfileRaw.recentArtists)
+          ? listenerProfileRaw.recentArtists.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        tasteKeywords: Array.isArray(listenerProfileRaw.tasteKeywords)
+          ? listenerProfileRaw.tasteKeywords.filter((v): v is string => typeof v === "string").slice(0, 6)
+          : undefined,
+        listeningPattern:
+          typeof listenerProfileRaw.listeningPattern === "string"
+            ? listenerProfileRaw.listeningPattern.trim() || undefined
+            : undefined,
+      }
+    : null;
+
   const request: SessionIntroRequest = {
     djID,
     firstTrack,
@@ -1760,6 +1848,7 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     listenerContext: listenerContext ?? undefined,
     personaHint: personaHint || undefined,
     toneGuardrails: toneGuardrails || undefined,
+    listenerProfile: listenerProfile ?? undefined,
   };
 
   return {
