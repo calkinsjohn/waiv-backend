@@ -20,6 +20,8 @@ export type SessionIntroRequest = {
   firstTrack: SessionIntroTrack;
   introKind: string;
   listenerContext?: SessionIntroListenerContext;
+  personaHint?: string;
+  toneGuardrails?: string;
 };
 
 export type SessionIntroResponse = {
@@ -37,7 +39,9 @@ type AnthropicResponse = {
   content?: Array<{ type?: string; text?: string }>;
 };
 
-const maxWordCount = 110;
+const minWordCount = 60;
+const maxWordCount = 150;
+const minParagraphCount = 3;
 const maxParagraphCount = 5;
 
 function normalizeWhitespace(text: string): string {
@@ -162,12 +166,19 @@ function matchesListenerTimeContext(
 
 function normalizeIntro(raw: string, request: SessionIntroRequest): string | null {
   const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
-  if (paragraphs.length === 0 || paragraphs.length > maxParagraphCount) {
+  if (
+    paragraphs.length === 0
+    || paragraphs.length < minParagraphCount
+    || paragraphs.length > maxParagraphCount
+  ) {
     return null;
   }
 
   const intro = paragraphs.join("\n\n").trim();
   if (!intro) {
+    return null;
+  }
+  if (wordCount(intro) < minWordCount) {
     return null;
   }
   if (wordCount(intro) > maxWordCount) {
@@ -330,6 +341,8 @@ function introKindGuidance(introKind: string, request: SessionIntroRequest): str
       "Welcome them briefly to W.A.I.V.",
       "You may mention that WAIV shapes a radio-style listening session from their music taste.",
       "You may mention they can switch DJs later, but do it lightly and only once.",
+      "Make the opening feel like a real show beginning, not a one-line product explanation or a cold song setup.",
+      "Build a little anticipation and scene before you name the first song.",
       `End by naturally introducing the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
     ].join(" ");
   }
@@ -337,7 +350,9 @@ function introKindGuidance(introKind: string, request: SessionIntroRequest): str
   return [
     "This is a normal session open, not a first-time product onboarding moment.",
     "Do not explain the app or over-introduce yourself.",
-    "Make it feel like the opening breath of a fresh set.",
+    "Make it feel like the opening breath of a fresh set and the first minute of a real radio show.",
+    "Open with a sense of occasion, shape, and atmosphere rather than jumping straight to the song in one sentence.",
+    "Let the intro earn the first song with at least two beats before the handoff: a point of view, a local-moment cue, or a set-shaping observation.",
     `Naturally introduce the first song, "${request.firstTrack.title}" by ${request.firstTrack.artist}, inside the intro itself.`,
   ].join(" ");
 }
@@ -377,7 +392,7 @@ function timeContextVariationGuidance(request: SessionIntroRequest): string {
 
     const listenerContext = request.listenerContext;
     const variants = [
-      "Haz una referencia ligera al momento local, pero no abras con una etiqueta de calendario. Deja que esa referencia llegue despues de la primera idea.",
+      "Haz una referencia clara pero natural al momento local, pero no abras con una etiqueta de calendario. Deja que esa referencia llegue despues de la primera idea.",
       `Deja que el intro tenga aire nocturno local, pero menciona solo un detalle de calendario de forma natural, como "${listenerContext.weekday}" o "${listenerContext.month}", no ambos juntos.`,
       "Lleva la referencia horaria al segundo pensamiento o al momento de presentar la cancion, en lugar de usarla como titular del intro.",
       "Usa una referencia mas suave al momento, como esta noche o a esta hora, dentro de una oracion completa y natural, no como fragmento suelto.",
@@ -400,7 +415,7 @@ function timeContextVariationGuidance(request: SessionIntroRequest): string {
   }
 
   const variants = [
-    "Reference the local time of day lightly, but do not open the intro with the weekday or calendar phrase. Let the time cue arrive after the first thought.",
+    "Reference the local time of day clearly but naturally, and do not open the intro with the weekday or calendar phrase. Let the time cue arrive after the first thought.",
     `Let the intro carry a local-night feel, but mention only one calendar detail naturally, such as "${listenerContext.weekday}" or "${listenerContext.month}", not both together.`,
     "Work the time cue into the song setup or second paragraph instead of making it the opening label for the whole intro.",
     "Use a softer local-time nod, like tonight or at this hour, and fold it into a full sentence rather than a chopped time-stamp opener.",
@@ -435,6 +450,7 @@ function listenerTimeGuidanceForDJ(listenerContext?: SessionIntroListenerContext
       `La hora local del oyente es ${listenerContext.localTimestamp} en ${listenerContext.timeZoneIdentifier}.`,
       `Localmente es ${localDate}, alrededor de la hora ${listenerContext.hour24}, en la ${localizedTimeOfDayLabel(listenerContext.timeOfDay, djID)}.`,
       `Haz una referencia natural al momento local correcto usando una frase como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
+      "En la mayoria de los intros, ancla claramente el set en ese momento local para que suene vivo y presente.",
       "Abre como un locutor real: con una observacion, una sensacion, una reaccion o una idea sobre el set, no con una etiqueta suelta de tiempo.",
       "Tambien puedes mencionar el dia de la semana, el mes o la fecha si sale natural.",
       "No abras todos los intros con la misma formula repetida de dia y momento.",
@@ -447,6 +463,7 @@ function listenerTimeGuidanceForDJ(listenerContext?: SessionIntroListenerContext
     `The listener's local time is ${listenerContext.localTimestamp} in ${listenerContext.timeZoneIdentifier}.`,
     `Locally, it is ${localDate}, around hour ${listenerContext.hour24} in the ${listenerContext.timeOfDay}.`,
     `Naturally reference the correct local time of day in the intro using a phrase that fits this moment, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`,
+    "In most intros, clearly anchor the set in that local moment so it feels live, current, and specific.",
     "Open like a real radio host: with an observation, a feeling, a reaction, or a thought about the set, not a bare time label.",
     "You may also mention the weekday, month, or date when it feels effortless and human.",
     "Do not default to opening every intro with the same weekday-plus-time phrase.",
@@ -472,12 +489,16 @@ async function generateWithAnthropic(
 
 ${spokenDeliveryDisciplinePrompt(request.djID)}
 
+${request.personaHint ? `Additional persona guidance: ${request.personaHint}` : ""}
+
+${request.toneGuardrails ? `Additional tone guardrails: ${request.toneGuardrails}` : ""}
+
 Write a session-opening radio intro in plain text.
 
 Rules:
 - Return plain text only, not JSON
-- 2 to 4 short paragraphs
-- 45 to 110 words total
+- 3 to 5 short paragraphs
+- 60 to 150 words total
 - No markdown, no bullet points, no stage directions, no SSML
 - No URLs, no hashtags, no emojis
 - Sound natural when spoken aloud
@@ -485,6 +506,8 @@ Rules:
 - Do not use placeholder text
 - Do not end with generic radio lines like "stay tuned" or "don't go anywhere"
 - Avoid generic AI-assistant phrasing
+- Make it feel like a real radio-show opening with a little runway and shape, not a one-sentence song setup
+- Give the intro at least two real beats before the final handoff into the song
 - The intro must include the song title "${request.firstTrack.title}" and artist "${request.firstTrack.artist}"
 - Mention the song and artist naturally inside the intro, not as a separate labeled field
 - You may mention W.A.I.V. when it helps, but do not force a station tag ending
@@ -589,6 +612,8 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
   const firstTrack = normalizeTrack(payload.firstTrack);
   const introKind = typeof payload.introKind === "string" ? payload.introKind.trim() : "standard";
   const listenerContext = payload.listenerContext ? normalizeListenerContext(payload.listenerContext) : undefined;
+  const personaHint = typeof payload.personaHint === "string" ? payload.personaHint.trim() : "";
+  const toneGuardrails = typeof payload.toneGuardrails === "string" ? payload.toneGuardrails.trim() : "";
 
   if (!djID || !firstTrack) {
     return null;
@@ -599,6 +624,8 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     firstTrack,
     introKind: introKind || "standard",
     listenerContext: listenerContext ?? undefined,
+    personaHint: personaHint || undefined,
+    toneGuardrails: toneGuardrails || undefined,
   };
 }
 

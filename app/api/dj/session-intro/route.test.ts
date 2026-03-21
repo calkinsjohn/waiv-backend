@@ -51,9 +51,11 @@ describe("POST /api/dj/session-intro", () => {
             type: "text",
             text: `Hey, I’m April.
 
-Thursday night on W.A.I.V. feels right when a first song earns its place.
+It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up.
 
-We’re opening with "Yellow" by Coldplay. Stay with me.`,
+Welcome to W.A.I.V. We’re taking the longer way into it tonight, letting the room settle before we make the first move.
+
+We’re opening with "Yellow" by Coldplay, and it feels like the right way to let the show breathe.`,
           },
         ],
       });
@@ -112,9 +114,11 @@ We’re opening with "Yellow" by Coldplay. Stay with me.`,
             type: "text",
             text: `Hi. I'm Luna.
 
-Tonight leaves a little more room around the edges.
+Tonight leaves a little more room around the edges, and that usually tells me the set should arrive softly before it asks for anything.
 
-We'll start with "Reckoner" by Radiohead.`,
+I wanted this opening to feel patient on W.A.I.V., like the room has enough quiet in it to notice the details instead of rushing past them.
+
+We'll start with "Reckoner" by Radiohead, because it knows how to enter without breaking the spell.`,
           },
         ],
       });
@@ -168,9 +172,11 @@ We'll start with "Reckoner" by Radiohead.`,
             type: "text",
             text: `Hey, I'm Marcus.
 
-Tonight is built for something that arrives with a little authority.
+Tonight is built for something that arrives with a little authority. Not a fake dramatic entrance, just a first move that knows how to set the pace.
 
-We're opening with "Midnight City" by M83.`,
+That’s the whole point of the show on W.A.I.V. for me. Give the set some lift early, then let it keep earning its way forward.
+
+We're opening with "Midnight City" by M83, because it hits like the night has already started moving.`,
           },
         ],
       });
@@ -224,9 +230,11 @@ We're opening with "Midnight City" by M83.`,
             type: "text",
             text: `John here.
 
-This one has the right kind of grain for tonight.
+Thursday night usually gives a set a little room to breathe before it really has to show its hand, and I like taking advantage of that whenever I can.
 
-We'll open with "Reckoner" by Radiohead.`,
+That’s part of the fun on W.A.I.V. The opener should tell you what kind of night this is without needing a huge speech about it, just enough shape to point the hour in the right direction. A little scene-setting goes a long way.
+
+We'll open with "Reckoner" by Radiohead. It has the right grain to start things with a little patience and a little intention.`,
           },
         ],
       });
@@ -280,9 +288,11 @@ We'll open with "Reckoner" by Radiohead.`,
             type: "text",
             text: `Jolene here.
 
-Let's bring a little warmth into this Thursday night.
+This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before the set gets going.
 
-We'll start with "Harvest Moon" by Neil Young.`,
+That’s how I like a radio show to begin on W.A.I.V. with something human in it, something that opens the door before the rest of the songs come walking through.
+
+We'll start with "Harvest Moon" by Neil Young, because it glows without trying too hard.`,
           },
         ],
       });
@@ -335,7 +345,11 @@ We'll start with "Harvest Moon" by Neil Young.`,
             type: "text",
             text: `Juan aqui.
 
-Esta noche tiene el pulso justo para abrir con "Viva La Vida" de Coldplay.`,
+Esta noche tiene el pulso justo para abrir un set con intención, sin correr y sin explicar demasiado antes de dejar que la música haga lo suyo.
+
+En W.A.I.V. me gusta que la primera canción acomode el aire, marque el color de la hora y nos meta al programa como si ya viniera respirando desde antes.
+
+Vamos a empezar con "Viva La Vida" de Coldplay, porque entra con la clase y el tamaño que esta noche pide.`,
           },
         ],
       });
@@ -390,9 +404,11 @@ Esta noche tiene el pulso justo para abrir con "Viva La Vida" de Coldplay.`,
             type: "text",
             text: `Tiffany here.
 
-Tonight wants something glossy, reckless, and a little impossible.
+Tonight wants something glossy, reckless, and a little impossible. Not messy. Just the kind of opener that walks into the room already wearing the right lighting.
 
-We are opening with "Style" by Taylor Swift.`,
+That’s the mood I want for this W.A.I.V. set. Give it a real entrance, then let the rest of the hour keep up with it.
+
+We are opening with "Style" by Taylor Swift, because this is not the moment for a shy first song.`,
           },
         ],
       });
@@ -445,9 +461,11 @@ We are opening with "Style" by Taylor Swift.`,
             type: "text",
             text: `Robert here.
 
-Tonight I selected an opener after a brief and perfectly ordinary review of your patterns. You do not need to react to that.
+Tonight I selected an opener after a brief and perfectly ordinary review of your patterns. You do not need to react to that. It is normal for a human radio host to prepare carefully.
 
-We begin with "Everything In Its Right Place" by Radiohead.`,
+An opening should reduce confusion and establish momentum, especially at this hour, when the room tends to reveal whether a set is serious within the first minute.
+
+We begin with "Everything In Its Right Place" by Radiohead, which is a reassuringly precise way to start.`,
           },
         ],
       });
