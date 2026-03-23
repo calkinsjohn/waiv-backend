@@ -796,7 +796,56 @@ function normalizeTrack(input: unknown): SessionIntroTrack | null {
   return { title, artist, isrc };
 }
 
-function normalizeListenerContext(input: unknown): SessionIntroListenerContext | null {
+function isRadioDayCarryoverHour(hour24: number): boolean {
+  return Number.isFinite(hour24) && hour24 >= 0 && hour24 < 4;
+}
+
+function listenerContextLocale(djID: string): string {
+  return isSpanishDJ(djID) ? "es-ES" : "en-US";
+}
+
+function applyRadioDayBoundary(
+  context: SessionIntroListenerContext,
+  djID: string
+): SessionIntroListenerContext {
+  if (!isRadioDayCarryoverHour(context.hour24) || context.timeOfDay.trim().toLowerCase() !== "night") {
+    return context;
+  }
+
+  const parsed = new Date(context.localTimestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return context;
+  }
+
+  const shifted = new Date(parsed.getTime() - 24 * 60 * 60 * 1000);
+  const locale = listenerContextLocale(djID);
+  const weekdayFormatter = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    timeZone: context.timeZoneIdentifier,
+  });
+  const monthFormatter = new Intl.DateTimeFormat(locale, {
+    month: "long",
+    timeZone: context.timeZoneIdentifier,
+  });
+  const dayFormatter = new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    timeZone: context.timeZoneIdentifier,
+  });
+  const yearFormatter = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    timeZone: context.timeZoneIdentifier,
+  });
+
+  return {
+    ...context,
+    weekday: weekdayFormatter.format(shifted),
+    month: monthFormatter.format(shifted),
+    dayOfMonth: Number(dayFormatter.format(shifted)) || context.dayOfMonth,
+    year: Number(yearFormatter.format(shifted)) || context.year,
+  };
+}
+
+function normalizeListenerContext(input: unknown, djID: string): SessionIntroListenerContext | null {
   const payload = (input ?? {}) as Partial<Record<keyof SessionIntroListenerContext, unknown>>;
   const localTimestamp = typeof payload.localTimestamp === "string" ? payload.localTimestamp.trim() : "";
   const timeZoneIdentifier = typeof payload.timeZoneIdentifier === "string" ? payload.timeZoneIdentifier.trim() : "";
@@ -820,7 +869,7 @@ function normalizeListenerContext(input: unknown): SessionIntroListenerContext |
     return null;
   }
 
-  return {
+  return applyRadioDayBoundary({
     localTimestamp,
     timeZoneIdentifier,
     weekday,
@@ -829,7 +878,7 @@ function normalizeListenerContext(input: unknown): SessionIntroListenerContext |
     year: Math.trunc(year),
     hour24: Math.trunc(hour24),
     timeOfDay,
-  };
+  }, djID);
 }
 
 function defaultShowContext(request: SessionIntroRequest): SessionIntroShowContext {
@@ -1293,6 +1342,11 @@ function buildListenerMomentPrompt(
   const localTimeLine = request.listenerContext
     ? `The listener's local time is ${request.listenerContext.localTimestamp} in ${request.listenerContext.timeZoneIdentifier}.`
     : "";
+  const radioDayLine = request.listenerContext && isRadioDayCarryoverHour(request.listenerContext.hour24)
+    ? isSpanishDJ(request.djID)
+      ? `Para hablar al aire, trata esta franja antes de las 4 a. m. como parte de la noche anterior: ${context.timeContext.label}.`
+      : `For on-air phrasing, treat anything before 4:00 AM as part of the previous night's radio day: ${context.timeContext.label}.`
+    : "";
 
   const firstSessionLine =
     context.sessionType === "first_ever_session" ? "This is the listener's very first session on WAIV." : "";
@@ -1318,7 +1372,7 @@ function buildListenerMomentPrompt(
     ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
     : "";
 
-  return [firstSessionLine, localTimeLine, timeReferenceRule, repetitionRule, clippedRule, listenerProfilePart].filter(Boolean).join(" ");
+  return [firstSessionLine, localTimeLine, radioDayLine, timeReferenceRule, repetitionRule, clippedRule, listenerProfilePart].filter(Boolean).join(" ");
 }
 
 function archetypeDirective(archetype: string): string {
@@ -1979,7 +2033,7 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
   const djID = typeof payload.djID === "string" ? payload.djID.trim() : "";
   const firstTrack = normalizeTrack(payload.firstTrack);
   const introKind = typeof payload.introKind === "string" ? payload.introKind.trim() : "standard";
-  const listenerContext = payload.listenerContext ? normalizeListenerContext(payload.listenerContext) : undefined;
+  const listenerContext = payload.listenerContext ? normalizeListenerContext(payload.listenerContext, djID) : undefined;
   const personaHint = typeof payload.personaHint === "string" ? payload.personaHint.trim() : "";
   const toneGuardrails = typeof payload.toneGuardrails === "string" ? payload.toneGuardrails.trim() : "";
 

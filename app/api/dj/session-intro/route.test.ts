@@ -99,6 +99,66 @@ We’re opening with "Yellow" by Coldplay, and it feels like the right way to le
     expect(systemPrompt).toContain("Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.");
   });
 
+  it("treats just-after-midnight intros as the previous radio night", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, welcome back.
+
+Friday night still has enough momentum in it to start with "Midnight City" by M83.
+
+We'll start there and keep the room moving.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Midnight City",
+          artist: "M83",
+          isrc: "USUG11100598",
+        },
+        listenerContext: {
+          localTimestamp: "2026-03-14T00:30:00-04:00",
+          timeZoneIdentifier: "America/Indiana/Indianapolis",
+          weekday: "Saturday",
+          month: "March",
+          dayOfMonth: 14,
+          year: 2026,
+          hour24: 0,
+          timeOfDay: "night",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(204);
+    expect(systemPrompt).toContain("The listener's local time is 2026-03-14T00:30:00-04:00 in America/Indiana/Indianapolis.");
+    expect(systemPrompt).toContain("Use a natural local-moment reference for Friday night");
+    expect(systemPrompt).toContain("For on-air phrasing, treat anything before 4:00 AM as part of the previous night's radio day: Friday night.");
+  });
+
   it("sends Luna-specific personality guidance for Luna intros", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
