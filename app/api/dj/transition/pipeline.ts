@@ -16,6 +16,7 @@ export type TransitionRequest = {
   toTrack: TransitionTrack;
   fromTrack?: TransitionTrack | null;
   sessionPosition: number;
+  showMomentType?: string | null;
   trigger: string;
   avoidRecentLines?: string[];
   listenerProfile?: ListenerProfile | null;
@@ -288,6 +289,45 @@ function sessionDepthLabel(position: number): string {
   if (position <= 8) return "The session is building momentum.";
   if (position <= 15) return "The listener is deep in the session now.";
   return "This is a long-running session — the listener is locked in.";
+}
+
+function showMomentInstruction(showMomentType?: string | null): string {
+  switch ((showMomentType ?? "").toLowerCase()) {
+    case "first_handoff":
+      return `Planned show moment: first handoff.
+- This is the first real move after the opening track
+- Make the second song feel intentionally placed, like the show is opening up in real time
+- Let the listener feel why this song belongs second without explaining it analytically
+- Favor 1 to 2 sentences with a clean handoff and a little extra presence`;
+    case "early_tease":
+      return `Planned show moment: early tease.
+- The show is still taking shape
+- Hint at the lane the set is settling into while still landing the next song cleanly
+- Sound lightly anticipatory, not promotional
+- Keep the line alive and in motion`;
+    case "back_announce":
+      return `Planned show moment: back announce.
+- Let the previous track register briefly before turning into the next one
+- Make the sequence feel curated and continuous rather than isolated
+- A short look back is good, but the line still has to move forward`;
+    case "station_id":
+      return `Planned show moment: station ID.
+- This is a stronger station-continuity beat
+- Let the station feel live and ongoing right now, not like a brand read
+- Use the station tag confidently, but keep the line musical and natural`;
+    case "midpoint_reset":
+      return `Planned show moment: midpoint reset.
+- The hour is established now
+- Re-center the set and recommit to its lane without sounding ceremonial
+- This should feel like a real host steering the room back into focus`;
+    case "late_reflection":
+      return `Planned show moment: late reflection.
+- The listener is already inside the set
+- Sound slightly more lived-in or reflective, but keep forward motion
+- Let the line feel earned by what has already been playing`;
+    default:
+      return "";
+  }
 }
 
 function djBridgeStyleGuidance(djID: string): string {
@@ -577,6 +617,10 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
   const fromTrack = payload.fromTrack ? normalizeTrack(payload.fromTrack) : null;
   const sessionPositionRaw = Number(payload.sessionPosition ?? 0);
   const sessionPosition = Number.isFinite(sessionPositionRaw) ? Math.max(0, Math.trunc(sessionPositionRaw)) : 0;
+  const showMomentType =
+    typeof payload.showMomentType === "string" && payload.showMomentType.trim().length > 0
+      ? payload.showMomentType.trim()
+      : null;
   const trigger = typeof payload.trigger === "string" ? payload.trigger.trim() : "auto";
   const avoidRecentLines = Array.isArray(payload.avoidRecentLines)
     ? payload.avoidRecentLines
@@ -604,7 +648,7 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
       }
     : null;
 
-  return { djID, toTrack, fromTrack, sessionPosition, trigger, avoidRecentLines, listenerProfile };
+  return { djID, toTrack, fromTrack, sessionPosition, showMomentType, trigger, avoidRecentLines, listenerProfile };
 }
 
 async function generateWithAnthropic(request: TransitionRequest): Promise<{ line: string; model: string } | null> {
@@ -619,9 +663,11 @@ async function generateWithAnthropic(request: TransitionRequest): Promise<{ line
   const personality = djPersonalityPrompt(request.djID);
   const depthContext = sessionDepthLabel(request.sessionPosition);
   const bridgeStyleGuidance = djBridgeStyleGuidance(request.djID);
+  const showMomentPrompt = showMomentInstruction(request.showMomentType);
   const listenerProfilePrompt = request.listenerProfile
     ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
     : "";
+  const maxWords = request.showMomentType ? 75 : 60;
 
   const systemPrompt = `${personality}
 
@@ -631,11 +677,12 @@ Write a single track introduction for radio broadcast.
 
 Rules:
 - Write ONE intro line, plain text only — no JSON, no quotes around the intro itself
-- Maximum 60 words
+- Maximum ${maxWords} words
 - Naturally include the song title "${request.toTrack.title}" and artist name "${request.toTrack.artist}"
 - Do not invent facts about the song or artist
 - Keep it conversational and natural for spoken audio
-- Write like the middle of a bridge, not the setup or sign-off
+- Write like a real live DJ moment inside an unfolding show, not like isolated generated copy
+- If a planned show moment is provided, write to that exact moment instead of falling back to a generic bridge
 - Mention the next song at most once. Do not restate or re-introduce the song title or artist in the final clause
 - Avoid defaulting to a bare "that was X, this is Y" structure — if you use that shape, earn both halves with something specific
 - When a previous track is provided, build a real bridge. Don't vary between "reference lightly" and "force a connection" — just say something specific and true about the previous song that earns the turn into the next one
@@ -671,8 +718,10 @@ Rules:
 - If recent bridge lines are provided, treat them as anti-patterns for this turn: do not echo their opening shape, sentence rhythm, key metaphor, or signature phrase
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
+- Allow a tiny amount of real-person imperfection when it helps: a slight sentence restart, an asymmetrical rhythm, or a lightly self-correcting thought is fine. Do not overdo it
 - ${depthContext}
 
+${showMomentPrompt ? `${showMomentPrompt}\n` : ""}
 ${bridgeStyleGuidance}`.trim();
 
   const parts: string[] = [];
@@ -680,6 +729,9 @@ ${bridgeStyleGuidance}`.trim();
     parts.push(`Transitioning from: "${request.fromTrack.title}" by ${request.fromTrack.artist}`);
   }
   parts.push(`Next track: "${request.toTrack.title}" by ${request.toTrack.artist}`);
+  if (request.showMomentType) {
+    parts.push(`Planned show moment: ${request.showMomentType}`);
+  }
   if (request.avoidRecentLines && request.avoidRecentLines.length > 0) {
     parts.push(
       `Recently used bridge lines to avoid echoing:\n${request.avoidRecentLines.map((line, index) => `${index + 1}. ${line}`).join("\n")}`

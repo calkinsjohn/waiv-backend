@@ -79,7 +79,7 @@ describe("POST /api/dj/transition", () => {
 
     expect(response.status).toBe(200);
     expect(payload.djLine).toContain("W.A.I.V.");
-    expect(systemPrompt).toContain('Do not default to a "that was X, this is Y" structure');
+    expect(systemPrompt).toContain('Avoid defaulting to a bare "that was X, this is Y" structure');
     expect(systemPrompt).toContain("Vary your bridge structures so they feel like a real live DJ");
     expect(systemPrompt).toContain("sometimes a tonal pivot");
     expect(systemPrompt).toContain("You may naturally reference time context when it genuinely fits the moment");
@@ -142,6 +142,63 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("You are John, an AI DJ host in WAIV.");
     expect(systemPrompt).toContain("Keep John calm, tasteful, and naturally cool");
     expect(systemPrompt).toContain("big sports fan, especially baseball");
+  });
+
+  it("adds planned show-moment guidance for first handoffs", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'This felt like the right second move, "Reckoner" by Radiohead. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        sessionPosition: 2,
+        showMomentType: "first_handoff",
+        trigger: "auto",
+        fromTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+    const systemPrompt = String(anthropicBody?.system ?? "");
+    const messageContent = JSON.stringify((anthropicBody?.messages as Array<{ content?: string }> | undefined)?.[0]?.content ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(systemPrompt).toContain("Planned show moment: first handoff.");
+    expect(systemPrompt).toContain("Make the second song feel intentionally placed");
+    expect(systemPrompt).toContain("Allow a tiny amount of real-person imperfection");
+    expect(messageContent).toContain("Planned show moment: first_handoff");
   });
 
   it("enforces the station-tag ending even when the model omits it", async () => {
@@ -501,7 +558,7 @@ describe("POST /api/dj/transition", () => {
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("DJ-specific bridge guidance for Rafa");
     expect(systemPrompt).toContain("Favor mood, momentum, glow, shape, presence, and after-hours confidence");
-    expect(systemPrompt).toContain("A little more glow on this turn, vamos");
+    expect(systemPrompt).toContain("A little more glow on this turn — [song] by [artist]. This is W.A.I.V.");
   });
 
   it("includes Tiffany-specific bridge guidance in the transition prompt", async () => {
