@@ -227,14 +227,14 @@ const archetypePlans: Record<string, ArchetypePlan> = {
     handoffStyle: "smooth_understated",
   },
   warm_familiar_open: {
-    required: ["openingHit", "momentAnchor", "songHandoff"],
-    optional: ["setFraming", "personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "warm_return",
     handoffStyle: "welcoming",
   },
   mood_setter: {
-    required: ["momentAnchor", "setFraming", "songHandoff"],
-    optional: ["openingHit", "personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "mood_first",
     handoffStyle: "soft_setter",
   },
@@ -245,8 +245,8 @@ const archetypePlans: Record<string, ArchetypePlan> = {
     handoffStyle: "immediate_push",
   },
   cinematic_open: {
-    required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
-    optional: ["personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "cinematic_arc",
     handoffStyle: "scene_to_song",
   },
@@ -263,26 +263,26 @@ const archetypePlans: Record<string, ArchetypePlan> = {
     handoffStyle: "considered",
   },
   late_night_confession: {
-    required: ["openingHit", "momentAnchor", "personalityFlourish", "songHandoff"],
-    optional: ["setFraming"],
+    required: ["openingHit", "personalityFlourish", "songHandoff"],
+    optional: ["momentAnchor", "setFraming"],
     openingStructure: "late_night_confession",
     handoffStyle: "close_mic",
   },
   friday_liftoff: {
-    required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
-    optional: ["personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "weekend_liftoff",
     handoffStyle: "energy_raise",
   },
   slow_burn_open: {
-    required: ["momentAnchor", "setFraming", "songHandoff"],
-    optional: ["openingHit", "personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "slow_burn",
     handoffStyle: "measured",
   },
   local_radio_style: {
-    required: ["openingHit", "momentAnchor", "songHandoff"],
-    optional: ["setFraming"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor"],
     openingStructure: "local_radio",
     handoffStyle: "station_real",
   },
@@ -293,8 +293,8 @@ const archetypePlans: Record<string, ArchetypePlan> = {
     handoffStyle: "close_and_quiet",
   },
   caught_you_at_the_right_time: {
-    required: ["openingHit", "momentAnchor", "songHandoff"],
-    optional: ["setFraming", "personalityFlourish"],
+    required: ["openingHit", "setFraming", "songHandoff"],
+    optional: ["momentAnchor", "personalityFlourish"],
     openingStructure: "right_time_open",
     handoffStyle: "timely",
   },
@@ -595,17 +595,26 @@ function matchesListenerTimeContext(
     return true;
   }
 
-  const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
-  if (shouldUseTimeReference && allowed.length > 0 && !containsPhrase(intro, allowed)) {
-    return false;
-  }
-
   const conflicting = conflictingTimeOfDayPhrases(listenerContext.timeOfDay, djID);
   if (conflicting.length > 0 && containsPhrase(intro, conflicting)) {
     return false;
   }
 
   return true;
+}
+
+function containsExpectedTimeReference(
+  intro: string,
+  listenerContext: SessionIntroListenerContext | undefined,
+  djID: string,
+  shouldUseTimeReference: boolean
+): boolean {
+  if (!listenerContext || !shouldUseTimeReference) {
+    return true;
+  }
+
+  const allowed = allowedTimeOfDayPhrases(listenerContext.timeOfDay, djID);
+  return allowed.length === 0 || containsPhrase(intro, allowed);
 }
 
 function stableHash(seed: string): number {
@@ -1171,8 +1180,8 @@ function applySessionTypeBehavior(
         targetSentences: 4,
         minWords: 34,
         maxWords: 90,
-        required: ["openingHit", "momentAnchor", "songHandoff"],
-        optional: ["setFraming", "personalityFlourish"],
+        required: ["openingHit", "setFraming", "songHandoff"],
+        optional: ["momentAnchor", "personalityFlourish"],
         allowStationMention: false,
         desiredParagraphs: 3,
       };
@@ -1181,8 +1190,8 @@ function applySessionTypeBehavior(
         targetSentences: 5,
         minWords: 44,
         maxWords: 110,
-        required: ["openingHit", "momentAnchor", "setFraming", "songHandoff"],
-        optional: ["personalityFlourish"],
+        required: ["openingHit", "setFraming", "songHandoff"],
+        optional: ["momentAnchor", "personalityFlourish"],
         allowStationMention: true,
         desiredParagraphs: 4,
       };
@@ -1358,15 +1367,15 @@ function buildListenerMomentPrompt(
 
   const timeReferenceRule = variation.shouldUseTimeReference
     ? isSpanishDJ(request.djID)
-      ? `Usa una referencia temporal natural para ${context.timeContext.label}, una frase como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`
-      : `Use a natural local-moment reference for ${context.timeContext.label}, such as ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}.`
+      ? `Deja entrar una referencia temporal natural para ${context.timeContext.label}, idealmente mezclada dentro de la bienvenida o del armado del show. Puedes apoyarte en frases como ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")}, pero no las uses como plantilla rígida ni como una frase separada solo para marcar la hora.`
+      : `Work in a natural local-moment reference for ${context.timeContext.label}, ideally folded into the welcome or show-framing line. Phrases like ${allowedPhrases.map((phrase) => `"${phrase}"`).join(", ")} are cues, not templates. Do not make the time reference a neat separate sentence just to mark the clock.`
     : isSpanishDJ(request.djID)
       ? "La referencia temporal es opcional aquí. No la fuerces si se siente repetida."
       : "A time reference is optional here. Do not force one if it feels recycled.";
 
   const repetitionRule = isSpanishDJ(request.djID)
-    ? "No repitas la misma estructura de apertura ni la misma frase de día y hora en intros seguidas."
-    : "Do not default to opening every intro with the same weekday-plus-time phrase.";
+    ? "No repitas la misma estructura de apertura ni la misma frase de día y hora en intros seguidas. Evita el patrón rígido de saludo y luego una segunda frase separada que solo dice el momento del día."
+    : "Do not default to opening every intro with the same weekday-plus-time phrase. Avoid the stiff pattern of a greeting followed by a separate clock-setting sentence.";
 
   const listenerProfilePart = request.listenerProfile
     ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
@@ -1437,7 +1446,7 @@ function buildContextPrompt(
     `Target: ${sessionBehavior.targetSentences} to ${Math.min(maxSentenceCount, sessionBehavior.targetSentences + 1)} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across ${sessionBehavior.desiredParagraphs} short paragraphs.`,
     `Variation constraints: avoid opening structures ${variation.bannedOpeningStructures.join(", ") || "none"}, avoid opening phrases ${variation.bannedOpeningPhrases.join(", ") || "none"}, avoid handoff styles ${variation.bannedHandoffStyles.join(", ") || "none"}, avoid repeating vocabulary ${variation.bannedVocabulary.join(", ") || "none"}.`,
     variation.shouldUseTimeReference
-      ? `Use a natural local-moment reference that fits ${context.timeContext.label}, such as ${allowedPhrases.join(", ")}.`
+      ? `Use a natural local-moment reference that fits ${context.timeContext.label}, but blend it into the opening motion of the show. Cues like ${allowedPhrases.join(", ")} are helpful, but the day/time reference should feel absorbed into the welcome or set framing, not broken out as a standalone calendar sentence.`
       : "A time reference is optional here. Do not force one if it feels recycled.",
     aiSelfAwarenessPrompt(config, variation, request.djID),
     musicAwareDirective(context),
@@ -1461,11 +1470,12 @@ function buildComponentPrompt(
   return [
     "Return strict JSON with these top-level keys only:",
     '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
-    "openingHit must be 1 sentence.",
-    "openingHit must be a welcome message in the DJ's voice and it must be the very first sentence of the intro.",
+    "openingHit should usually be 1 short sentence, but it may be 2 short sentences if that helps the welcome and the launch feel like one natural motion.",
+    "openingHit must be a welcome message in the DJ's voice and it must contain the very first sentence of the intro.",
     "openingHit must also carry real show-opening lift. It should sound like the top of a radio show, not just a greeting.",
-    "momentAnchor must be 1 sentence.",
-    "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale.",
+    "momentAnchor may be 0 to 1 sentence.",
+    "momentAnchor should only stand alone if that sounds natural. If the local-moment reference flows better inside openingHit or setFraming, leave momentAnchor empty.",
+    "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale. It may absorb the time/day reference if that makes the flow sound more human.",
     "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
     variation.shouldUseAISelfAwareness
       ? `If you include AI self-awareness, put it in personalityFlourish or setFraming as a single brief aside. Keep it subtle, in character, and aligned with this style: ${config.aiAwarenessStyle}`
@@ -1474,6 +1484,7 @@ function buildComponentPrompt(
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
     "Do not write a second welcome or a second start after openingHit. The intro should feel like one continuous launch into the set.",
+    "Do not create a stiff one-two pattern where sentence one is the welcome and sentence two is only the day or time. The opening should move like natural speech.",
     "Avoid vague standalone lines like 'this felt right' or 'let's try it' when 'this' or 'it' really means the show. Name the show or the set directly.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
@@ -1614,14 +1625,14 @@ function composeIntro(
   const paragraphs: string[] = [];
 
   if (bodySentences.length >= 4) {
-    paragraphs.push(bodySentences.slice(0, 1).join(" "));
-    paragraphs.push(bodySentences.slice(1, 3).join(" "));
-    if (bodySentences.length > 3) {
-      paragraphs.push(bodySentences.slice(3).join(" "));
+    paragraphs.push(bodySentences.slice(0, 2).join(" "));
+    paragraphs.push(bodySentences.slice(2, 4).join(" "));
+    if (bodySentences.length > 4) {
+      paragraphs.push(bodySentences.slice(4).join(" "));
     }
   } else if (bodySentences.length === 3) {
-    paragraphs.push(bodySentences[0]);
-    paragraphs.push(bodySentences.slice(1).join(" "));
+    paragraphs.push(bodySentences.slice(0, 2).join(" "));
+    paragraphs.push(bodySentences[2]);
   } else if (bodySentences.length > 0) {
     paragraphs.push(bodySentences.join(" "));
   }
@@ -1807,8 +1818,8 @@ function evaluateIntro(
     score -= 0.18;
     weakComponents.add("setFraming");
   }
-  if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, variation.shouldUseTimeReference)) {
-    score -= 0.22;
+  if (!containsExpectedTimeReference(intro, request.listenerContext, request.djID, variation.shouldUseTimeReference)) {
+    score -= 0.1;
     weakComponents.add("momentAnchor");
   }
   if (!startsWithWelcomeMessage(intro, request.djID)) {

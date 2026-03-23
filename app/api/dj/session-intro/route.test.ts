@@ -94,7 +94,7 @@ We’re opening with "Yellow" by Coldplay, and it feels like the right way to le
     expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
     expect(systemPrompt).toContain("Favor smooth sentence endings over too many trailing fragments or ellipses.");
     expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
-    expect(systemPrompt).toContain('such as "night", "tonight", "late night", "this late"');
+    expect(systemPrompt).toContain('Phrases like "night", "tonight", "late night", "this late"');
     expect(systemPrompt).toContain("Do not default to opening every intro with the same weekday-plus-time phrase.");
     expect(systemPrompt).toContain("Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.");
   });
@@ -155,7 +155,7 @@ We'll start there and keep the room moving.`,
 
     expect(response.status).toBe(204);
     expect(systemPrompt).toContain("The listener's local time is 2026-03-14T00:30:00-04:00 in America/Indiana/Indianapolis.");
-    expect(systemPrompt).toContain("Use a natural local-moment reference for Friday night");
+    expect(systemPrompt).toContain("Work in a natural local-moment reference for Friday night");
     expect(systemPrompt).toContain("For on-air phrasing, treat anything before 4:00 AM as part of the previous night's radio day: Friday night.");
   });
 
@@ -445,7 +445,7 @@ Vamos a empezar con "Viva La Vida" de Coldplay, porque entra con la clase y el t
     expect(systemPrompt).toContain("Speak entirely in natural spoken Spanish. Never switch into English.");
     expect(systemPrompt).toContain("calm, cinematic male radio DJ with quiet confidence and real warmth");
     expect(systemPrompt).toContain("Keep Juan smooth, cinematic, and fully natural in Spanish");
-    expect(systemPrompt).toContain('frase como "noche", "esta noche", "ya tarde", "a esta hora"');
+    expect(systemPrompt).toContain('Puedes apoyarte en frases como "noche", "esta noche", "ya tarde", "a esta hora"');
     expect(systemPrompt).toContain("No empieces con fragmentos cortados como 'Esta noche,' 'Jueves por la noche,' o 'A esta hora,' por si solos.");
   });
 
