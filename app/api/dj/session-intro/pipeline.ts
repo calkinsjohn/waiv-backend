@@ -1188,23 +1188,23 @@ function applySessionTypeBehavior(
       };
     case "first_show_today":
       return {
-        targetSentences: 4,
-        minWords: 36,
-        maxWords: 96,
+        targetSentences: 5,
+        minWords: 44,
+        maxWords: 112,
         required: basePlan.required,
         optional: basePlan.optional,
         allowStationMention: false,
-        desiredParagraphs: 3,
+        desiredParagraphs: 4,
       };
     default:
       return {
-        targetSentences: 4,
-        minWords: 34,
-        maxWords: 90,
+        targetSentences: 5,
+        minWords: 42,
+        maxWords: 108,
         required: basePlan.required,
         optional: basePlan.optional,
         allowStationMention: false,
-        desiredParagraphs: 3,
+        desiredParagraphs: 4,
       };
   }
 }
@@ -1274,13 +1274,13 @@ function buildWelcomePrompt(djID: string, sessionType: string): string {
   const examples = welcomeExamples(djID).map((phrase) => `"${phrase}"`).join(", ");
   if (isSpanishDJ(djID)) {
     return sessionType === "first_ever_session"
-      ? `La primera frase debe funcionar como una bienvenida clara y natural al show. Tiene que sonar como recibir al oyente por primera vez, con personalidad. Ejemplos de tono: ${examples}.`
-      : `La primera frase debe funcionar como una bienvenida clara y natural de regreso o de entrada al show. Tiene que sonar como abrir la transmisión, no como empezar en seco. Ejemplos de tono: ${examples}.`;
+      ? `La primera frase debe funcionar como una bienvenida clara y natural al show y, al mismo tiempo, hacer sentir que la transmisión acaba de arrancar. Tiene que sonar como recibir al oyente por primera vez con personalidad y con impulso radial. No hagas una frase de saludo y luego otra aparte que recién arranque el show. Ejemplos de tono: ${examples}.`
+      : `La primera frase debe funcionar como una bienvenida clara y natural de regreso o de entrada al show y, al mismo tiempo, hacer sentir que la transmisión ya está arrancando. Tiene que sonar como abrir el aire de verdad, no como un saludo suelto seguido de un segundo arranque. Ejemplos de tono: ${examples}.`;
   }
 
   return sessionType === "first_ever_session"
-    ? `The very first sentence must work as a clear, natural welcome into the show. It should feel like greeting someone into this station for the first time, in the DJ's own voice. Tone examples: ${examples}.`
-    : `The very first sentence must work as a clear, natural welcome back or welcome in. It should feel like opening the show, not starting abruptly. Tone examples: ${examples}.`;
+    ? `The very first sentence must work as a clear, natural welcome into the show and also make it unmistakable that the station is coming alive right now. It should feel like greeting someone into this station for the first time in the DJ's own voice, with real show-opening lift. Do not write a standalone greeting and then a second sentence that finally starts the show. Tone examples: ${examples}.`
+    : `The very first sentence must work as a clear, natural welcome back or welcome in and also make it unmistakable that the show is opening right now. It should feel like a real on-air launch, not a loose greeting followed by a second start. Tone examples: ${examples}.`;
 }
 
 function djListenerReferenceStyle(djID: string): string {
@@ -1443,7 +1443,9 @@ function buildContextPrompt(
     musicAwareDirective(context),
     `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
     "Do not write a tiny intro. This should feel like a real show opening with scene, direction, and a memorable turn into music.",
-    "Make this feel like a living station already in motion. Imply continuity, set direction, and land the handoff cleanly into the first song.",
+    "Make this feel like a living station already in motion. The listener should clearly feel that a show is starting, not that a DJ is casually dropping a pre-roll over a song.",
+    "The opening should have one decisive launch beat: welcome the listener and start the set in the same motion, then build the room around that.",
+    "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
   ].join(" ");
 }
 
@@ -1460,6 +1462,7 @@ function buildComponentPrompt(
     '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
     "openingHit must be 1 sentence.",
     "openingHit must be a welcome message in the DJ's voice and it must be the very first sentence of the intro.",
+    "openingHit must also carry real show-opening lift. It should sound like the top of a radio show, not just a greeting.",
     "momentAnchor must be 1 sentence.",
     "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale.",
     "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
@@ -1469,6 +1472,7 @@ function buildComponentPrompt(
     "songHandoff must be 1 sentence and must name the song and artist directly.",
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
+    "Do not write a second welcome or a second start after openingHit. The intro should feel like one continuous launch into the set.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
     `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
@@ -1477,6 +1481,7 @@ function buildComponentPrompt(
       : "For a normal session open, do not explain the app or over-introduce the DJ.",
     `Archetype ${archetype} should drive the structure more than session type, unless session type clearly asks for shorter behavior.`,
     "The overall result should feel like tuning into a real station at the top of a set, not hearing a generated pre-roll.",
+    "A great result makes the listener feel the show begin in real time: a welcome, a scene, a sense of direction, then the first song.",
     `Required components in order of importance: ${sessionBehavior.required.join(", ")}.`,
   ].join(" ");
 }
@@ -1687,6 +1692,44 @@ function startsWithWelcomeMessage(text: string, djID: string): boolean {
   return cues.some((cue) => opening.includes(cue));
 }
 
+function startsWithShowLaunch(text: string, djID: string): boolean {
+  const opening = normalizedContainment(splitParagraphs(text)[0] || text);
+  const englishCues = [
+    "on w a i v",
+    "on waiv",
+    "opening the set",
+    "opening this set",
+    "opening the show",
+    "opening this hour",
+    "starting the set",
+    "starting this show",
+    "starting this hour",
+    "starting here",
+    "starting us off",
+    "were opening",
+    "we re opening",
+    "we are opening",
+    "kicking this off",
+    "top of the set",
+    "top of the hour",
+  ];
+  const spanishCues = [
+    "en w a i v",
+    "en waiv",
+    "abrimos con",
+    "abrimos este set",
+    "abrimos la noche",
+    "arrancamos con",
+    "vamos a empezar",
+    "empieza el set",
+    "empieza la noche",
+    "arranca el set",
+    "arranca la noche",
+  ];
+  const cues = isSpanishDJ(djID) ? spanishCues : englishCues;
+  return cues.some((cue) => opening.includes(cue));
+}
+
 function containsAISelfAwareness(text: string, djID: string): boolean {
   const normalized = normalizedContainment(text);
   const phrases = isSpanishDJ(djID)
@@ -1769,6 +1812,10 @@ function evaluateIntro(
   if (!startsWithWelcomeMessage(intro, request.djID)) {
     score -= 0.28;
     weakComponents.add("openingHit");
+  }
+  if (!startsWithShowLaunch(intro, request.djID)) {
+    score -= 0.2;
+    weakComponents.add("setFraming");
   }
   if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
     score -= 0.08;

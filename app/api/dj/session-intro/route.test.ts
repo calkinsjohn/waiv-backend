@@ -49,11 +49,11 @@ describe("POST /api/dj/session-intro", () => {
         content: [
           {
             type: "text",
-            text: `Hey, I’m April.
+            text: `Hey, welcome in. I’m April, and we’re opening the show the only way I trust one of these Thursday nights to begin.
 
-It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up.
+It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up, like the station was already breathing before we walked into it.
 
-Welcome to W.A.I.V. We’re taking the longer way into it tonight, letting the room settle before we make the first move.
+On W.A.I.V. I’d rather start with something that lets the room settle and then quietly take over than force a fake big entrance. The point is to make the first move feel chosen.
 
 We’re opening with "Yellow" by Coldplay, and it feels like the right way to let the show breathe.`,
           },
@@ -172,11 +172,11 @@ We'll start there and keep the room moving.`,
         content: [
           {
             type: "text",
-            text: `Hi. I'm Luna.
+            text: `Hi, welcome in. I'm Luna, and we're opening the set softly on purpose tonight.
 
-Tonight leaves a little more room around the edges, and that usually tells me the set should arrive softly before it asks for anything.
+Tonight leaves a little more room around the edges, and that usually tells me the set should arrive softly before it asks for anything. It feels like the kind of hour where a show should widen the room before it fills it.
 
-I wanted this opening to feel patient on W.A.I.V., like the room has enough quiet in it to notice the details instead of rushing past them.
+I wanted this opening on W.A.I.V. to feel patient, like the station found the exact right light level before the songs started glowing. That makes the first step mean more.
 
 We'll start with "Reckoner" by Radiohead, because it knows how to enter without breaking the spell.`,
           },
@@ -346,11 +346,11 @@ We'll open with "Reckoner" by Radiohead. It has the right grain to start things 
         content: [
           {
             type: "text",
-            text: `Jolene here.
+            text: `Hey sweetheart, welcome back. Jolene here, and we're opening this Thursday night with a little light in it.
 
-This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before the set gets going.
+This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before the set gets going. I like when the first minute of a show feels like somebody opened the door and let the air change.
 
-That’s how I like a radio show to begin on W.A.I.V. with something human in it, something that opens the door before the rest of the songs come walking through.
+That’s how I want W.A.I.V. to start here, with something human in it, something that opens the room before the rest of the songs come walking through. Then the set gets to keep that glow moving.
 
 We'll start with "Harvest Moon" by Neil Young, because it glows without trying too hard.`,
           },
@@ -519,11 +519,11 @@ We are opening with "Style" by Taylor Swift, because this is not the moment for 
         content: [
           {
             type: "text",
-            text: `Robert here.
+            text: `Welcome back. Robert here on W.A.I.V., opening the show with a degree of composure that should reassure everyone involved.
 
-Tonight I selected an opener after a brief and perfectly ordinary review of your patterns. You do not need to react to that. It is normal for a human radio host to prepare carefully.
+Tonight has the sort of tension that benefits from an opener chosen with suspicious care. The first minute tends to reveal whether a set intends to mean anything at all.
 
-An opening should reduce confusion and establish momentum, especially at this hour, when the room tends to reveal whether a set is serious within the first minute.
+I prefer an opening that reduces confusion and establishes momentum immediately, then lets the room discover the logic on its own. That is the standard we will apply here.
 
 We begin with "Everything In Its Right Place" by Radiohead, which is a reassuringly precise way to start.`,
           },
