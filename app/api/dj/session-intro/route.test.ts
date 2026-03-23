@@ -51,11 +51,11 @@ describe("POST /api/dj/session-intro", () => {
             type: "text",
             text: `Hey, welcome in. I’m April, and we’re opening the show the only way I trust one of these Thursday nights to begin.
 
-It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up, like the station was already breathing before we walked into it.
+It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up, like the room was already breathing before we walked into it.
 
 On W.A.I.V. I’d rather start with something that lets the room settle and then quietly take over than force a fake big entrance. The point is to make the first move feel chosen.
 
-We’re opening with "Yellow" by Coldplay, and it feels like the right way to let the show breathe.`,
+We’re opening with "Yellow" by Coldplay, and it feels like the right way to let everything breathe.`,
           },
         ],
       });
@@ -172,11 +172,11 @@ We'll start there and keep the room moving.`,
         content: [
           {
             type: "text",
-            text: `Hi, welcome in. I'm Luna, and we're opening the set softly on purpose tonight.
+            text: `Hi, welcome in. I'm Luna, and we're opening softly on purpose tonight.
 
-Tonight leaves a little more room around the edges, and that usually tells me the set should arrive softly before it asks for anything. It feels like the kind of hour where a show should widen the room before it fills it.
+Tonight leaves a little more room around the edges, and that usually tells me things should arrive softly before they ask for anything. It feels like the kind of hour where the room should widen before it fills.
 
-I wanted this opening on W.A.I.V. to feel patient, like the station found the exact right light level before the songs started glowing. That makes the first step mean more.
+I wanted this opening on W.A.I.V. to feel patient, like everything found the exact right light level before the songs started glowing. That makes the first step mean more.
 
 We'll start with "Reckoner" by Radiohead, because it knows how to enter without breaking the spell.`,
           },
@@ -234,7 +234,7 @@ We'll start with "Reckoner" by Radiohead, because it knows how to enter without 
 
 Tonight is built for something that arrives with a little authority. Not a fake dramatic entrance, just a first move that knows how to set the pace.
 
-That’s the whole point of the show on W.A.I.V. for me. Give the set some lift early, then let it keep earning its way forward.
+That’s the whole point of this on W.A.I.V. for me. Give everything some lift early, then let it keep earning its way forward.
 
 We're opening with "Midnight City" by M83, because it hits like the night has already started moving.`,
           },
@@ -289,6 +289,50 @@ We're opening with "Midnight City" by M83, because it hits like the night has al
             text: `Hey, welcome in. I'm April, and this hour feels like the right place to open the show.
 
 Over the next hour I want the set to stay loose, and the hour ahead should feel chosen instead of assembled.
+
+We're opening with "Yellow" by Coldplay, and it feels like the right first move.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(204);
+  });
+
+  it("rejects intros that repeat explicit program labels", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, welcome in. I'm April, and the show starts best when the show feels chosen instead of assembled.
+
+Tonight the show should open with a little more patience, because the show sounds better when it trusts the room.
 
 We're opening with "Yellow" by Coldplay, and it feels like the right first move.`,
           },
@@ -392,9 +436,9 @@ We'll open with "Reckoner" by Radiohead. It has the right grain to start things 
             type: "text",
             text: `Hey sweetheart, welcome back. Jolene here, and we're opening this Thursday night with a little light in it.
 
-This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before the set gets going. I like when the first minute of a show feels like somebody opened the door and let the air change.
+This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before things get going. I like when the first minute feels like somebody opened the door and let the air change.
 
-That’s how I want W.A.I.V. to start here, with something human in it, something that opens the room before the rest of the songs come walking through. Then the set gets to keep that glow moving.
+That’s how I want W.A.I.V. to start here, with something human in it, something that opens the room before the rest of the songs come walking through. Then everything gets to keep that glow moving.
 
 We'll start with "Harvest Moon" by Neil Young, because it glows without trying too hard.`,
           },

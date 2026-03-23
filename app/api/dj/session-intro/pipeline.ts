@@ -1459,7 +1459,7 @@ function buildContextPrompt(
     shouldEmphasizeHourHorizon
       ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation. Mention that horizon only once in the entire intro."
       : "Do not force an hour-long-show cue here if the intro is functioning more like a continuation than a fresh start.",
-    "When referring to the program, say 'the show', 'this show', 'the set', or 'the station' instead of vague pronouns like 'it'.",
+    "Use at most one explicit program label like 'the show', 'the set', or 'the station' if it helps orient the listener. After that, stay concrete and musical instead of repeating the label.",
   ].join(" ");
 }
 
@@ -1495,7 +1495,7 @@ function buildComponentPrompt(
     "Do not do a two-step opener like 'Hey there, welcome in. Hey, I'm April.' If the DJ names themselves, it should feel like the same opening breath, not a restart.",
     "Do not create a stiff one-two pattern where sentence one is the welcome and sentence two is only the day or time. The opening should move like natural speech.",
     "If you mention the hour ahead or the next hour, do it only once in the entire intro. Do not echo that same horizon idea in another sentence.",
-    "Avoid vague standalone lines like 'this felt right' or 'let's try it' when 'this' or 'it' really means the show. Name the show or the set directly.",
+    "Avoid vague standalone lines like 'this felt right' or 'let's try it' when they are too empty to mean anything. If you name the program at all, do it once and then move on.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
     `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
@@ -1792,6 +1792,40 @@ function mentionsShowHorizon(text: string, djID: string): boolean {
   return countShowHorizonMentions(text, djID) > 0;
 }
 
+function countProgramLabelMentions(text: string, djID: string): number {
+  const normalized = normalizedContainment(text);
+  const englishCues = [
+    "this station",
+    "the station",
+    "this show",
+    "the show",
+    "this set",
+    "the set",
+  ];
+  const spanishCues = [
+    "esta estacion",
+    "la estacion",
+    "este show",
+    "el show",
+    "este set",
+    "el set",
+  ];
+  const cues = isSpanishDJ(djID) ? spanishCues : englishCues;
+  let remaining = normalized;
+  let count = 0;
+
+  for (const cue of cues) {
+    const escapedCue = cue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`(^|\\s)${escapedCue}(?=\\s|$)`, "g");
+    remaining = remaining.replace(pattern, (match) => {
+      count += 1;
+      return match.replace(new RegExp(escapedCue), " ");
+    });
+  }
+
+  return count;
+}
+
 function countShowHorizonMentions(text: string, djID: string): number {
   const normalized = normalizedContainment(text);
   const englishCues = [
@@ -1968,6 +2002,11 @@ function evaluateIntro(
     score -= 0.28;
     weakComponents.add("setFraming");
   }
+  const programLabelMentions = countProgramLabelMentions(intro, request.djID);
+  if (programLabelMentions > 1) {
+    score -= 0.3;
+    weakComponents.add("setFraming");
+  }
   if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
     score -= 0.08;
     weakComponents.add("personalityFlourish");
@@ -2070,6 +2109,9 @@ function normalizeIntro(
     return null;
   }
   if (countShowHorizonMentions(intro, request.djID) > 1) {
+    return null;
+  }
+  if (countProgramLabelMentions(intro, request.djID) > 1) {
     return null;
   }
 
