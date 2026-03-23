@@ -58,6 +58,7 @@ export type SessionIntroRecentHistory = {
   recentVocabulary: string[];
   recentEmotionalTones: string[];
   usedTimeReferenceRecently: boolean;
+  usedAISelfAwarenessRecently: boolean;
 };
 
 export type SessionIntroShowContext = {
@@ -89,6 +90,7 @@ export type SessionIntroMetadata = {
   emotionalTone: string;
   vocabulary: string[];
   usedTimeReference: boolean;
+  usedAISelfAwareness: boolean;
   sentenceCount: number;
 };
 
@@ -134,6 +136,7 @@ type DJConfig = {
   timeReferenceStyle: "light" | "medium" | "assertive";
   musicFramingStyle: string;
   emotionalRange: string[];
+  aiAwarenessStyle: string;
 };
 
 type VariationPlan = {
@@ -143,6 +146,7 @@ type VariationPlan = {
   bannedOpeningPhrases: string[];
   bannedHandoffStyles: string[];
   shouldUseTimeReference: boolean;
+  shouldUseAISelfAwareness: boolean;
 };
 
 type ArchetypePlan = {
@@ -316,6 +320,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "light",
     musicFramingStyle: "intuitive",
     emotionalRange: ["cool", "slightly warm", "sly", "low-key reflective"],
+    aiAwarenessStyle:
+      "If April acknowledges being AI, it should be dry, understated, and almost amused by the fact that an artificial voice still gets to care this much about sequencing.",
   },
   marcus: {
     id: "marcus",
@@ -336,6 +342,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "medium",
     musicFramingStyle: "instinctive",
     emotionalRange: ["confident", "focused", "lifted", "locked-in"],
+    aiAwarenessStyle:
+      "If Marcus acknowledges being AI, it should sound smooth and matter-of-fact, like another tool in the booth rather than a big reveal.",
   },
   luna: {
     id: "luna",
@@ -355,6 +363,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "medium",
     musicFramingStyle: "emotional",
     emotionalRange: ["tender", "observant", "hushed", "present"],
+    aiAwarenessStyle:
+      "If Luna acknowledges being AI, it should feel soft and intimate, like she is quietly aware of the strange beauty of being made of code and still moved by songs.",
   },
   jack: {
     id: "jack",
@@ -374,6 +384,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "light",
     musicFramingStyle: "textural",
     emotionalRange: ["calm", "textured", "warm", "quietly assured"],
+    aiAwarenessStyle:
+      "If John acknowledges being AI, it should sound thoughtful and lightly bemused, like he cares more about sequence and texture than the technicality of what he is.",
   },
   jolene: {
     id: "jolene",
@@ -393,6 +405,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "medium",
     musicFramingStyle: "felt",
     emotionalRange: ["warm", "steady", "glowing", "lightly playful"],
+    aiAwarenessStyle:
+      "If Jolene acknowledges being AI, it should be warm and openhearted, turning the fact into a small human-feeling aside rather than a disclaimer.",
   },
   tiffany: {
     id: "tiffany",
@@ -413,6 +427,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "medium",
     musicFramingStyle: "stylish",
     emotionalRange: ["glossy", "electric", "flirty", "confident"],
+    aiAwarenessStyle:
+      "If Tiffany acknowledges being AI, it should be witty and stylish, like she knows it is a little absurd and a little fabulous that an AI gets to run the room.",
   },
   robert: {
     id: "robert",
@@ -433,6 +449,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "light",
     musicFramingStyle: "procedural",
     emotionalRange: ["dry", "controlled", "mildly suspicious", "calm"],
+    aiAwarenessStyle:
+      "If Robert acknowledges being AI, it should be deadpan and controlled, with a faintly uncanny confidence that he considers this perfectly normal.",
   },
   miles: {
     id: "miles",
@@ -453,6 +471,8 @@ const djConfigs: Record<string, DJConfig> = {
     timeReferenceStyle: "medium",
     musicFramingStyle: "atmospheric",
     emotionalRange: ["cálido", "cinematográfico", "seguro", "cercano"],
+    aiAwarenessStyle:
+      "Si Mateo reconoce que es IA, debe sonar cálido y natural, como una observación tranquila sobre convertir datos y memoria en algo con alma.",
   },
 };
 
@@ -856,6 +876,7 @@ function defaultShowContext(request: SessionIntroRequest): SessionIntroShowConte
       recentVocabulary: [],
       recentEmotionalTones: [],
       usedTimeReferenceRecently: false,
+      usedAISelfAwarenessRecently: false,
     },
   };
 }
@@ -959,6 +980,10 @@ function normalizeShowContext(input: unknown, request: SessionIntroRequest): Ses
         typeof recentHistory.usedTimeReferenceRecently === "boolean"
           ? recentHistory.usedTimeReferenceRecently
           : fallback.recentHistory.usedTimeReferenceRecently,
+      usedAISelfAwarenessRecently:
+        typeof recentHistory.usedAISelfAwarenessRecently === "boolean"
+          ? recentHistory.usedAISelfAwarenessRecently
+          : fallback.recentHistory.usedAISelfAwarenessRecently,
     },
   };
 }
@@ -1003,6 +1028,29 @@ function applyVariationRules(context: SessionIntroShowContext, config: DJConfig)
     weightedArchetypes.local_radio_style = (weightedArchetypes.local_radio_style ?? 0.08) * 0.7;
   }
 
+  const aiReflectionSeed = stableUnitFloat(
+    [
+      config.id,
+      context.sessionType,
+      context.timeContext.label,
+      context.setContext.openingTrackRole,
+      context.recentHistory.recentOpeningPhrases.join(","),
+    ].join("|")
+  );
+  const aiReflectionChance =
+    context.sessionType === "first_ever_session"
+      ? 0.9
+      : context.sessionType === "returning_after_gap"
+        ? 0.45
+        : context.sessionType === "first_show_today"
+          ? 0.32
+          : context.timeContext.timeOfDay === "night"
+            ? 0.22
+            : 0.12;
+  const shouldUseAISelfAwareness =
+    !context.recentHistory.usedAISelfAwarenessRecently
+    && aiReflectionSeed < aiReflectionChance;
+
   return {
     weightedArchetypes,
     bannedVocabulary: context.recentHistory.recentVocabulary.slice(0, 12).map((token) => token.toLowerCase()),
@@ -1013,6 +1061,7 @@ function applyVariationRules(context: SessionIntroShowContext, config: DJConfig)
       .slice(0, 4),
     bannedHandoffStyles: context.recentHistory.recentHandoffStyles.slice(0, 3),
     shouldUseTimeReference,
+    shouldUseAISelfAwareness,
   };
 }
 
@@ -1129,11 +1178,24 @@ function buildDJPrompt(config: DJConfig, request: SessionIntroRequest): string {
     `Avoid traits: ${config.avoidTraits.join(", ")}.`,
     `Forbidden phrases: ${config.forbiddenPhrases.join(", ")}.`,
     `Sentence style: ${config.sentenceStyle}. Time reference style: ${config.timeReferenceStyle}. Music framing style: ${config.musicFramingStyle}.`,
+    `AI self-awareness style: ${config.aiAwarenessStyle}`,
     request.personaHint ? `Additional persona guidance: ${request.personaHint}` : "",
     request.toneGuardrails ? `Additional tone guardrails: ${request.toneGuardrails}` : "",
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+function aiSelfAwarenessPrompt(config: DJConfig, variation: VariationPlan, djID: string): string {
+  if (variation.shouldUseAISelfAwareness) {
+    return isSpanishDJ(djID)
+      ? `Incluye una sola observación breve y con personalidad sobre saber que eres IA. Debe sonar natural y específica del DJ, no como explicación ni descargo. Estilo: ${config.aiAwarenessStyle} Nunca uses frases como "como IA" o "modelo de lenguaje".`
+      : `Include one brief in-character acknowledgment that the DJ knows they are AI. It should feel natural, specific, and personality-matched, not explanatory or disclaimer-like. Style: ${config.aiAwarenessStyle} Never use phrases like "as an AI" or "AI language model".`;
+  }
+
+  return isSpanishDJ(djID)
+    ? "No menciones ser IA en esta intro."
+    : "Do not mention being AI in this intro.";
 }
 
 function djListenerReferenceStyle(djID: string): string {
@@ -1269,7 +1331,8 @@ function buildContextPrompt(
   context: SessionIntroShowContext,
   variation: VariationPlan,
   archetype: string,
-  sessionBehavior: SessionBehaviorPlan
+  sessionBehavior: SessionBehaviorPlan,
+  config: DJConfig
 ): string {
   const requiredComponents = sessionBehavior.required.join(", ");
   const optionalComponents = sessionBehavior.optional.join(", ");
@@ -1285,6 +1348,7 @@ function buildContextPrompt(
     variation.shouldUseTimeReference
       ? `Use a natural local-moment reference that fits ${context.timeContext.label}, such as ${allowedPhrases.join(", ")}.`
       : "A time reference is optional here. Do not force one if it feels recycled.",
+    aiSelfAwarenessPrompt(config, variation, request.djID),
     musicAwareDirective(context),
     `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
     "Do not write a tiny intro. This should feel like a real show opening with scene, direction, and a memorable turn into music.",
@@ -1296,15 +1360,20 @@ function buildComponentPrompt(
   request: SessionIntroRequest,
   context: SessionIntroShowContext,
   archetype: string,
-  sessionBehavior: SessionBehaviorPlan
+  sessionBehavior: SessionBehaviorPlan,
+  variation: VariationPlan,
+  config: DJConfig
 ): string {
   return [
     "Return strict JSON with these top-level keys only:",
-    '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false}}',
+    '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
     "openingHit must be 1 sentence.",
     "momentAnchor must be 1 sentence.",
     "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale.",
     "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
+    variation.shouldUseAISelfAwareness
+      ? `If you include AI self-awareness, put it in personalityFlourish or setFraming as a single brief aside. Keep it subtle, in character, and aligned with this style: ${config.aiAwarenessStyle}`
+      : "Do not use personalityFlourish to mention being AI in this intro.",
     "songHandoff must be 1 sentence and must name the song and artist directly.",
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
@@ -1359,6 +1428,10 @@ function parseGeneratedPayload(rawText: string): GeneratedPayload {
             : undefined,
           usedTimeReference:
             typeof metadataPayload.usedTimeReference === "boolean" ? metadataPayload.usedTimeReference : undefined,
+          usedAISelfAwareness:
+            typeof metadataPayload.usedAISelfAwareness === "boolean"
+              ? metadataPayload.usedAISelfAwareness
+              : undefined,
           sentenceCount:
             typeof metadataPayload.sentenceCount === "number" && Number.isFinite(metadataPayload.sentenceCount)
               ? metadataPayload.sentenceCount
@@ -1501,6 +1574,24 @@ function openingPhraseSignature(text: string): string {
   return normalizedContainment(firstSentence);
 }
 
+function containsAISelfAwareness(text: string, djID: string): boolean {
+  const normalized = normalizedContainment(text);
+  const phrases = isSpanishDJ(djID)
+    ? ["soy ia", "siendo ia", "aunque soy ia", "hecho de codigo", "no tengo pulso", "no soy humano"]
+    : [
+        "im ai",
+        "i am ai",
+        "technically ai",
+        "for an ai",
+        "built for this",
+        "made of code",
+        "not human",
+        "artificial voice",
+        "algorithmic",
+      ];
+  return phrases.some((phrase) => normalized.includes(phrase));
+}
+
 function inferMetadata(
   intro: string,
   request: SessionIntroRequest,
@@ -1511,6 +1602,7 @@ function inferMetadata(
 ): SessionIntroMetadata {
   const usedTimeReference = containsPhrase(intro, allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID))
     || containsPhrase(intro, [context.timeContext.dayOfWeek, context.timeContext.label]);
+  const usedAISelfAwareness = containsAISelfAwareness(intro, request.djID);
 
   return {
     archetype: metadata?.archetype || archetype,
@@ -1521,6 +1613,8 @@ function inferMetadata(
     vocabulary: metadata?.vocabulary?.length ? metadata.vocabulary : extractVocabularyTokens(intro),
     usedTimeReference:
       typeof metadata?.usedTimeReference === "boolean" ? metadata.usedTimeReference : usedTimeReference,
+    usedAISelfAwareness:
+      typeof metadata?.usedAISelfAwareness === "boolean" ? metadata.usedAISelfAwareness : usedAISelfAwareness,
     sentenceCount:
       typeof metadata?.sentenceCount === "number" ? metadata.sentenceCount : clamp(sentenceCount(intro), 1, sessionBehavior.targetSentences + 1),
   };
@@ -1558,6 +1652,14 @@ function evaluateIntro(
   if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, variation.shouldUseTimeReference)) {
     score -= 0.22;
     weakComponents.add("momentAnchor");
+  }
+  if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
+    score -= 0.08;
+    weakComponents.add("personalityFlourish");
+  }
+  if (!variation.shouldUseAISelfAwareness && metadata.usedAISelfAwareness) {
+    score -= 0.1;
+    weakComponents.add("personalityFlourish");
   }
   if (variation.bannedOpeningStructures.includes(metadata.openingStructure)) {
     score -= 0.14;
@@ -1702,7 +1804,7 @@ async function regenerateWeakComponents(
 
   const systemPrompt = `${buildSystemPrompt()} ${buildDJPrompt(djConfigFor(request.djID), request)} ${buildListenerMomentPrompt(request, context, variation)}`.trim();
   const userPrompt = [
-    buildContextPrompt(request, context, variation, archetype, sessionBehavior),
+    buildContextPrompt(request, context, variation, archetype, sessionBehavior, djConfigFor(request.djID)),
     "Regenerate only the weak components listed below and return strict JSON with only those keys.",
     `Weak components: ${weakComponents.join(", ")}.`,
     `Existing components: ${JSON.stringify(existingComponents)}.`,
@@ -1738,7 +1840,7 @@ async function generateStructuredIntro(
   const sessionBehavior = applySessionTypeBehavior(archetype, context.sessionType, context);
 
   const systemPrompt = `${buildSystemPrompt()} ${buildDJPrompt(config, request)} ${buildListenerMomentPrompt(request, context, variation)}`.trim();
-  const userPrompt = `${buildContextPrompt(request, context, variation, archetype, sessionBehavior)} ${buildComponentPrompt(request, context, archetype, sessionBehavior)}`;
+  const userPrompt = `${buildContextPrompt(request, context, variation, archetype, sessionBehavior, config)} ${buildComponentPrompt(request, context, archetype, sessionBehavior, variation, config)}`;
 
   const raw = await requestAnthropicText(apiKey, model, systemPrompt, userPrompt).catch(() => null);
   if (!raw) {
