@@ -275,6 +275,50 @@ We're opening with "Midnight City" by M83, because it hits like the night has al
     expect(systemPrompt).toContain("not a chatbot, assistant, or announcer reading copy");
   });
 
+  it("rejects intros that repeat the hour-horizon cue more than once", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: `Hey, welcome in. I'm April, and this hour feels like the right place to open the show.
+
+Over the next hour I want the set to stay loose, and the hour ahead should feel chosen instead of assembled.
+
+We're opening with "Yellow" by Coldplay, and it feels like the right first move.`,
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(204);
+  });
+
   it("sends John-specific personality guidance for jack intros", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

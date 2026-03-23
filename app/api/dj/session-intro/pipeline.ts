@@ -1457,7 +1457,7 @@ function buildContextPrompt(
     "The opening should have one decisive launch beat: welcome the listener and start the set in the same motion, then build the room around that.",
     "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
     shouldEmphasizeHourHorizon
-      ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation."
+      ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation. Mention that horizon only once in the entire intro."
       : "Do not force an hour-long-show cue here if the intro is functioning more like a continuation than a fresh start.",
     "When referring to the program, say 'the show', 'this show', 'the set', or 'the station' instead of vague pronouns like 'it'.",
   ].join(" ");
@@ -1494,6 +1494,7 @@ function buildComponentPrompt(
     "Do not follow the welcome with another greeting like 'hey', 'hi', or 'welcome back' in the next sentence.",
     "Do not do a two-step opener like 'Hey there, welcome in. Hey, I'm April.' If the DJ names themselves, it should feel like the same opening breath, not a restart.",
     "Do not create a stiff one-two pattern where sentence one is the welcome and sentence two is only the day or time. The opening should move like natural speech.",
+    "If you mention the hour ahead or the next hour, do it only once in the entire intro. Do not echo that same horizon idea in another sentence.",
     "Avoid vague standalone lines like 'this felt right' or 'let's try it' when 'this' or 'it' really means the show. Name the show or the set directly.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
@@ -1788,27 +1789,43 @@ function startsWithShowLaunch(text: string, djID: string): boolean {
 }
 
 function mentionsShowHorizon(text: string, djID: string): boolean {
+  return countShowHorizonMentions(text, djID) > 0;
+}
+
+function countShowHorizonMentions(text: string, djID: string): number {
   const normalized = normalizedContainment(text);
   const englishCues = [
-    "next hour",
-    "this hour",
-    "hour ahead",
+    "over this next hour",
     "over the next hour",
     "for the next hour",
-    "rest of the hour",
     "through this hour",
-    "over this next hour",
+    "rest of the hour",
+    "hour ahead",
+    "next hour",
+    "this hour",
   ];
   const spanishCues = [
+    "durante la proxima hora",
+    "en la hora que viene",
+    "lo que sigue de la hora",
+    "por la proxima hora",
     "la proxima hora",
     "esta hora",
-    "en la hora que viene",
-    "durante la proxima hora",
-    "por la proxima hora",
-    "lo que sigue de la hora",
   ];
   const cues = isSpanishDJ(djID) ? spanishCues : englishCues;
-  return cues.some((cue) => normalized.includes(cue));
+  let remaining = normalized;
+  let count = 0;
+
+  for (const cue of cues) {
+    const escapedCue = cue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`(^|\\s)${escapedCue}(?=\\s|$)`, "g");
+    remaining = remaining.replace(pattern, (match) => {
+      count += 1;
+      return match.replace(new RegExp(escapedCue), " ");
+    });
+  }
+
+  return count;
 }
 
 function firstParagraphSentences(text: string): string[] {
@@ -1946,6 +1963,11 @@ function evaluateIntro(
     score -= 0.12;
     weakComponents.add("setFraming");
   }
+  const showHorizonMentions = countShowHorizonMentions(intro, request.djID);
+  if (showHorizonMentions > 1) {
+    score -= 0.28;
+    weakComponents.add("setFraming");
+  }
   if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
     score -= 0.08;
     weakComponents.add("personalityFlourish");
@@ -2045,6 +2067,9 @@ function normalizeIntro(
     return null;
   }
   if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, shouldUseTimeReference)) {
+    return null;
+  }
+  if (countShowHorizonMentions(intro, request.djID) > 1) {
     return null;
   }
 
