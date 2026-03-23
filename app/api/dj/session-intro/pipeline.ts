@@ -1446,6 +1446,7 @@ function buildContextPrompt(
     "Make this feel like a living station already in motion. The listener should clearly feel that a show is starting, not that a DJ is casually dropping a pre-roll over a song.",
     "The opening should have one decisive launch beat: welcome the listener and start the set in the same motion, then build the room around that.",
     "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
+    "When referring to the program, say 'the show', 'this show', 'the set', or 'the station' instead of vague pronouns like 'it'.",
   ].join(" ");
 }
 
@@ -1473,6 +1474,7 @@ function buildComponentPrompt(
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
     "Do not write a second welcome or a second start after openingHit. The intro should feel like one continuous launch into the set.",
+    "Avoid vague standalone lines like 'this felt right' or 'let's try it' when 'this' or 'it' really means the show. Name the show or the set directly.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
     `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
