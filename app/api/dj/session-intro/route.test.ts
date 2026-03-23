@@ -230,7 +230,7 @@ We'll start with "Reckoner" by Radiohead, because it knows how to enter without 
         content: [
           {
             type: "text",
-            text: `Hey, I'm Marcus.
+            text: `Hey, welcome in. I'm Marcus, and over the next hour we're opening with a little authority.
 
 Tonight is built for something that arrives with a little authority. Not a fake dramatic entrance, just a first move that knows how to set the pace.
 
@@ -288,7 +288,7 @@ We're opening with "Midnight City" by M83, because it hits like the night has al
         content: [
           {
             type: "text",
-            text: `John here.
+            text: `Welcome back. John here, and this hour could use a set with a little patience in it.
 
 Thursday night usually gives a set a little room to breathe before it really has to show its hand, and I like taking advantage of that whenever I can.
 
@@ -403,7 +403,7 @@ We'll start with "Harvest Moon" by Neil Young, because it glows without trying t
         content: [
           {
             type: "text",
-            text: `Juan aqui.
+            text: `Juan aqui, y en la próxima hora vamos a abrir este show con un poco de intención.
 
 Esta noche tiene el pulso justo para abrir un set con intención, sin correr y sin explicar demasiado antes de dejar que la música haga lo suyo.
 

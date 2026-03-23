@@ -1436,6 +1436,7 @@ function buildContextPrompt(
   const requiredComponents = sessionBehavior.required.join(", ");
   const optionalComponents = sessionBehavior.optional.join(", ");
   const allowedPhrases = allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID);
+  const shouldEmphasizeHourHorizon = context.sessionType !== "resume_playback";
   return [
     `Show context: ${JSON.stringify(context)}.`,
     `Primary archetype: ${archetype}.`,
@@ -1455,6 +1456,9 @@ function buildContextPrompt(
     "Make this feel like a living station already in motion. The listener should clearly feel that a show is starting, not that a DJ is casually dropping a pre-roll over a song.",
     "The opening should have one decisive launch beat: welcome the listener and start the set in the same motion, then build the room around that.",
     "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
+    shouldEmphasizeHourHorizon
+      ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation."
+      : "Do not force an hour-long-show cue here if the intro is functioning more like a continuation than a fresh start.",
     "When referring to the program, say 'the show', 'this show', 'the set', or 'the station' instead of vague pronouns like 'it'.",
   ].join(" ");
 }
@@ -1476,6 +1480,9 @@ function buildComponentPrompt(
     "momentAnchor may be 0 to 1 sentence.",
     "momentAnchor should only stand alone if that sounds natural. If the local-moment reference flows better inside openingHit or setFraming, leave momentAnchor empty.",
     "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale. It may absorb the time/day reference if that makes the flow sound more human.",
+    context.sessionType === "resume_playback"
+      ? "Because this intro behaves more like a continuation, do not force a full hour-horizon line."
+      : "setFraming should lightly imply the shape of the hour ahead so the listener understands a show is beginning, not that they joined midway.",
     "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
     variation.shouldUseAISelfAwareness
       ? `If you include AI self-awareness, put it in personalityFlourish or setFraming as a single brief aside. Keep it subtle, in character, and aligned with this style: ${config.aiAwarenessStyle}`
@@ -1567,6 +1574,41 @@ function cleanSentence(text: string): string {
     normalized += ".";
   }
   return normalized;
+}
+
+function deduplicatedIntroParagraphs(paragraphs: string[]): string[] {
+  let previousSentenceSignature = "";
+  let previousParagraphSignature = "";
+  const deduplicated: string[] = [];
+
+  for (const paragraph of paragraphs) {
+    const sentenceList = normalizeWhitespace(paragraph)
+      .replace(/(?<=[.!?])\s+/g, "\n")
+      .split("\n")
+      .map((sentence) => sentence.trim())
+      .filter(Boolean);
+
+    const keptSentences: string[] = [];
+    for (const sentence of sentenceList) {
+      const signature = normalizedContainment(sentence);
+      if (!signature || signature === previousSentenceSignature) {
+        continue;
+      }
+      keptSentences.push(sentence);
+      previousSentenceSignature = signature;
+    }
+
+    const rebuiltParagraph = keptSentences.join(" ").trim();
+    const paragraphSignature = normalizedContainment(rebuiltParagraph);
+    if (!paragraphSignature || paragraphSignature === previousParagraphSignature) {
+      continue;
+    }
+
+    deduplicated.push(rebuiltParagraph);
+    previousParagraphSignature = paragraphSignature;
+  }
+
+  return deduplicated;
 }
 
 function composeIntro(
@@ -1745,6 +1787,30 @@ function startsWithShowLaunch(text: string, djID: string): boolean {
   return cues.some((cue) => opening.includes(cue));
 }
 
+function mentionsShowHorizon(text: string, djID: string): boolean {
+  const normalized = normalizedContainment(text);
+  const englishCues = [
+    "next hour",
+    "this hour",
+    "hour ahead",
+    "over the next hour",
+    "for the next hour",
+    "rest of the hour",
+    "through this hour",
+    "over this next hour",
+  ];
+  const spanishCues = [
+    "la proxima hora",
+    "esta hora",
+    "en la hora que viene",
+    "durante la proxima hora",
+    "por la proxima hora",
+    "lo que sigue de la hora",
+  ];
+  const cues = isSpanishDJ(djID) ? spanishCues : englishCues;
+  return cues.some((cue) => normalized.includes(cue));
+}
+
 function firstParagraphSentences(text: string): string[] {
   const firstParagraph = splitParagraphs(text)[0] || text;
   return firstParagraph
@@ -1876,6 +1942,10 @@ function evaluateIntro(
     score -= 0.2;
     weakComponents.add("setFraming");
   }
+  if (context.sessionType !== "resume_playback" && !mentionsShowHorizon(intro, request.djID)) {
+    score -= 0.12;
+    weakComponents.add("setFraming");
+  }
   if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
     score -= 0.08;
     weakComponents.add("personalityFlourish");
@@ -1928,7 +1998,9 @@ function normalizeIntro(
   request: SessionIntroRequest,
   shouldUseTimeReference: boolean
 ): string | null {
-  const paragraphs = splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""));
+  const paragraphs = deduplicatedIntroParagraphs(
+    splitParagraphs(raw.replace(/^['"“”‘’]+|['"“”‘’]+$/g, ""))
+  );
   if (
     paragraphs.length < minParagraphCount
     || paragraphs.length > maxParagraphCount
