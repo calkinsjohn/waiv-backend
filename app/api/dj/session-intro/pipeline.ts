@@ -1283,13 +1283,13 @@ function buildWelcomePrompt(djID: string, sessionType: string): string {
   const examples = welcomeExamples(djID).map((phrase) => `"${phrase}"`).join(", ");
   if (isSpanishDJ(djID)) {
     return sessionType === "first_ever_session"
-      ? `La primera frase debe funcionar como una bienvenida clara y natural al show y, al mismo tiempo, hacer sentir que la transmisión acaba de arrancar. Tiene que sonar como recibir al oyente por primera vez con personalidad y con impulso radial. No hagas una frase de saludo y luego otra aparte que recién arranque el show. Ejemplos de tono: ${examples}.`
-      : `La primera frase debe funcionar como una bienvenida clara y natural de regreso o de entrada al show y, al mismo tiempo, hacer sentir que la transmisión ya está arrancando. Tiene que sonar como abrir el aire de verdad, no como un saludo suelto seguido de un segundo arranque. Ejemplos de tono: ${examples}.`;
+      ? `La primera frase debe funcionar como una bienvenida clara y natural al show y, al mismo tiempo, hacer sentir que la transmisión acaba de arrancar. Tiene que sonar como recibir al oyente por primera vez con personalidad y con impulso radial. No hagas una frase de saludo y luego otra aparte que recién arranque el show. Si dices el nombre del DJ, intégralo en esa misma apertura, no como otro saludo separado. Ejemplos de tono: ${examples}.`
+      : `La primera frase debe funcionar como una bienvenida clara y natural de regreso o de entrada al show y, al mismo tiempo, hacer sentir que la transmisión ya está arrancando. Tiene que sonar como abrir el aire de verdad, no como un saludo suelto seguido de un segundo arranque. Si dices el nombre del DJ, intégralo en esa misma apertura, no como otro saludo separado. Ejemplos de tono: ${examples}.`;
   }
 
   return sessionType === "first_ever_session"
-    ? `The very first sentence must work as a clear, natural welcome into the show and also make it unmistakable that the station is coming alive right now. It should feel like greeting someone into this station for the first time in the DJ's own voice, with real show-opening lift. Do not write a standalone greeting and then a second sentence that finally starts the show. Tone examples: ${examples}.`
-    : `The very first sentence must work as a clear, natural welcome back or welcome in and also make it unmistakable that the show is opening right now. It should feel like a real on-air launch, not a loose greeting followed by a second start. Tone examples: ${examples}.`;
+    ? `The very first sentence must work as a clear, natural welcome into the show and also make it unmistakable that the station is coming alive right now. It should feel like greeting someone into this station for the first time in the DJ's own voice, with real show-opening lift. Do not write a standalone greeting and then a second sentence that finally starts the show. If you identify the DJ by name, fold it into that same opening motion instead of starting over. Tone examples: ${examples}.`
+    : `The very first sentence must work as a clear, natural welcome back or welcome in and also make it unmistakable that the show is opening right now. It should feel like a real on-air launch, not a loose greeting followed by a second start. If you identify the DJ by name, fold it into that same opening motion instead of starting over. Tone examples: ${examples}.`;
 }
 
 function djListenerReferenceStyle(djID: string): string {
@@ -1484,6 +1484,8 @@ function buildComponentPrompt(
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
     "Do not write a second welcome or a second start after openingHit. The intro should feel like one continuous launch into the set.",
+    "Do not follow the welcome with another greeting like 'hey', 'hi', or 'welcome back' in the next sentence.",
+    "Do not do a two-step opener like 'Hey there, welcome in. Hey, I'm April.' If the DJ names themselves, it should feel like the same opening breath, not a restart.",
     "Do not create a stiff one-two pattern where sentence one is the welcome and sentence two is only the day or time. The opening should move like natural speech.",
     "Avoid vague standalone lines like 'this felt right' or 'let's try it' when 'this' or 'it' really means the show. Name the show or the set directly.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
@@ -1743,6 +1745,46 @@ function startsWithShowLaunch(text: string, djID: string): boolean {
   return cues.some((cue) => opening.includes(cue));
 }
 
+function firstParagraphSentences(text: string): string[] {
+  const firstParagraph = splitParagraphs(text)[0] || text;
+  return firstParagraph
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean);
+}
+
+function hasRepeatedGreetingRestart(text: string, djID: string): boolean {
+  const sentences = firstParagraphSentences(text);
+  guard: {
+    if (sentences.length < 2) {
+      break guard;
+    }
+
+    const second = normalizedContainment(sentences[1]);
+    const englishRestartCues = [
+      "hey",
+      "hey there",
+      "hi",
+      "hi there",
+      "hello",
+      "hello there",
+      "welcome",
+      "welcome back",
+      "welcome in",
+    ];
+    const spanishRestartCues = [
+      "hola",
+      "bienvenido",
+      "bienvenida",
+      "que tal",
+    ];
+    const cues = isSpanishDJ(djID) ? spanishRestartCues : englishRestartCues;
+    return cues.some((cue) => second.startsWith(cue));
+  }
+
+  return false;
+}
+
 function containsAISelfAwareness(text: string, djID: string): boolean {
   const normalized = normalizedContainment(text);
   const phrases = isSpanishDJ(djID)
@@ -1824,6 +1866,10 @@ function evaluateIntro(
   }
   if (!startsWithWelcomeMessage(intro, request.djID)) {
     score -= 0.28;
+    weakComponents.add("openingHit");
+  }
+  if (hasRepeatedGreetingRestart(intro, request.djID)) {
+    score -= 0.3;
     weakComponents.add("openingHit");
   }
   if (!startsWithShowLaunch(intro, request.djID)) {
