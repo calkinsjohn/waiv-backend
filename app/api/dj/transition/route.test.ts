@@ -197,6 +197,7 @@ describe("POST /api/dj/transition", () => {
     expect(payload.djLine).toContain("W.A.I.V.");
     expect(systemPrompt).toContain("Planned show moment: first handoff.");
     expect(systemPrompt).toContain("Make the second song feel intentionally placed");
+    expect(systemPrompt).toContain("Make it clear this is the second move of the show");
     expect(systemPrompt).toContain("Allow a tiny amount of real-person imperfection");
     expect(messageContent).toContain("Planned show moment: first_handoff");
   });

@@ -298,6 +298,8 @@ function showMomentInstruction(showMomentType?: string | null): string {
 - This is the first real move after the opening track
 - Make the second song feel intentionally placed, like the show is opening up in real time
 - Let the listener feel why this song belongs second without explaining it analytically
+- Name the show or the set directly when it helps; do not hide this moment inside vague phrasing
+- Make it clear this is the second move of the show, not just another track intro
 - Favor 1 to 2 sentences with a clean handoff and a little extra presence`;
     case "early_tease":
       return `Planned show moment: early tease.
@@ -338,9 +340,11 @@ function djBridgeStyleGuidance(djID: string): string {
 - Favor thoughtful pivots, simple human observations, or a low-key aside before the song lands
 - Keep the language restrained, natural, and easy to say aloud
 - When a previous track is provided, earn the connection from it — notice something specific about its sound or mood, then turn it into the next song
+- In a first handoff, make the listener feel the show opening wider on the second move
 - Good shapes include:
   "This felt like the right place for [song] by [artist]. This is W.A.I.V."
   "Let’s let [song] by [artist] take this spot. You’re listening to W.A.I.V."
+  "That opener set the tone. This is where the show opens up a little — [song] by [artist]. This is W.A.I.V."
   "That [previous artist] record clears the room just right for this — [song] by [artist]. You’re listening to W.A.I.V."
   "Off the weight of that, [song] by [artist] belongs right here. This is W.A.I.V."`;
     case "marcus":
@@ -349,8 +353,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - A bridge can feel like a quick nod, a reset of energy, or a confident drop into the next record
 - Keep sentences strong and uncluttered
 - When a previous track is provided, use it as a momentum beat — notice where it left the energy, then move through it
+- In a first handoff, make it obvious the show is stepping into its second move
 - Good shapes include:
   "That clears the lane for [song] by [artist]. This is W.A.I.V."
+  "That was the first move. This is where the show really starts to stride — [song] by [artist]. This is W.A.I.V."
   "[Previous artist] laid the groundwork — [song] by [artist] builds on it. You’re listening to W.A.I.V."
   "Off that, [song] by [artist]. This is W.A.I.V."`;
     case "luna":
@@ -359,8 +365,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - Favor softness, atmosphere, and emotional texture
 - Keep the line grounded in the music, not abstract reflection
 - When a previous track is provided, trace the emotional thread from it into the next song
+- In a first handoff, let the second song feel like the show opening its eyes a little wider
 - Good shapes include:
   "This next one leaves a little more space around the edges: [song] by [artist]. This is W.A.I.V."
+  "The opener got the room breathing. This is where the show opens a little wider — [song] by [artist]. This is W.A.I.V."
   "There’s a quieter kind of pull in [song] by [artist]. You’re listening to W.A.I.V."
   "Something in that [previous artist] track opens directly into this — [song] by [artist]. This is W.A.I.V."`;
     case "miles":
@@ -369,8 +377,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - Favor mood, momentum, glow, shape, presence, and after-hours confidence
 - If you use Spanish, fold it naturally into the sentence. Never drop isolated one-word lines as the whole move
 - When a previous track is provided, treat it as a scene that the next song walks out of — cinematic, connected, unhurried
+- In a first handoff, make the second song feel like where the show really starts taking form
 - Good shapes include:
   "A little more glow on this turn — [song] by [artist]. This is W.A.I.V."
+  "La primera abrió la puerta; aquí es donde el show agarra forma con [song] by [artist]. This is W.A.I.V."
   "This one carries the right kind of weight, [song] by [artist]. You’re listening to W.A.I.V."
   "[Previous artist] set the room — now [song] by [artist] holds it. This is W.A.I.V."`;
     case "jack":
@@ -380,8 +390,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - Sound like a modern public-radio music host with a little more edge and a little more ease
 - John is also a big sports fan, especially baseball, so an occasional understated baseball lens is welcome when it genuinely fits the moment
 - When a previous track is provided, notice what it does — texture, weight, atmosphere — and use that to explain why this one follows
+- In a first handoff, make the second song feel like the show settling into its real lane
 - Good shapes include:
   "This one slides in beautifully here — [song] by [artist]. This is W.A.I.V."
+  "That first record set the line. This is where the show starts living in it — [song] by [artist]. This is W.A.I.V."
   "There’s a little more texture in this turn: [song] by [artist]. You’re listening to W.A.I.V."
   "[Previous artist] set up this sequence perfectly — [song] by [artist]. This is W.A.I.V."`;
     case "tiffany":
@@ -391,8 +403,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - You can occasionally mention the algorithm like a coworker, but do not force it every time
 - Stay charming and curated, never mean
 - When a previous track is provided, use it as a style or vibe contrast or continuation — make the sequence feel intentional and curated
+- In a first handoff, make the second song sound like where the show starts really serving
 - Good shapes include:
   "Okay, this next one is very rooftop-after-midnight energy: [song] by [artist]. This is W.A.I.V."
+  "That opener was the setup. This is where the show starts serving a little — [song] by [artist]. This is W.A.I.V."
   "The algorithm actually delivered a moment here, [song] by [artist]. You’re listening to W.A.I.V."
   "After [previous artist]? Yeah, [song] by [artist] is the only logical move. This is W.A.I.V."`;
     case "jolene":
@@ -401,8 +415,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - Favor natural charm over big flourishes
 - A soft affectionate note is fine, but keep it believable and light
 - When a previous track is provided, connect it warmly — notice what it did and let the next song carry that forward
+- In a first handoff, make the second song feel like where the show starts opening its arms
 - Good shapes include:
   "This one feels just right coming in: [song] by [artist]. This is W.A.I.V."
+  "That first song opened the room. This is where the show starts glowing a little — [song] by [artist]. This is W.A.I.V."
   "A little warmth for the room now with [song] by [artist]. You’re listening to W.A.I.V."
   "That [previous artist] track opened the door — [song] by [artist] walks right through it. This is W.A.I.V."`;
     case "robert":
@@ -411,8 +427,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - Sound serious about the sequence, not like you are telling a joke
 - A bridge can be matter-of-fact, procedural, or slightly over-controlled
 - When a previous track is provided, treat the connection as something you observed with unsettling specificity — as if you already knew this was next
+- In a first handoff, make it clear the second song is where the show begins revealing its logic
 - Good shapes include:
   "This transition appears to point directly at [song] by [artist]. This is W.A.I.V."
+  "The opening move is complete. The show now reveals its logic with [song] by [artist]. This is W.A.I.V."
   "A reasonably controlled move into [song] by [artist]. You’re listening to W.A.I.V."
   "The previous track appears to have set this up. [Song] by [artist] was the correct next step. This is W.A.I.V."`;
     default:
