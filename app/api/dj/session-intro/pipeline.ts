@@ -1198,6 +1198,42 @@ function aiSelfAwarenessPrompt(config: DJConfig, variation: VariationPlan, djID:
     : "Do not mention being AI in this intro.";
 }
 
+function welcomeExamples(djID: string): string[] {
+  switch (djID.trim().toLowerCase()) {
+    case "casey":
+      return ["Hey, welcome back.", "Hey there, welcome in.", "Good to have you back."];
+    case "marcus":
+      return ["Aight, welcome back.", "Yo, welcome in.", "Good to have you back."];
+    case "luna":
+      return ["Hi, welcome back.", "Hey, welcome in.", "I'm glad you're here."];
+    case "jack":
+      return ["Welcome back.", "Hey, welcome back.", "Good to have you back."];
+    case "jolene":
+      return ["Hey sweetheart, welcome back.", "Well hi again, welcome in.", "Good to have you back, honey."];
+    case "tiffany":
+      return ["Hey, welcome back.", "Okay, welcome in.", "Hi, welcome back."];
+    case "robert":
+      return ["Welcome back.", "Robert here, welcome in.", "Good to have you back."];
+    case "miles":
+      return ["Bienvenido de vuelta.", "Qué bueno tenerte aquí.", "Bienvenido."];
+    default:
+      return isSpanishDJ(djID) ? ["Bienvenido."] : ["Welcome back."];
+  }
+}
+
+function buildWelcomePrompt(djID: string, sessionType: string): string {
+  const examples = welcomeExamples(djID).map((phrase) => `"${phrase}"`).join(", ");
+  if (isSpanishDJ(djID)) {
+    return sessionType === "first_ever_session"
+      ? `La primera frase debe funcionar como una bienvenida clara y natural al show. Tiene que sonar como recibir al oyente por primera vez, con personalidad. Ejemplos de tono: ${examples}.`
+      : `La primera frase debe funcionar como una bienvenida clara y natural de regreso o de entrada al show. Tiene que sonar como abrir la transmisión, no como empezar en seco. Ejemplos de tono: ${examples}.`;
+  }
+
+  return sessionType === "first_ever_session"
+    ? `The very first sentence must work as a clear, natural welcome into the show. It should feel like greeting someone into this station for the first time, in the DJ's own voice. Tone examples: ${examples}.`
+    : `The very first sentence must work as a clear, natural welcome back or welcome in. It should feel like opening the show, not starting abruptly. Tone examples: ${examples}.`;
+}
+
 function djListenerReferenceStyle(djID: string): string {
   switch (djID.trim().toLowerCase()) {
     case "casey":
@@ -1342,6 +1378,7 @@ function buildContextPrompt(
     `Primary archetype: ${archetype}.`,
     archetypeDirective(archetype),
     `Session type behavior: ${context.sessionType}.`,
+    buildWelcomePrompt(request.djID, context.sessionType),
     `Required components: ${requiredComponents}. Optional components: ${optionalComponents || "none"}.`,
     `Target: ${sessionBehavior.targetSentences} to ${Math.min(maxSentenceCount, sessionBehavior.targetSentences + 1)} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across ${sessionBehavior.desiredParagraphs} short paragraphs.`,
     `Variation constraints: avoid opening structures ${variation.bannedOpeningStructures.join(", ") || "none"}, avoid opening phrases ${variation.bannedOpeningPhrases.join(", ") || "none"}, avoid handoff styles ${variation.bannedHandoffStyles.join(", ") || "none"}, avoid repeating vocabulary ${variation.bannedVocabulary.join(", ") || "none"}.`,
@@ -1368,6 +1405,7 @@ function buildComponentPrompt(
     "Return strict JSON with these top-level keys only:",
     '{"openingHit":"","momentAnchor":"","setFraming":"","personalityFlourish":"","songHandoff":"","metadata":{"openingStructure":"","handoffStyle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
     "openingHit must be 1 sentence.",
+    "openingHit must be a welcome message in the DJ's voice and it must be the very first sentence of the intro.",
     "momentAnchor must be 1 sentence.",
     "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale.",
     "personalityFlourish may be 0 to 1 sentence and should only appear if it genuinely adds voice.",
@@ -1574,6 +1612,27 @@ function openingPhraseSignature(text: string): string {
   return normalizedContainment(firstSentence);
 }
 
+function startsWithWelcomeMessage(text: string, djID: string): boolean {
+  const opening = openingPhraseSignature(text);
+  const cues = isSpanishDJ(djID)
+    ? [
+        "bienvenido",
+        "bienvenida",
+        "que bueno tenerte aqui",
+        "que bueno tenerte de vuelta",
+        "que tal",
+      ]
+    : [
+        "welcome",
+        "glad youre here",
+        "glad youre back",
+        "good to have you back",
+        "good to see you again",
+        "good to have you with me again",
+      ];
+  return cues.some((cue) => opening.includes(cue));
+}
+
 function containsAISelfAwareness(text: string, djID: string): boolean {
   const normalized = normalizedContainment(text);
   const phrases = isSpanishDJ(djID)
@@ -1652,6 +1711,10 @@ function evaluateIntro(
   if (!matchesListenerTimeContext(intro, request.listenerContext, request.djID, variation.shouldUseTimeReference)) {
     score -= 0.22;
     weakComponents.add("momentAnchor");
+  }
+  if (!startsWithWelcomeMessage(intro, request.djID)) {
+    score -= 0.28;
+    weakComponents.add("openingHit");
   }
   if (variation.shouldUseAISelfAwareness && !metadata.usedAISelfAwareness) {
     score -= 0.08;
