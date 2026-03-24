@@ -327,6 +327,13 @@ function showMomentInstruction(showMomentType?: string | null): string {
 - The listener is already inside the set
 - Sound slightly more lived-in or reflective, but keep forward motion
 - Let the line feel earned by what has already been playing`;
+    case "final_song_signoff":
+      return `Planned show moment: final song signoff.
+- This is the last song of the show
+- Clearly but naturally say that this is the final song or last song before the show wraps
+- Make the wrap-up feel warm, real, and in character, not ceremonial or over-written
+- One explicit closing cue is enough; do not keep repeating that the show is ending
+- The line still has to hand off cleanly into the song`;
     default:
       return "";
   }
