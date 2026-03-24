@@ -2247,14 +2247,20 @@ async function generateStructuredIntro(
   const systemPrompt = `${buildSystemPrompt()} ${buildDJPrompt(config, request)} ${buildListenerMomentPrompt(request, context, variation)}`.trim();
   const userPrompt = `${buildContextPrompt(request, context, variation, archetype, sessionBehavior, config)} ${buildComponentPrompt(request, context, archetype, sessionBehavior, variation, config)}`;
 
-  const raw = await requestAnthropicText(apiKey, model, systemPrompt, userPrompt).catch(() => null);
+  const raw = await requestAnthropicText(apiKey, model, systemPrompt, userPrompt).catch((err) => {
+    console.error(`[session-intro] requestAnthropicText threw: ${err}`);
+    return null;
+  });
   if (!raw) {
+    console.error("[session-intro] no raw text returned from LLM");
     return null;
   }
+  console.log(`[session-intro] raw LLM response (first 300): ${raw.slice(0, 300)}`);
 
   let payload = parseGeneratedPayload(raw);
   let intro = composeIntro(payload, archetype, sessionBehavior);
   if (!intro) {
+    console.error(`[session-intro] composeIntro returned null. payload=${JSON.stringify(payload).slice(0, 300)}`);
     return null;
   }
   const usedStructuredComponents = Boolean(
@@ -2263,6 +2269,7 @@ async function generateStructuredIntro(
 
   let metadata = inferMetadata(intro, request, context, archetype, payload.metadata, sessionBehavior);
   let evaluation = evaluateIntro(intro, request, context, config, variation, archetype, sessionBehavior, metadata);
+  console.log(`[session-intro] score=${evaluation.score} threshold=${usedStructuredComponents ? 0.62 : 0.48} intro="${intro.slice(0, 100)}"`);
 
   if (evaluation.score < 0.74 && usedStructuredComponents && payload.components) {
     const regenerated = await regenerateWeakComponents(
@@ -2293,11 +2300,13 @@ async function generateStructuredIntro(
 
   const normalized = normalizeIntro(intro, request, variation.shouldUseTimeReference);
   if (!normalized) {
+    console.error(`[session-intro] normalizeIntro returned null for: "${intro.slice(0, 200)}"`);
     return null;
   }
 
   const rejectionThreshold = usedStructuredComponents ? 0.62 : 0.48;
   if (evaluation.score < rejectionThreshold) {
+    console.error(`[session-intro] score ${evaluation.score} below threshold ${rejectionThreshold}. weakComponents=${JSON.stringify(evaluation.weakComponents)}`);
     return null;
   }
 
