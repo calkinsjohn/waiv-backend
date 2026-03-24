@@ -1461,7 +1461,7 @@ function buildContextPrompt(
     `Session type behavior: ${context.sessionType}.`,
     buildWelcomePrompt(request.djID, context.sessionType),
     `Required components: ${requiredComponents}. Optional components: ${optionalComponents || "none"}.`,
-    `Target: ${sessionBehavior.targetSentences} to ${Math.min(maxSentenceCount, sessionBehavior.targetSentences + 1)} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, split across ${sessionBehavior.desiredParagraphs} short paragraphs.`,
+    `Target: ${sessionBehavior.targetSentences} to ${Math.min(maxSentenceCount, sessionBehavior.targetSentences + 1)} sentences, ${sessionBehavior.minWords} to ${sessionBehavior.maxWords} words, usually carried across ${sessionBehavior.desiredParagraphs} natural paragraphs rather than a ladder of one-sentence blocks.`,
     `Variation constraints: avoid opening structures ${variation.bannedOpeningStructures.join(", ") || "none"}, avoid opening phrases ${variation.bannedOpeningPhrases.join(", ") || "none"}, avoid handoff styles ${variation.bannedHandoffStyles.join(", ") || "none"}, avoid repeating vocabulary ${variation.bannedVocabulary.join(", ") || "none"}.`,
     variation.shouldUseTimeReference
       ? `Use a natural local-moment reference that fits ${context.timeContext.label}, but blend it into the opening motion of the show. Cues like ${allowedPhrases.join(", ")} are helpful, but the day/time reference should feel absorbed into the welcome or set framing, not broken out as a standalone calendar sentence.`
@@ -1475,6 +1475,7 @@ function buildContextPrompt(
     "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
     "Prefer concrete host behavior over music-description. The DJ should welcome, choose, steer, and hand off, not write a small essay about the song.",
     "Every paragraph should do one clear job: open the show, place the first song, widen the hour, or hand off into music.",
+    "Prefer 2 flowing paragraphs in most cases. Avoid a staircase of short isolated lines unless the DJ voice truly calls for it.",
     "Avoid abstraction-heavy language built from mood, texture, atmosphere, glow, energy, or emotional weather unless it points to something concrete and audible.",
     shouldEmphasizeHourHorizon
       ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation. Mention that horizon only once in the entire intro."
@@ -1520,6 +1521,8 @@ function buildComponentPrompt(
     "Avoid vague standalone lines like 'this felt right' or 'let's try it' when they are too empty to mean anything. If you name the program at all, do it once and then move on.",
     "Do not use abstraction-heavy filler like 'emotional weather', 'texture', 'glow', 'energy', 'atmosphere', 'the room breathing', or 'light level' unless it points to one concrete thing and sounds like real speech.",
     "Do not let multiple paragraphs all do the same job. Avoid stacking welcome + explanation + music essay.",
+    "Do not break the intro into separate chunks when one thought should run into the next. The listener should hear a flowing monologue, not modular blocks.",
+    "Keep the final handoff attached to the last body thought unless the intro is long enough to earn its own final paragraph.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
     `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
@@ -1693,22 +1696,24 @@ function composeIntro(
   const handoff = deduped[deduped.length - 1];
   const paragraphs: string[] = [];
 
-  if (bodySentences.length >= 4) {
+  if (!bodySentences.length) {
+    paragraphs.push(handoff);
+  } else if (bodySentences.length <= 2) {
+    paragraphs.push(bodySentences.join(" "));
+    paragraphs.push(handoff);
+  } else if (bodySentences.length <= 4) {
+    paragraphs.push(bodySentences.slice(0, 2).join(" "));
+    paragraphs.push([...bodySentences.slice(2), handoff].join(" "));
+  } else if (bodySentences.length <= 6 || sessionBehavior.desiredParagraphs <= 2) {
+    paragraphs.push(bodySentences.slice(0, 2).join(" "));
+    paragraphs.push([...bodySentences.slice(2), handoff].join(" "));
+  } else {
     paragraphs.push(bodySentences.slice(0, 2).join(" "));
     paragraphs.push(bodySentences.slice(2, 4).join(" "));
-    if (bodySentences.length > 4) {
-      paragraphs.push(bodySentences.slice(4).join(" "));
-    }
-  } else if (bodySentences.length === 3) {
-    paragraphs.push(bodySentences.slice(0, 2).join(" "));
-    paragraphs.push(bodySentences[2]);
-  } else if (bodySentences.length > 0) {
-    paragraphs.push(bodySentences.join(" "));
+    paragraphs.push([...bodySentences.slice(4), handoff].join(" "));
   }
 
-  paragraphs.push(handoff);
-
-  const maxParagraphsForIntro = clamp(sessionBehavior.desiredParagraphs, 2, maxParagraphCount);
+  const maxParagraphsForIntro = clamp(sessionBehavior.desiredParagraphs, 2, 3);
   return paragraphs
     .filter(Boolean)
     .slice(0, maxParagraphsForIntro)

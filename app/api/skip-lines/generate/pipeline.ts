@@ -44,6 +44,20 @@ const DEFAULT_CANDIDATE_COUNT = 5;
 const MIN_CANDIDATE_COUNT = 3;
 const MAX_CANDIDATE_COUNT = 5;
 
+const genericSkipPlatitudePatterns = [
+  /\bbetter energy\b/i,
+  /\bmore the vibe\b/i,
+  /\bvibe\b/i,
+  /\bmood\b/i,
+  /\btexture\b/i,
+  /\bglow\b/i,
+  /\bchemistry\b/i,
+  /\bsilhouette\b/i,
+  /\batmosfera\b/i,
+  /\bthe right shape\b/i,
+  /\bthe right frame\b/i,
+] as const;
+
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
@@ -67,6 +81,10 @@ function normalizeLine(line: string, toTrack: SkipLineTrack): string | null {
   }
 
   if (wordCount(trimmed) > MAX_WORDS) {
+    return null;
+  }
+
+  if (genericSkipPlatitudePatterns.some((pattern) => pattern.test(trimmed))) {
     return null;
   }
 
@@ -274,7 +292,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "Luna should sound calm, intuitive, and emotionally specific.",
         "She can acknowledge the miss softly, then place the next song like a gentle correction.",
-        "Favor atmosphere, feeling, tone, or the way a song settles in, but keep it concise.",
+        "Favor softness and emotional clarity, but keep it concrete and concise.",
         "Avoid vague moonlight poetry, generic comfort-language, and overexplaining the choice.",
       ].join(" ");
     case "marcus":
@@ -282,7 +300,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "Marcus should sound confident, quick, and musically intentional.",
         "He can acknowledge the miss, then place the next song with momentum and authority.",
-        "Favor language about timing, weight, energy, lift, pressure, or the cleanness of the next move.",
+        "Favor language about timing, pressure, lift, or the cleanness of the next move.",
         "Avoid hype-man shouting, sports metaphors, locker-room phrasing, and generic radio filler.",
       ].join(" ");
     case "jack":
@@ -290,7 +308,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "John should sound calm, discerning, and casually assured.",
         "He can acknowledge the miss with understated taste, then place the next song like a cleaner, better pull from the shelf.",
-        "Favor language about fit, texture, placement, tone, feel, or the way the next track lands.",
+        "Favor language about fit, placement, feel, or the way the next track lands.",
         "A restrained baseball phrase is fine once in a while if it feels natural, but avoid turning him into a sports-radio host.",
         "Avoid zingers, old-radio cosplay, vinyl cliches, and generic filler.",
       ].join(" ");
@@ -299,7 +317,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "Jolene should sound warm, lightly encouraging, and musically sure of herself.",
         "She can acknowledge the miss with a little heart, then place the next song like a gentle but confident course correction.",
-        "Favor language about warmth, lift, comfort, glow, or what feels right in the room.",
+        "Favor language about warmth, lift, comfort, or what will sit better here.",
         "Avoid pet-name overload, pageant energy, and overly sweet generic filler.",
       ].join(" ");
     case "robert":
@@ -316,7 +334,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "Tiffany should sound stylish, fast, dramatic, and musically intentional.",
         "She can acknowledge the miss with a little flair, then place the next song like a cleaner, hotter, more photogenic choice.",
-        "Favor language about vibe, polish, glow, chemistry, silhouette, mood, or what feels more iconic right now.",
+        "Favor sharp reactions and cleaner choices, not empty aesthetic language.",
         "Keep it concise and speakable, like an actual host with flair, not a social media caption or an ad.",
         "Avoid empty influencer filler, generic hype, and anything too branded or hashtag-ready.",
       ].join(" ");
@@ -325,7 +343,7 @@ function skipLineStyleGuidance(djID: string): string {
         "These lines are spoken right after the listener rejects a song.",
         "Juan should sound calm, smooth, and musically intentional in natural Spanish.",
         "He can acknowledge the miss briefly, then place the next song with quiet confidence and good taste.",
-        "Favor language about atmosfera, pulso, peso, movimiento, o por que la siguiente cancion entra mejor ahora.",
+        "Favor language about pulso, movimiento, ajuste, o por que la siguiente cancion entra mejor ahora.",
         "Keep the line concise and speakable, like something a real late-night host would actually say.",
         "Avoid generic radio filler, forced Spanglish, cheesy flirtiness, and overexplaining the choice.",
       ].join(" ");
@@ -338,31 +356,31 @@ function exampleSkipLinesForDJ(request: SkipLineGenerateRequest): string {
   switch ((request.djID || "").trim().toLowerCase()) {
     case "casey":
       return [
-        `{"lines":["Not this one. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Let’s let \\"${request.toTrack.title}\\" by ${request.toTrack.artist} take this spot.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} feels better here."]}`,
+        `{"lines":["Not this one. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Let's move to \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} makes more sense here."]}`,
       ].join(" ");
     case "luna":
       return [
-        `{"lines":["Not this one. \\"${request.toTrack.title}\\" by ${request.toTrack.artist} feels steadier.","Let’s soften the turn with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} settles in better here."]}`,
+        `{"lines":["Not this one. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Let's move gently to \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} sits better here."]}`,
       ].join(" ");
     case "marcus":
       return [
-        `{"lines":["That lost momentum. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better pressure here with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} lands cleaner right now."]}`,
+        `{"lines":["That missed. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Let's tighten it with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} lands cleaner right now."]}`,
       ].join(" ");
     case "jack":
       return [
-        `{"lines":["That was not quite the fit. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} sits better here.","Better pull here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}."]}`,
+        `{"lines":["That was not quite the fit. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} sits better here.","Let's go with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}."]}`,
       ].join(" ");
     case "jolene":
       return [
-        `{"lines":["Let’s warm it up with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","That should feel nicer: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better fit right here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}."]}`,
+        `{"lines":["Let's warm it up with \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","That should sit nicer: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better fit right here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}."]}`,
       ].join(" ");
     case "robert":
       return [
-        `{"lines":["That was not the correct move. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","A more stable outcome here is \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} aligns better here."]}`,
+        `{"lines":["That was not the correct move. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","A more stable move here is \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} aligns better here."]}`,
       ].join(" ");
     case "tiffany":
       return [
-        `{"lines":["No, we can do hotter than that. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better look right here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} has the better glow right now."]}`,
+        `{"lines":["No, we can do better than that. Try \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","Better move right here: \\"${request.toTrack.title}\\" by ${request.toTrack.artist}.","\\"${request.toTrack.title}\\" by ${request.toTrack.artist} is the better call right now."]}`,
       ].join(" ");
     case "miles":
       return [
@@ -430,9 +448,13 @@ Rules:
 - Keep tone snappy, conversational, and varied
 - No filler, no backstory, no meta commentary
 - Write like the middle of a bridge, not a setup or sign-off
+- Each line should do one simple job: acknowledge the miss, correct course, and place the next song
+- Keep the focus on the choice, not on describing the music
 - Do not use stock bridge lead-ins (for example: "we're shifting gears", "switching gears", "up next", "coming up")
 - Do not use stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere")
 - Do not mention release years, genres, or facts
+- Avoid empty abstraction-heavy language like vibe, mood, texture, glow, chemistry, silhouette, atmosphere, or energy unless it points to something concrete
+- Avoid generic approval lines like "better energy", "more the vibe", "better glow", or "right shape"
 - ${(request.djID || "").trim().toLowerCase() === "miles" ? "Write every line fully in natural spoken Spanish." : "Write every line in natural spoken English unless the DJ guidance says otherwise."}
 - ${retryGuidance(attempt, request)}
 - ${skipLineStyleGuidance(request.djID || "")}`.trim();
