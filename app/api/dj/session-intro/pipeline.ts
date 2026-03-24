@@ -189,6 +189,22 @@ const genericIntroPhrases = [
   "i can see that you",
 ];
 
+const genericIntroPlatitudePatterns = [
+  /\bemotional weather\b/i,
+  /\broom should widen\b/i,
+  /\bright light level\b/i,
+  /\bbefore the songs started glowing\b/i,
+  /\blet the room settle\b/i,
+  /\bshape the room\b/i,
+  /\btexture reads as\b/i,
+  /\bfelt mood is\b/i,
+  /\bthe point is to make the first move feel chosen\b/i,
+  /\bthis knows how to enter\b/i,
+  /\bthe room was already breathing\b/i,
+  /\bthis feels like the right pocket\b/i,
+  /\ba little glow on it\b/i,
+] as const;
+
 const supportedArchetypes = [
   "cold_open",
   "confident_station_open",
@@ -1221,8 +1237,9 @@ function applySessionTypeBehavior(
 function buildSystemPrompt(): string {
   return [
     "You are writing the opening lines for a live-feeling music radio show.",
-    "Sound like a real DJ opening a set. Be natural, specific, and in-the-moment.",
-    "Do not sound like an AI assistant or onboarding copy. Imply mood rather than explain it.",
+    "Sound like a real DJ opening a show. Be natural, specific, and in-the-moment.",
+    "Do not sound like an AI assistant, onboarding copy, or tasteful music writing.",
+    "Prefer concrete host behavior over abstract interpretation.",
     "Never return analysis. Never narrate the process. Return only the requested output.",
   ].join(" ");
 }
@@ -1235,7 +1252,7 @@ function buildDJPrompt(config: DJConfig, request: SessionIntroRequest): string {
     `Tone traits: ${config.toneTraits.join(", ")}.`,
     `Avoid traits: ${config.avoidTraits.join(", ")}.`,
     `Forbidden phrases: ${config.forbiddenPhrases.join(", ")}.`,
-    `Sentence style: ${config.sentenceStyle}. Time reference style: ${config.timeReferenceStyle}. Music framing style: ${config.musicFramingStyle}.`,
+    `Sentence style: ${config.sentenceStyle}. Time reference style: ${config.timeReferenceStyle}.`,
     `AI self-awareness style: ${config.aiAwarenessStyle}`,
     request.personaHint ? `Additional persona guidance: ${request.personaHint}` : "",
     request.toneGuardrails ? `Additional tone guardrails: ${request.toneGuardrails}` : "",
@@ -1305,11 +1322,11 @@ function djListenerReferenceStyle(djID: string): string {
     case "jolene":
       return "When referencing listener taste, Jolene is warm and recognizing — she makes the listener feel seen without making a production of it.";
     case "tiffany":
-      return "When referencing listener taste, Tiffany makes it aesthetic — she treats the listener's library as a style statement she's here to affirm and amplify.";
+      return "When referencing listener taste, Tiffany should sound sharp and stylish, but still concrete — one quick human observation, not an aesthetic monologue.";
     case "robert":
       return "When referencing listener taste, Robert is unsettlingly precise — he references listener data with a calm certainty that implies he's been tracking it for some time.";
     case "miles":
-      return "When referencing listener taste, Rafa is cinematic and unhurried — he connects listener taste to mood and atmosphere, not to facts about play counts.";
+      return "When referencing listener taste, Rafa is cinematic and unhurried — he connects listener taste to placement and feel, not to vague atmosphere or play-count facts.";
     default:
       return "";
   }
@@ -1386,19 +1403,19 @@ function buildListenerMomentPrompt(
 
 function archetypeDirective(archetype: string): string {
   const directives: Record<string, string> = {
-    cold_open: "Open immediately with conviction. Minimal ceremony. It should feel like the station is already moving.",
+    cold_open: "Open immediately with conviction. Minimal ceremony. It should feel like the host is already moving into the first choice.",
     confident_station_open: "Let this feel like a real show open with presence, momentum, and calm authority.",
-    understated_cool_open: "Keep it restrained, tasteful, and low-drama, but still intentional enough to feel like a real opening moment.",
+    understated_cool_open: "Keep it restrained, real, and low-drama, but still intentional enough to feel like a true opening moment.",
     warm_familiar_open: "Make it feel welcoming and lived-in, like the listener is settling into a station they trust.",
-    mood_setter: "Start by shaping the room and the emotional weather before you turn into the first song.",
+    mood_setter: "Set the scene with one concrete human detail, then move cleanly into the first song.",
     immediate_song_forward: "Get to the first song quickly, but still make the open feel deliberate and live.",
-    cinematic_open: "Create a vivid scene and a sense of scale without sounding overwritten or movie-trailer dramatic.",
+    cinematic_open: "Create a vivid but simple scene and a sense of scale without sounding overwritten or trailer-like.",
     playful_tease: "Use a lightly teasing entrance with charisma, then pivot cleanly into the opener.",
     reflective_open: "Let the opening feel thoughtful and specific, like the DJ noticed the exact right entry point into the hour.",
     late_night_confession: "Keep it close-mic, intimate, and unforced, like a late-night host talking to one listener.",
     friday_liftoff: "Give it weekend lift and a feeling of release, but stay grounded and radio-real.",
     slow_burn_open: "Let the set arrive patiently. The opening should feel unhurried but unmistakably intentional.",
-    local_radio_style: "Write like a real human station open: present, specific, lightly scene-setting, and naturally rhythmic.",
+    local_radio_style: "Write like a real human station open: present, specific, and naturally rhythmic.",
     intimate_low_key_open: "Keep it close, human, and lightly hushed, but not sleepy or vague.",
     caught_you_at_the_right_time: "Make it feel like the DJ caught the listener at exactly the right moment for this first song.",
   };
@@ -1408,7 +1425,7 @@ function archetypeDirective(archetype: string): string {
 
 function musicAwareDirective(context: SessionIntroShowContext): string {
   const mood = context.setContext.openingTrackMood.join(", ") || "intentional";
-  const texture = context.setContext.openingTrackTexture.join(", ") || "curated";
+  const texture = context.setContext.openingTrackTexture.join(", ") || "clean";
   const energyBand =
     context.setContext.openingTrackEnergy >= 0.72
       ? "high and assertive"
@@ -1418,10 +1435,10 @@ function musicAwareDirective(context: SessionIntroShowContext): string {
 
   return [
     `The opener's role is ${context.setContext.openingTrackRole}.`,
-    `Its felt mood is ${mood}.`,
-    `Its texture reads as ${texture}.`,
-    `Its energy feels ${energyBand}.`,
-    "Imply why this is a strong opening choice without sounding analytical or metadata-driven.",
+    `Useful cues from the opener: mood ${mood}; texture ${texture}; energy ${energyBand}.`,
+    "Do not recite these cues back in the intro.",
+    "Use them only to help the DJ make a believable opening choice and a clean turn into the song.",
+    "The listener should feel that the DJ picked this song on purpose, not hear a description of the song's abstract qualities.",
   ].join(" ");
 }
 
@@ -1452,10 +1469,13 @@ function buildContextPrompt(
     aiSelfAwarenessPrompt(config, variation, request.djID),
     musicAwareDirective(context),
     `First song: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
-    "Do not write a tiny intro. This should feel like a real show opening with scene, direction, and a memorable turn into music.",
+    "Do not write a tiny intro. This should feel like a real show opening with direction, presence, and a memorable turn into music.",
     "Make this feel like a living station already in motion. The listener should clearly feel that a show is starting, not that a DJ is casually dropping a pre-roll over a song.",
     "The opening should have one decisive launch beat: welcome the listener and start the set in the same motion, then build the room around that.",
     "Make the first song feel like the opening move of an hour, not just the next track in a queue.",
+    "Prefer concrete host behavior over music-description. The DJ should welcome, choose, steer, and hand off, not write a small essay about the song.",
+    "Every paragraph should do one clear job: open the show, place the first song, widen the hour, or hand off into music.",
+    "Avoid abstraction-heavy language built from mood, texture, atmosphere, glow, energy, or emotional weather unless it points to something concrete and audible.",
     shouldEmphasizeHourHorizon
       ? "Naturally signal that this is the top of a roughly hour-long show. One light horizon cue is enough: 'for the next hour', 'this hour', 'the hour ahead', 'over the next hour', or an equally natural variation. Mention that horizon only once in the entire intro."
       : "Do not force an hour-long-show cue here if the intro is functioning more like a continuation than a fresh start.",
@@ -1480,6 +1500,7 @@ function buildComponentPrompt(
     "momentAnchor may be 0 to 1 sentence.",
     "momentAnchor should only stand alone if that sounds natural. If the local-moment reference flows better inside openingHit or setFraming, leave momentAnchor empty.",
     "setFraming should usually be 1 to 2 sentences and should carry the biggest sense of show-opening scale. It may absorb the time/day reference if that makes the flow sound more human.",
+    "setFraming should sound like a host steering the first minutes of a show, not like a critic describing a song's aura.",
     context.sessionType === "resume_playback"
       ? "Because this intro behaves more like a continuation, do not force a full hour-horizon line."
       : "setFraming should lightly imply the shape of the hour ahead so the listener understands a show is beginning, not that they joined midway.",
@@ -1488,6 +1509,7 @@ function buildComponentPrompt(
       ? `If you include AI self-awareness, put it in personalityFlourish or setFraming as a single brief aside. Keep it subtle, in character, and aligned with this style: ${config.aiAwarenessStyle}`
       : "Do not use personalityFlourish to mention being AI in this intro.",
     "songHandoff must be 1 sentence and must name the song and artist directly.",
+    "songHandoff should feel like a real on-air handoff into music, not like a poetic summary of the track.",
     "Use empty strings only for truly omitted optional components.",
     "Song handoff must cleanly introduce the opening song and sound like the final turn into music.",
     "Do not write a second welcome or a second start after openingHit. The intro should feel like one continuous launch into the set.",
@@ -1496,6 +1518,8 @@ function buildComponentPrompt(
     "Do not create a stiff one-two pattern where sentence one is the welcome and sentence two is only the day or time. The opening should move like natural speech.",
     "If you mention the hour ahead or the next hour, do it only once in the entire intro. Do not echo that same horizon idea in another sentence.",
     "Avoid vague standalone lines like 'this felt right' or 'let's try it' when they are too empty to mean anything. If you name the program at all, do it once and then move on.",
+    "Do not use abstraction-heavy filler like 'emotional weather', 'texture', 'glow', 'energy', 'atmosphere', 'the room breathing', or 'light level' unless it points to one concrete thing and sounds like real speech.",
+    "Do not let multiple paragraphs all do the same job. Avoid stacking welcome + explanation + music essay.",
     "Do not open with a bare clipped time fragment on its own like 'Thursday night,' or 'At this hour,'.",
     `Do not reuse stale-feeling phrasing. Make the first song feel intentionally placed for ${context.timeContext.label}.`,
     `Never write onboarding copy. Never explain WAIV unless session type ${context.sessionType} absolutely requires a light station cue.`,
@@ -1948,6 +1972,11 @@ function inferMetadata(
   };
 }
 
+function containsGenericIntroPlatitude(text: string): boolean {
+  const normalized = normalizeWhitespace(text);
+  return genericIntroPlatitudePatterns.some((pattern) => pattern.test(normalized));
+}
+
 function evaluateIntro(
   intro: string,
   request: SessionIntroRequest,
@@ -2039,6 +2068,10 @@ function evaluateIntro(
     score -= 0.28;
     weakComponents.add("openingHit");
   }
+  if (containsGenericIntroPlatitude(intro)) {
+    score -= 0.28;
+    weakComponents.add("setFraming");
+  }
   if (!intro.trim().endsWith(".") && !intro.trim().endsWith("!") && !intro.trim().endsWith("?")) {
     score -= 0.08;
     weakComponents.add("songHandoff");
@@ -2112,6 +2145,9 @@ function normalizeIntro(
     return null;
   }
   if (countProgramLabelMentions(intro, request.djID) > 1) {
+    return null;
+  }
+  if (containsGenericIntroPlatitude(intro)) {
     return null;
   }
 

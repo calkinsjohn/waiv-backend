@@ -49,13 +49,13 @@ describe("POST /api/dj/session-intro", () => {
         content: [
           {
             type: "text",
-            text: `Hey, welcome in. I’m April, and we’re opening the show the only way I trust one of these Thursday nights to begin.
+            text: `Hey, welcome in. I’m April, and Thursday night feels like a good place to start the show without overdoing it.
 
-It’s Thursday night, and this is the kind of hour where the first song matters a little more than the speech around it. I wanted the opening to feel lived-in instead of dressed up, like the room was already breathing before we walked into it.
+The first song matters a little more on a night like this, so I wanted something that feels chosen instead of just first in line.
 
-On W.A.I.V. I’d rather start with something that lets the room settle and then quietly take over than force a fake big entrance. The point is to make the first move feel chosen.
+For the next hour, I’m keeping this calm, a little deliberate, and close to the ground.
 
-We’re opening with "Yellow" by Coldplay, and it feels like the right way to let everything breathe.`,
+We’re opening with "Yellow" by Coldplay.`,
           },
         ],
       });
@@ -172,13 +172,13 @@ We'll start there and keep the room moving.`,
         content: [
           {
             type: "text",
-            text: `Hi, welcome in. I'm Luna, and we're opening softly on purpose tonight.
+            text: `Hi, welcome in. I'm Luna, and tonight feels like a gentle way to open the show.
 
-Tonight leaves a little more room around the edges, and that usually tells me things should arrive softly before they ask for anything. It feels like the kind of hour where the room should widen before it fills.
+I didn't want to rush the first move. Some nights go better when the first song arrives softly and lets the hour widen on its own.
 
-I wanted this opening on W.A.I.V. to feel patient, like everything found the exact right light level before the songs started glowing. That makes the first step mean more.
+For the next hour, I want to keep this close and a little unhurried.
 
-We'll start with "Reckoner" by Radiohead, because it knows how to enter without breaking the spell.`,
+We'll start with "Reckoner" by Radiohead.`,
           },
         ],
       });
