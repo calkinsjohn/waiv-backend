@@ -1146,14 +1146,7 @@ function selectArchetype(context: SessionIntroShowContext, variation: VariationP
   }
 
   const total = weights.reduce((sum, [, weight]) => sum + weight, 0);
-  const seed = [
-    config.id,
-    context.sessionType,
-    context.timeContext.label,
-    context.setContext.openingTrackRole,
-    context.recentHistory.recentArchetypes.join(","),
-  ].join("|");
-  const pick = stableUnitFloat(seed) * total;
+  const pick = Math.random() * total;
   let cursor = 0;
   for (const [archetype, weight] of weights) {
     cursor += weight;
@@ -1181,6 +1174,20 @@ function applySessionTypeBehavior(
         allowStationMention: false,
         desiredParagraphs: 2,
       };
+    case "fresh_start": {
+      const componentCount = basePlan.required.length + Math.min(basePlan.optional.length, 1);
+      const targetSentences = Math.max(componentCount + 1, 3);
+      const minWords = basePlan.required.length <= 2 ? 18 : 32;
+      return {
+        targetSentences,
+        minWords,
+        maxWords: 100,
+        required: basePlan.required,
+        optional: basePlan.optional,
+        allowStationMention: false,
+        desiredParagraphs: Math.min(targetSentences - 1, 3),
+      };
+    }
     case "switched_dj":
       return {
         targetSentences: 3,
