@@ -90,6 +90,10 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("If recent bridge lines are provided, treat them as anti-patterns for this turn");
     expect(systemPrompt).toContain('Do not open with overused reflective stems like "There\'s something about..."');
     expect(systemPrompt).toContain('If your first instinct is "There\'s something about..."');
+    expect(systemPrompt).toContain("Every bridge should do one clear host move");
+    expect(systemPrompt).toContain("Every bridge should include at least one concrete anchor");
+    expect(systemPrompt).toContain("Do not use abstract taste-language as filler");
+    expect(systemPrompt).toContain('Avoid empty approval language like "this feels right"');
     expect(messageContent).toContain("Recently used bridge lines to avoid echoing");
   });
 
@@ -246,6 +250,47 @@ describe("POST /api/dj/transition", () => {
     expect(payload.llmModel.length).toBeGreaterThan(0);
   });
 
+  it("rejects abstract platitude bridges", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'The vibe shifts nicely into "Reckoner" by Radiohead. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "tiffany",
+        sessionPosition: 4,
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-WAIV-Transition-Reason")).toBe("llm_rejected");
+  });
+
   it("collapses duplicated ending phrases before appending the station tag", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -257,7 +302,7 @@ describe("POST /api/dj/transition", () => {
         content: [
           {
             type: "text",
-            text: 'This one carries the right kind of weight for the room, "Reckoner" by Radiohead, this one carries the right kind of weight for the room.',
+            text: 'I wanted "Reckoner" by Radiohead right here, I wanted "Reckoner" by Radiohead right here.',
           },
         ],
       });
@@ -286,8 +331,8 @@ describe("POST /api/dj/transition", () => {
     const payload = (await response.json()) as { djLine: string };
 
     expect(response.status).toBe(200);
-    expect(payload.djLine).toContain('This one carries the right kind of weight for the room, "Reckoner" by Radiohead.');
-    expect(payload.djLine.toLowerCase()).not.toContain('room, this one carries the right kind of weight for the room');
+    expect(payload.djLine).toContain('I wanted "Reckoner" by Radiohead right here.');
+    expect(payload.djLine.toLowerCase()).not.toContain('right here, i wanted "reckoner" by radiohead right here');
   });
 
   it("strips gibberish suffix fragments before appending the station tag", async () => {
@@ -558,8 +603,8 @@ describe("POST /api/dj/transition", () => {
 
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("DJ-specific bridge guidance for Rafa");
-    expect(systemPrompt).toContain("Favor mood, momentum, glow, shape, presence, and after-hours confidence");
-    expect(systemPrompt).toContain("A little more glow on this turn — [song] by [artist]. This is W.A.I.V.");
+    expect(systemPrompt).toContain("Favor clean confidence and after-hours presence, not decorative mood-writing");
+    expect(systemPrompt).toContain("Seguimos por aquí con [song] by [artist]. This is W.A.I.V.");
   });
 
   it("includes Tiffany-specific bridge guidance in the transition prompt", async () => {
@@ -606,7 +651,7 @@ describe("POST /api/dj/transition", () => {
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("DJ-specific bridge guidance for Tiffany");
     expect(systemPrompt).toContain("avoid social-caption language");
-    expect(systemPrompt).toContain("Set the mood first, then add a playful influencer-style observation");
-    expect(systemPrompt).toContain("The algorithm actually delivered a moment here");
+    expect(systemPrompt).toContain("keep the line rooted in an actual choice, reaction, or contrast");
+    expect(systemPrompt).toContain("The algorithm actually did its job here");
   });
 });

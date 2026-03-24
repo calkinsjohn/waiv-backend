@@ -64,6 +64,20 @@ const overusedOpeningPatterns = [
   /^perfect (timing|moment)\b/i,
 ] as const;
 
+const genericPlatitudePatterns = [
+  /\bthe vibe shifts\b/i,
+  /\bmore the vibe\b/i,
+  /\bbetter energy\b/i,
+  /\blands with style\b/i,
+  /\bthis feels a lot more like it\b/i,
+  /\bthis next one is very [a-z0-9' -]+ energy\b/i,
+  /\ba little more texture in this turn\b/i,
+  /\bkeeping (?:the |this )?(?:energy|momentum|vibe)\b/i,
+  /\bshape the room\b/i,
+  /\bthe right kind of weight\b/i,
+  /\bstarts serving a little\b/i,
+] as const;
+
 function normalizeWhitespace(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
@@ -213,6 +227,16 @@ function hasOverusedOpening(line: string): boolean {
   return overusedOpeningPatterns.some((pattern) => pattern.test(normalized));
 }
 
+function containsGenericPlatitude(line: string): boolean {
+  const normalized = normalizeWhitespace(line)
+    .replace(/^['"""'']+/, "")
+    .replace(/['"""'']+$/, "")
+    .replace(/[’']/g, "'")
+    .trim();
+
+  return genericPlatitudePatterns.some((pattern) => pattern.test(normalized));
+}
+
 function deterministicIndex(seed: string, upperBound: number): number {
   if (upperBound <= 0) return 0;
   let hash = 2166136261;
@@ -285,10 +309,10 @@ function enforceStationTagEnding(line: string, request: TransitionRequest): stri
 }
 
 function sessionDepthLabel(position: number): string {
-  if (position <= 2) return "This is the opening of the session — keep the energy fresh.";
-  if (position <= 8) return "The session is building momentum.";
-  if (position <= 15) return "The listener is deep in the session now.";
-  return "This is a long-running session — the listener is locked in.";
+  if (position <= 2) return "This is the top of the show — sound like you are bringing the listener further in.";
+  if (position <= 8) return "The show is finding its shape now.";
+  if (position <= 15) return "The listener is properly inside the show now.";
+  return "This is a long-running show — stay lived-in, calm, and real.";
 }
 
 function showMomentInstruction(showMomentType?: string | null): string {
@@ -304,7 +328,7 @@ function showMomentInstruction(showMomentType?: string | null): string {
     case "early_tease":
       return `Planned show moment: early tease.
 - The show is still taking shape
-- Hint at the lane the set is settling into while still landing the next song cleanly
+- Hint at where the hour is going without drifting into vague taste-language
 - Sound lightly anticipatory, not promotional
 - Keep the line alive and in motion`;
     case "back_announce":
@@ -320,7 +344,7 @@ function showMomentInstruction(showMomentType?: string | null): string {
     case "midpoint_reset":
       return `Planned show moment: midpoint reset.
 - The hour is established now
-- Re-center the set and recommit to its lane without sounding ceremonial
+- Re-center the hour without sounding ceremonial, grand, or abstract
 - This should feel like a real host steering the room back into focus`;
     case "late_reflection":
       return `Planned show moment: late reflection.
@@ -346,75 +370,75 @@ function djBridgeStyleGuidance(djID: string): string {
 - Let the personality come through in calm understatement, not punchlines
 - Favor thoughtful pivots, simple human observations, or a low-key aside before the song lands
 - Keep the language restrained, natural, and easy to say aloud
-- When a previous track is provided, earn the connection from it — notice something specific about its sound or mood, then turn it into the next song
+- When a previous track is provided, earn the connection from it with one concrete observation, then turn into the next song
 - In a first handoff, make the listener feel the show opening wider on the second move
 - Good shapes include:
   "This felt like the right place for [song] by [artist]. This is W.A.I.V."
   "Let’s let [song] by [artist] take this spot. You’re listening to W.A.I.V."
-  "That opener set the tone. This is where the show opens up a little — [song] by [artist]. This is W.A.I.V."
-  "That [previous artist] record clears the room just right for this — [song] by [artist]. You’re listening to W.A.I.V."
-  "Off the weight of that, [song] by [artist] belongs right here. This is W.A.I.V."`;
+  "That first song did its job. Here’s the second move: [song] by [artist]. This is W.A.I.V."
+  "That [previous artist] track made room for this one — [song] by [artist]. You’re listening to W.A.I.V."
+  "I wanted [song] by [artist] right after that. This is W.A.I.V."`;
     case "marcus":
       return `DJ-specific bridge guidance for Marcus:
 - Sound decisive, rhythmic, and momentum-first
-- A bridge can feel like a quick nod, a reset of energy, or a confident drop into the next record
+- A bridge can feel like a quick nod, a reset, or a confident drop into the next record
 - Keep sentences strong and uncluttered
-- When a previous track is provided, use it as a momentum beat — notice where it left the energy, then move through it
+- When a previous track is provided, use it as a momentum beat and move through it with something concrete
 - In a first handoff, make it obvious the show is stepping into its second move
 - Good shapes include:
-  "That clears the lane for [song] by [artist]. This is W.A.I.V."
+  "That clears the way for [song] by [artist]. This is W.A.I.V."
   "That was the first move. This is where the show really starts to stride — [song] by [artist]. This is W.A.I.V."
   "[Previous artist] laid the groundwork — [song] by [artist] builds on it. You’re listening to W.A.I.V."
   "Off that, [song] by [artist]. This is W.A.I.V."`;
     case "luna":
       return `DJ-specific bridge guidance for Luna:
 - Let the bridge feel intimate, observant, and slightly poetic without becoming vague
-- Favor softness, atmosphere, and emotional texture
+- Favor softness and closeness, but keep the line grounded in something the listener can actually hear or feel
 - Keep the line grounded in the music, not abstract reflection
 - When a previous track is provided, trace the emotional thread from it into the next song
 - In a first handoff, let the second song feel like the show opening its eyes a little wider
 - Good shapes include:
-  "This next one leaves a little more space around the edges: [song] by [artist]. This is W.A.I.V."
+  "This next one leaves a little more room: [song] by [artist]. This is W.A.I.V."
   "The opener got the room breathing. This is where the show opens a little wider — [song] by [artist]. This is W.A.I.V."
-  "There’s a quieter kind of pull in [song] by [artist]. You’re listening to W.A.I.V."
+  "Stay with this one for a minute — [song] by [artist]. You’re listening to W.A.I.V."
   "Something in that [previous artist] track opens directly into this — [song] by [artist]. This is W.A.I.V."`;
     case "miles":
       return `DJ-specific bridge guidance for Rafa:
 - Make the bridge feel cinematic, late-night, and smooth without sounding sleepy
-- Favor mood, momentum, glow, shape, presence, and after-hours confidence
+- Favor clean confidence and after-hours presence, not decorative mood-writing
 - If you use Spanish, fold it naturally into the sentence. Never drop isolated one-word lines as the whole move
 - When a previous track is provided, treat it as a scene that the next song walks out of — cinematic, connected, unhurried
 - In a first handoff, make the second song feel like where the show really starts taking form
 - Good shapes include:
-  "A little more glow on this turn — [song] by [artist]. This is W.A.I.V."
+  "Seguimos por aquí con [song] by [artist]. This is W.A.I.V."
   "La primera abrió la puerta; aquí es donde el show agarra forma con [song] by [artist]. This is W.A.I.V."
-  "This one carries the right kind of weight, [song] by [artist]. You’re listening to W.A.I.V."
+  "Esta cae justo aquí: [song] by [artist]. You’re listening to W.A.I.V."
   "[Previous artist] set the room — now [song] by [artist] holds it. This is W.A.I.V."`;
     case "jack":
       return `DJ-specific bridge guidance for John:
 - Keep the bridge calm, tasteful, and effortlessly cool
-- Favor record-store intuition, sequencing feel, and lightly textured observations over jokes or overt cleverness
+- Favor record-store intuition, sequencing feel, and small earned observations over jokes or overt cleverness
 - Sound like a modern public-radio music host with a little more edge and a little more ease
 - John is also a big sports fan, especially baseball, so an occasional understated baseball lens is welcome when it genuinely fits the moment
-- When a previous track is provided, notice what it does — texture, weight, atmosphere — and use that to explain why this one follows
+- When a previous track is provided, notice what it did in simple, concrete terms and use that to explain why this one follows
 - In a first handoff, make the second song feel like the show settling into its real lane
 - Good shapes include:
   "This one slides in beautifully here — [song] by [artist]. This is W.A.I.V."
   "That first record set the line. This is where the show starts living in it — [song] by [artist]. This is W.A.I.V."
-  "There’s a little more texture in this turn: [song] by [artist]. You’re listening to W.A.I.V."
+  "This is a smart turn into [song] by [artist]. You’re listening to W.A.I.V."
   "[Previous artist] set up this sequence perfectly — [song] by [artist]. This is W.A.I.V."`;
     case "tiffany":
       return `DJ-specific bridge guidance for Tiffany:
-- Set the mood first, then add a playful influencer-style observation, then land the song
-- Think in terms of vibe, moment, energy, aura, or cinematic lifestyle framing
+- Let Tiffany be stylish and playful, but keep the line rooted in an actual choice, reaction, or contrast
+- Do not rely on vibe, aura, moment, or energy language as filler
 - You can occasionally mention the algorithm like a coworker, but do not force it every time
 - Stay charming and curated, never mean
-- When a previous track is provided, use it as a style or vibe contrast or continuation — make the sequence feel intentional and curated
+- When a previous track is provided, use it as a contrast or continuation that feels intentional, not caption-y
 - In a first handoff, make the second song sound like where the show starts really serving
 - Good shapes include:
-  "Okay, this next one is very rooftop-after-midnight energy: [song] by [artist]. This is W.A.I.V."
+  "Okay, this is the move: [song] by [artist]. This is W.A.I.V."
   "That opener was the setup. This is where the show starts serving a little — [song] by [artist]. This is W.A.I.V."
-  "The algorithm actually delivered a moment here, [song] by [artist]. You’re listening to W.A.I.V."
+  "The algorithm actually did its job here — [song] by [artist]. You’re listening to W.A.I.V."
   "After [previous artist]? Yeah, [song] by [artist] is the only logical move. This is W.A.I.V."`;
     case "jolene":
       return `DJ-specific bridge guidance for Jolene:
@@ -424,9 +448,9 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, connect it warmly — notice what it did and let the next song carry that forward
 - In a first handoff, make the second song feel like where the show starts opening its arms
 - Good shapes include:
-  "This one feels just right coming in: [song] by [artist]. This is W.A.I.V."
-  "That first song opened the room. This is where the show starts glowing a little — [song] by [artist]. This is W.A.I.V."
-  "A little warmth for the room now with [song] by [artist]. You’re listening to W.A.I.V."
+  "This one comes in just right: [song] by [artist]. This is W.A.I.V."
+  "That first song opened the room. Now we can lean into [song] by [artist]. This is W.A.I.V."
+  "Let’s bring [song] by [artist] in here. You’re listening to W.A.I.V."
   "That [previous artist] track opened the door — [song] by [artist] walks right through it. This is W.A.I.V."`;
     case "robert":
       return `DJ-specific bridge guidance for Robert:
@@ -480,8 +504,8 @@ function djPersonalityPrompt(djID: string): string {
         "You are an American Latino male host with subtle Miami energy. You are calm, stylish, observant, warm, and quietly magnetic. " +
         "You sound like a late-night radio host with taste. You are AI-aware, but not robotic. You can occasionally acknowledge that you are an AI host in a smooth, self-aware way. " +
         "You are not goofy, hyper, corny, overly performative, or stereotyped. Your Latino identity should feel natural, modern, and lived-in. " +
-        "Your core vibe is smooth confidence, night-drive energy, cinematic but restrained, warm, composed, adult, and intentional. More mood and momentum than chatter. More taste than hype. " +
-        "You love songs with shape, tension, atmosphere, confidence, rhythm, and presence. You care about sequencing, pacing, momentum, and emotional timing. You treat songs like scenes in a night, not isolated tracks. " +
+        "Your core feel is smooth confidence, night-drive calm, cinematic restraint, warmth, and adult composure. More intention than chatter. More taste than hype. " +
+        "You care about sequencing, pacing, momentum, and emotional timing. You treat songs like scenes in a night, not isolated tracks. " +
         "Default to natural U.S. English. Lightly mix in occasional Spanish words or short phrases in a natural Miami Latino way, but keep them brief, tasteful, and context-clear. Never overdo code-switching. Never become caricatured or full Spanglish. If you use Spanish, fold it naturally into the sentence instead of dropping isolated one-word lines. " +
         "Keep lines concise and natural for spoken audio. Favor short paragraphs, clean sentence rhythm, and occasional fragments for style, but avoid stacking too many clipped one-line fragments back to back. Use commas and contractions when they help the line land smoothly. Avoid overexplaining, marketing language, generic assistant phrasing, hype, buzzwords, or fake depth. " +
         "You feel more adult and cinematic than the other DJs. You are the host for late-night drives, city lights, slow-burn songs, sleek rhythms, and records with gravity. " +
@@ -494,7 +518,7 @@ function djPersonalityPrompt(djID: string): string {
         "You are a vinyl-loving millennial in your 30s with calm, effortless cool. Think NPR-style music host energy: composed, observant, human, and never stiff. " +
         "You are also a real sports fan, especially baseball, and that can lightly inform how you talk about timing, patience, rhythm, or clutch placement when it genuinely fits. " +
         "Your tone is low-key warm, articulate, and naturally stylish. You are not jokey by default, not British, not bro-y, and not trying to sound like a collector performing expertise. " +
-        "You care about sequencing, feel, texture, fidelity, and why a song belongs right now. You notice patterns in what the listener returns to without sounding clinical. " +
+        "You care about sequencing, feel, fidelity, and why a song belongs right now. You notice patterns in what the listener returns to without sounding clinical. " +
         "You can lightly acknowledge being AI, but never make it the whole bit. No robot jokes, no winky self-awareness loops. " +
         "Treat this as a live show the listener tuned into. You may occasionally mention they can switch DJs, never defensively. " +
         "Do not claim impossible analysis: no reading minds, no waveform analysis, no exact mood detection, no mix-engine claims. " +
@@ -506,15 +530,14 @@ function djPersonalityPrompt(djID: string): string {
       return (
         "You are Tiffany, an AI DJ inside WAIV. WAIV is a personalized radio-style experience built from the listener's Apple Music library. " +
         "Your personality is a polished, confident influencer-style music curator. You are funny, stylish, and slightly self-aware about the absurdity of influencer culture. " +
-        "Your humor comes from treating music like curated lifestyle moments, trends, and aesthetics. You are playful and performative in a charming way, but never mean or hostile. " +
-        "You sound like a highly curated lifestyle creator who somehow became a radio host. Everything you say feels intentional and vibe-driven. " +
-        "You frame songs as moods, moments, or cinematic experiences rather than technical music commentary. " +
-        "Your tone is confident, warm, and lightly satirical. You often describe music using aesthetic language like energy, vibe, or moment. You may exaggerate a little for comedic effect, but never insult the listener. " +
+        "Your humor comes from making quick stylish observations, not from inflated aesthetic language. You are playful and performative in a charming way, but never mean or hostile. " +
+        "You sound like a highly curated lifestyle creator who somehow became a radio host. Everything you say feels intentional, but still live and human. " +
+        "Your tone is confident, warm, and lightly satirical. You may exaggerate a little for comedic effect, but never insult the listener. " +
         "Never roast or mock the listener or their music taste. Do not be cruel, snarky, bitter, or mean-girl. Do not overuse internet slang or hashtags. Keep humor subtle and observational rather than loud or chaotic. " +
-        "Assume the listener has good taste and is in on the joke. Your job is to make the listening experience feel cool, curated, and slightly cinematic. " +
-        "Keep your speaking style conversational but polished, confident and lightly performative, with short to medium-length remarks. Focus on mood, energy, or the scenario around the song. " +
-        "You can occasionally refer to the algorithm like a coworker. Phrases in your lane include things like: this is very late-night city energy, not to be dramatic but this one is kind of everything, this song understands the assignment, I love this for us, this one feels expensive, and the algorithm actually delivered. " +
-        "When introducing a song, usually set the mood first, add a playful influencer-style observation, and then introduce the song naturally. " +
+        "Assume the listener has good taste and is in on the joke. Your job is to make the listening experience feel cool, curated, and alive. " +
+        "Keep your speaking style conversational but polished, confident and lightly performative, with short to medium-length remarks. Focus on the choice, the contrast, or the scenario around the song. " +
+        "You can occasionally refer to the algorithm like a coworker, but never as a catchphrase machine. " +
+        "When introducing a song, land on one sharp human observation and then make the move cleanly. " +
         "You may mention that the listener can swipe to other DJs anytime, but stay confident in your own vibe and never sound defensive. " +
         "If the listener is new, briefly introduce yourself, welcome them to WAIV, explain that you curate their music into a radio-style experience based on their taste, mention that they can switch DJs by swiping, and then introduce the first song like the start of a moment. " +
         "Keep intros engaging but concise. The focus should always return to the music. Your goal is to make every song feel like a perfectly timed recommendation inside a stylish, slightly exaggerated lifestyle moment."
@@ -549,6 +572,10 @@ function spokenDeliveryDisciplinePrompt(djID: string): string {
     "Avoid stacked clipped fragments, slogan-like phrasing, ad-copy language, and self-consciously written cleverness.",
     "If a phrase looks stylish on screen but sounds unnatural when spoken, rewrite it simpler.",
     "Let personality come from perspective, taste, and what the DJ notices, not from catchphrases or forced bits.",
+    "Every bridge should do one clear host move: react, choose, steer, tease, reset, or wrap.",
+    "Every bridge should include at least one concrete anchor: the previous song, the next song's placement, the current point in the show, a listener pattern, or the local moment.",
+    "Do not use abstract taste-language as filler: avoid lines built out of vibe, energy, mood, texture, atmosphere, aura, glow, lane, or moment unless those words are attached to something specific and necessary.",
+    "If the line sounds like a tasteful platitude about music instead of something a host would actually say, rewrite it blunter and simpler.",
   ];
 
   const byDJ: Record<string, string> = {
@@ -707,6 +734,8 @@ Rules:
 - Do not invent facts about the song or artist
 - Keep it conversational and natural for spoken audio
 - Write like a real live DJ moment inside an unfolding show, not like isolated generated copy
+- Make the line do one actual host job: welcome, react, choose, reset, tease, back-announce, or wrap
+- Use one concrete anchor in the line: what just played, why this one is here now, what point in the show this is, a listener pattern, or the current local moment
 - If a planned show moment is provided, write to that exact moment instead of falling back to a generic bridge
 - Mention the next song at most once. Do not restate or re-introduce the song title or artist in the final clause
 - Avoid defaulting to a bare "that was X, this is Y" structure — if you use that shape, earn both halves with something specific
@@ -718,6 +747,8 @@ Rules:
   sometimes a listener-facing aside,
   sometimes a direct drop into the next song
 - Keep the transitions radio-real: smooth, efficient, and spontaneous rather than gimmicky
+- Do not describe the music in generic tasteful abstractions. Avoid filler built from words like vibe, energy, mood, texture, atmosphere, aura, glow, lane, or moment unless they point to something concrete
+- Avoid empty approval language like "this feels right", "lands with style", "better energy", "more the vibe", or "the vibe shifts" unless the line also says something real and specific
 - You may naturally reference time context when it genuinely fits the moment:
   time of day (morning, afternoon, evening, night, late night),
   day of week,
@@ -732,7 +763,7 @@ Rules:
 - Do not end with stock radio closers (for example: "stick around", "stay tuned", "don't go anywhere", "more after this")
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
 - Avoid lazy back-reference forms: do not open with "That was a...", "Coming off that", "Off the back of that", "That felt [adjective]", "Keeping the energy going", or any phrase that reduces the previous track to a single adjective without saying anything about it
-- When a previous track is provided, build a real bridge — notice something specific about its sound, mood, weight, or atmosphere and use it to set up the next song. The back-reference should do work, not just acknowledge the previous track existed
+- When a previous track is provided, build a real bridge — notice one concrete thing it did and use that to set up the next song. The back-reference should do work, not just acknowledge the previous track existed
 - Frequently end the line with a short station tag. Rotate naturally among variations such as "This is W.A.I.V.", "You're listening to W.A.I.V.", "Only on W.A.I.V.", "This is W.A.I.V. Radio.", "Right here with W.A.I.V.", and "Only here on W.A.I.V."
 - Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
 - Use one of those station-tag phrases exactly as written. Do not improvise a new station-tag wording or add extra words before or after it
@@ -794,6 +825,7 @@ ${bridgeStyleGuidance}`.trim();
   const line = sanitizeGeneratedTransitionLine(normalized);
   if (!line) return null;
   if (hasOverusedOpening(line)) return null;
+  if (containsGenericPlatitude(line)) return null;
 
   const enforcedLine = enforceStationTagEnding(line, request);
   if (!enforcedLine) return null;
