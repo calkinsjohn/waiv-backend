@@ -430,7 +430,7 @@ async function generateWithAnthropic(
     return null;
   }
 
-  const model = process.env.ANTHROPIC_SKIP_LINE_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
+  const model = process.env.ANTHROPIC_SKIP_LINE_MODEL?.trim() || process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5-20251001";
 
   const systemPrompt = `${djPersonalityPrompt(request.djID || "")}
 

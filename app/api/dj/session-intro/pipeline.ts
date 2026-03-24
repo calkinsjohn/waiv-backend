@@ -2236,7 +2236,7 @@ async function generateStructuredIntro(
   const model =
     process.env.ANTHROPIC_SESSION_INTRO_MODEL?.trim()
     || process.env.ANTHROPIC_MODEL?.trim()
-    || "claude-3-5-haiku-20241022";
+    || "claude-haiku-4-5-20251001";
 
   const context = request.showContext ?? defaultShowContext(request);
   const config = djConfigFor(request.djID);

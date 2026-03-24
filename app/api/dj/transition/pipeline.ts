@@ -710,7 +710,7 @@ async function generateWithAnthropic(request: TransitionRequest): Promise<{ line
   const model =
     process.env.ANTHROPIC_TRANSITION_MODEL?.trim() ||
     process.env.ANTHROPIC_MODEL?.trim() ||
-    "claude-haiku-4-5";
+    "claude-haiku-4-5-20251001";
 
   const personality = djPersonalityPrompt(request.djID);
   const depthContext = sessionDepthLabel(request.sessionPosition);

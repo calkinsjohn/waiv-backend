@@ -593,7 +593,7 @@ async function generateDJLineWithAnthropic(
     return null;
   }
 
-  const model = process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5";
+  const model = process.env.ANTHROPIC_MODEL?.trim() || "claude-haiku-4-5-20251001";
 
   const systemPrompt = `You are a warm, knowledgeable radio DJ introducing a song. You are given editorial prose and optional context.
 ${storyPersonaGuidance(djID)}
