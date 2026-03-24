@@ -2183,6 +2183,8 @@ async function requestAnthropicText(
   });
 
   if (!response.ok) {
+    const errorBody = await response.text().catch(() => "(unreadable)");
+    console.error(`[session-intro] Anthropic API error ${response.status} model=${model}: ${errorBody}`);
     throw new Error(`anthropic_request_failed_${response.status}`);
   }
 
@@ -2234,7 +2236,7 @@ async function generateStructuredIntro(
   const model =
     process.env.ANTHROPIC_SESSION_INTRO_MODEL?.trim()
     || process.env.ANTHROPIC_MODEL?.trim()
-    || "claude-haiku-4-5";
+    || "claude-3-5-haiku-20241022";
 
   const context = request.showContext ?? defaultShowContext(request);
   const config = djConfigFor(request.djID);
