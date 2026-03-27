@@ -257,7 +257,7 @@ const djConfigs: Record<string, DJConfig> = {
     stationStyleWeights: { WAIV: 0.32, "W.A.I.V.": 0.22, omit_station_once_in_awhile: 0.46 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
-    stationPresenceExamples: ["April here with you on WAIV.", "Hey, we're back on W.A.I.V. April here.", "April here."],
+    stationPresenceExamples: ["April here with you on WAIV.", "Hey, we're back on W.A.I.V. April here.", "April with you tonight."],
     sonicMomentExamples: ["Hey, we're back.", "Good to have you here.", "Alright, we're back."],
     curatorMoves: ["Wanted to start somewhere familiar.", "This felt like the right kind of opener.", "I wanted a first move with some patience."],
     anchorMoves: ["Feels like a slow Thursday.", "Right about the part of the night where everything softens.", "Middle of the afternoon, but we're not rushing it."],
@@ -1431,9 +1431,42 @@ function parseGeneratedPayload(rawText: string): GeneratedPayload {
 
 function cleanGeneratedIntro(text: string): string {
   return splitParagraphs(text.replace(/^["“”'‘’]+|["“”'‘’]+$/g, ""))
-    .map((paragraph) => normalizeWhitespace(paragraph).replace(/\s+([,.!?;:])/g, "$1"))
+    .map((paragraph) => dedupeAdjacentSentences(normalizeWhitespace(paragraph)).replace(/\s+([,.!?;:])/g, "$1"))
     .join("\n\n")
     .trim();
+}
+
+function dedupeAdjacentSentences(text: string): string {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean);
+
+  const deduped: string[] = [];
+  for (const sentence of sentences) {
+    const previous = deduped[deduped.length - 1];
+    if (previous && areNearDuplicateSentences(previous, sentence)) {
+      continue;
+    }
+    deduped.push(sentence);
+  }
+
+  return deduped.join(" ");
+}
+
+function areNearDuplicateSentences(first: string, second: string): boolean {
+  const normalizedFirst = normalizedContainment(first);
+  const normalizedSecond = normalizedContainment(second);
+  if (!normalizedFirst || !normalizedSecond) return false;
+  if (normalizedFirst === normalizedSecond) return true;
+
+  const firstWords = normalizedFirst.split(" ").filter(Boolean);
+  const secondWords = normalizedSecond.split(" ").filter(Boolean);
+  const shorter = firstWords.length <= secondWords.length ? firstWords : secondWords;
+  const longer = firstWords.length <= secondWords.length ? secondWords : firstWords;
+
+  if (shorter.length > 3) return false;
+  return shorter.every((word) => longer.includes(word));
 }
 
 function containsGenericIntroPlatitude(text: string): boolean {
