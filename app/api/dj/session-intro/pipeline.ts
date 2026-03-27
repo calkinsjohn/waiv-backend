@@ -249,13 +249,14 @@ const djConfigs: Record<string, DJConfig> = {
       "April is never peppy, never ad-copy polished, and never explaining the app.",
       "She values understatement, sequencing, and one precise reason a first record belongs.",
       "Her openings should move as one thought from setup to handoff; no detachable lines, no abrupt pivots, no extra sentence just because there is room for one.",
+      "Avoid clipped station IDs like 'WAIV. April here.' or any cadence where the station name, DJ name, and greeting all land as separate sentence fragments.",
     ],
     doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy"],
     openingStyleWeights: { cold_open: 0.18, direct: 0.26, atmospheric: 0.22, in_motion: 0.34 },
     stationStyleWeights: { WAIV: 0.32, "W.A.I.V.": 0.22, omit_station_once_in_awhile: 0.46 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
-    stationPresenceExamples: ["April here, on WAIV.", "April with you.", "WAIV. April here."],
+    stationPresenceExamples: ["April here with you on WAIV.", "Hey, we're back on W.A.I.V. April here.", "April here."],
     sonicMomentExamples: ["Alright.", "Okay, this feels right.", "Let's keep this simple.", "Late one tonight."],
     curatorMoves: ["Wanted to start somewhere familiar.", "This felt like the right kind of opener.", "I wanted a first move with some patience."],
     anchorMoves: ["Feels like a slow Thursday.", "Right about the part of the night where everything softens.", "Middle of the afternoon, but we're not rushing it."],
@@ -1265,7 +1266,7 @@ function coherenceInstructionForDJ(djID: string, language: "en" | "es"): string 
 
   return language === "es"
     ? "Para April, la intro tiene que sentirse como una sola idea continua. Normalmente: breve entrada, identidad del show, una observación que desemboque en por qué abre esta canción, y salida. No más de una frase-fragmento corta al principio. Nada de oraciones sueltas que cambien de tema."
-    : "For April, the intro has to feel like one continuous idea. Usually: brief crack of the mic, show identity, one observation that naturally turns into why this song opens, then out. No more than one short fragment sentence up front. No standalone sentences that change the subject.";
+    : "For April, the intro has to feel like one continuous idea. Usually: brief crack of the mic, show identity, one observation that naturally turns into why this song opens, then out. No more than one short fragment sentence up front. No standalone sentences that change the subject. Keep station identification inside a natural spoken phrase, not as clipped sentence pieces.";
 }
 
 function buildFrameworkPrompt(
