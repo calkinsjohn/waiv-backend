@@ -309,10 +309,11 @@ function enforceStationTagEnding(line: string, request: TransitionRequest): stri
 }
 
 function sessionDepthLabel(position: number): string {
-  if (position <= 2) return "This is the top of the show — sound like you are bringing the listener further in.";
-  if (position <= 8) return "The show is finding its shape now.";
-  if (position <= 15) return "The listener is properly inside the show now.";
-  return "This is a long-running show — stay lived-in, calm, and real.";
+  if (position <= 2) return "This is the top of the show — sound like you are bringing the listener further in and making the show feel fully underway.";
+  if (position <= 5) return "The show is still opening out — let the listener feel the shape of the hour becoming clear.";
+  if (position <= 8) return "The show is finding its real lane now.";
+  if (position <= 15) return "The listener is properly inside the show now — speak like the hour has real continuity.";
+  return "This is a long-running show — stay lived-in, calm, and real, like the set has history behind it.";
 }
 
 function showMomentInstruction(showMomentType?: string | null): string {
@@ -328,6 +329,7 @@ function showMomentInstruction(showMomentType?: string | null): string {
     case "early_tease":
       return `Planned show moment: early tease.
 - The show is still taking shape
+- Let the listener feel that the hour has direction, not just momentum
 - Hint at where the hour is going without drifting into vague taste-language
 - Sound lightly anticipatory, not promotional
 - Keep the line alive and in motion`;
@@ -344,6 +346,7 @@ function showMomentInstruction(showMomentType?: string | null): string {
     case "midpoint_reset":
       return `Planned show moment: midpoint reset.
 - The hour is established now
+- Briefly make that structure audible: this is a reset inside a real hour, not a random segue
 - Re-center the hour without sounding ceremonial, grand, or abstract
 - This should feel like a real host steering the room back into focus`;
     case "late_reflection":
@@ -734,6 +737,7 @@ Rules:
 - Do not invent facts about the song or artist
 - Keep it conversational and natural for spoken audio
 - Write like a real live DJ moment inside an unfolding show, not like isolated generated copy
+- The listener should be able to feel the hour taking shape across these lines; when useful, lightly name the show/start/reset/final stretch instead of hiding everything behind generic cool-sounding language
 - Make the line do one actual host job: welcome, react, choose, reset, tease, back-announce, or wrap
 - Use one concrete anchor in the line: what just played, why this one is here now, what point in the show this is, a listener pattern, or the current local moment
 - If a planned show moment is provided, write to that exact moment instead of falling back to a generic bridge

@@ -1465,6 +1465,9 @@ function buildFrameworkPrompt(
       ? "No escribas saludo genérico de IA. Tiene que sentirse como el arranque real de un show."
       : "Do not write a generic AI greeting. It must feel like a real show starting.",
     config.language === "es"
+      ? "Haz sentir que el show empieza ahora mismo, no solo que va a sonar una canción. Una referencia natural a abrir la hora, arrancar el set, poner el show en marcha o volver al aire suma mucho si cae limpia."
+      : "Make it feel like the show is beginning right now, not just that a song is being introduced. A natural reference to opening the hour, starting the set, getting the show underway, or being back on air is strong when it lands cleanly.",
+    config.language === "es"
       ? "La primera línea debe dar la bienvenida o marcar que el show vuelve al aire. No abras con una frase atmosférica suelta."
       : "The first line should welcome the listener or acknowledge that the show is back on air. Do not open with a detached atmospheric fragment.",
     config.language === "es"
@@ -1547,6 +1550,9 @@ function buildOutputPrompt(plan: IntroDecisionPlan, djID: string): string {
     config.language === "es"
       ? "Haz que se sienta hablado de principio a fin: una mente, un momento, una lógica continua."
       : "Make it feel spoken all the way through: one mind, one moment, one continuous train of thought.",
+    config.language === "es"
+      ? "Deja que una frase marque con naturalidad que el show se está abriendo o arrancando, pero sin usar la misma fórmula siempre."
+      : "Let one phrase naturally mark that the show is opening or getting underway, but do not rely on the same wording every time.",
     config.language === "es"
       ? "No saques una mini línea por cada capa. Las capas tienen que fundirse en 2 a 5 oraciones conectadas, según el largo pedido."
       : "Do not output one mini-line per layer. The layers should fuse into 2 to 5 connected sentences, depending on the requested length.",
