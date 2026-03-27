@@ -126,6 +126,32 @@ type IntroLength = "short" | "medium" | "long";
 type IntroStationStyle = "WAIV" | "W.A.I.V." | "omit_station_once_in_awhile";
 type IntroHandoffStyle = "clean" | "dramatic" | "understated" | "conversational";
 type IntroFamiliarity = "highly_familiar" | "moderately_familiar" | "exploratory";
+type IntroWelcomeMode = "welcome_back" | "good_to_have_you" | "back_with_you" | "open_door";
+type IntroPresenceMode = "name_first" | "with_you" | "station_first" | "back_on_air";
+type IntroTimeAnchorMode =
+  | "slow_weeknight"
+  | "night_softening"
+  | "midday_unrushed"
+  | "morning_unhurried"
+  | "friday_voltage"
+  | "sunday_loose"
+  | "quiet_room"
+  | "weekend_open"
+  | "precision_hour"
+  | "night_in_motion"
+  | "soft_night"
+  | "steady_start";
+type IntroCurationMode =
+  | "familiar_return"
+  | "known_record_first"
+  | "patient_first_move"
+  | "soft_entry"
+  | "clean_statement"
+  | "curious_first_turn"
+  | "direct_hit"
+  | "warm_welcome"
+  | "exact_fit"
+  | "natural_bridge";
 type IntroLayerName =
   | "sonicMoment"
   | "presenceIdentity"
@@ -161,12 +187,12 @@ type IntroDecisionPlan = {
   stationStyle: IntroStationStyle;
   familiarity: IntroFamiliarity;
   handoffStyle: IntroHandoffStyle;
-  timeAnchor: string;
+  welcomeMode: IntroWelcomeMode;
+  presenceMode: IntroPresenceMode;
+  timeAnchorMode: IntroTimeAnchorMode;
   moodAnchor: string;
-  curationAngle: string;
+  curationMode: IntroCurationMode;
   linePattern: IntroLayerName[][];
-  stationPresenceExample: string;
-  sonicMomentCue: string;
   energyProfile: "energetic" | "steady" | "reflective";
 };
 
@@ -1032,85 +1058,98 @@ function linePatternForLength(
   return patterns[stableHash(seed) % patterns.length];
 }
 
-function timeAnchorForContext(
+function welcomeModeForContext(
+  config: DJConfig,
+  context: SessionIntroShowContext,
+  openingStyle: IntroOpeningStyle,
+  seed: string
+): IntroWelcomeMode {
+  const choices: IntroWelcomeMode[] = ["welcome_back", "good_to_have_you"];
+  if (openingStyle === "in_motion" || context.setContext.openingTrackEnergy >= 0.72) {
+    choices.push("back_with_you");
+  }
+  if (config.id === "luna" || config.id === "jolene") {
+    choices.push("open_door");
+  }
+  return choices[stableHash(`${seed}|welcome-mode`) % choices.length];
+}
+
+function presenceModeForContext(
+  config: DJConfig,
+  stationStyle: IntroStationStyle,
+  seed: string
+): IntroPresenceMode {
+  const choices: IntroPresenceMode[] =
+    stationStyle === "omit_station_once_in_awhile"
+      ? ["name_first", "with_you"]
+      : stationStyle === "W.A.I.V."
+        ? ["back_on_air", "station_first", "with_you"]
+        : ["name_first", "with_you", "back_on_air"];
+
+  if (config.id === "casey") {
+    return stationStyle === "omit_station_once_in_awhile"
+      ? "with_you"
+      : choices[stableHash(`${seed}|presence-mode`) % Math.min(choices.length, 2)];
+  }
+
+  return choices[stableHash(`${seed}|presence-mode`) % choices.length];
+}
+
+function timeAnchorModeForContext(
   config: DJConfig,
   context: SessionIntroShowContext,
   seed: string
-): string {
+): IntroTimeAnchorMode {
   const timeOfDay = context.timeContext.timeOfDay.toLowerCase();
   const day = context.timeContext.dayOfWeek;
-  const season = context.environmentContext.season?.toLowerCase();
-  const localeVibe = context.environmentContext.localeVibe?.trim();
-  const weatherVibe = context.environmentContext.weatherVibe?.trim();
+  const choices: IntroTimeAnchorMode[] = ["steady_start"];
 
-  const candidates = [...config.anchorMoves];
-  if (config.language === "es") {
-    if (timeOfDay === "morning") candidates.push("La mañana viene tranquila.");
-    if (timeOfDay === "afternoon") candidates.push("La tarde tiene buen espacio para arrancar bien.");
-    if (timeOfDay === "night") candidates.push("Esta noche pide una entrada con calma.");
-    if (day === "domingo") candidates.push("Domingo de soltarse un poco.");
-  } else {
-    if (timeOfDay === "morning") candidates.push("Morning, but not in a hurry.");
-    if (timeOfDay === "afternoon") candidates.push("Middle of the afternoon, but we're not rushing it.");
-    if (timeOfDay === "night") candidates.push("Late enough that the room is already listening.");
-    if (day === "sunday") candidates.push("Sunday energy. A little loose, a little reflective.");
-    if (day === "friday") candidates.push("Friday has a little voltage in it already.");
+  if (timeOfDay === "morning") choices.push("morning_unhurried");
+  if (timeOfDay === "afternoon") choices.push("midday_unrushed");
+  if (timeOfDay === "night" || timeOfDay === "evening") {
+    choices.push("night_softening");
+    choices.push("soft_night");
   }
-  if (config.id !== "casey" && season && season !== "unknown") {
-    candidates.push(config.language === "es" ? `Se siente muy ${season}.` : `Feels a little ${season}.`);
-  }
-  if (config.id !== "casey" && weatherVibe) {
-    candidates.push(config.language === "es" ? `Hay algo de ${weatherVibe} en el aire.` : `There's a little ${weatherVibe} in the air.`);
-  }
-  if (config.id !== "casey" && localeVibe) {
-    candidates.push(config.language === "es" ? `${localeVibe} también entra en esto.` : `${localeVibe} gets to be part of this too.`);
-  }
+  if (day === "friday") choices.push("friday_voltage", "night_in_motion");
+  if (day === "sunday") choices.push("sunday_loose", "quiet_room");
+  if (context.timeContext.isWeekend) choices.push("weekend_open");
 
-  return candidates[stableHash(`${seed}|time-anchor`) % candidates.length];
+  if (config.id === "robert") choices.push("precision_hour");
+  if (config.id === "marcus") choices.push("night_in_motion");
+  if (config.id === "luna") choices.push("quiet_room", "soft_night");
+  if (config.id === "casey") choices.push("slow_weeknight");
+
+  return choices[stableHash(`${seed}|time-anchor-mode`) % choices.length];
 }
 
-function curationAngleForContext(
+function curationModeForContext(
   config: DJConfig,
   context: SessionIntroShowContext,
   familiarity: IntroFamiliarity,
   seed: string
-): string {
+): IntroCurationMode {
   const energyProfile = inferEnergyProfile(context);
-  let choices = [...config.curatorMoves];
+  let choices: IntroCurationMode[] = ["natural_bridge"];
 
-  if (config.language === "es") {
-    if (familiarity === "highly_familiar") {
-      choices.push("Quise empezar con algo conocido.");
-      choices.push("Me gustó abrir en un lugar familiar.");
-    } else if (familiarity === "exploratory") {
-      choices.push("Confía en esta primera vuelta.");
-      choices.push("Quise abrir con algo que despierte curiosidad sin forzarlo.");
-    } else {
-      choices.push("Esta primera decisión tenía que sentirse natural.");
-    }
-
-    if (energyProfile === "energetic") {
-      choices.push("No quise perder tiempo en la entrada.");
-    } else if (energyProfile === "reflective") {
-      choices.push("Mejor empezar con algo que se acomode rápido.");
-    }
+  if (familiarity === "highly_familiar") {
+    choices.push("familiar_return", "known_record_first");
+  } else if (familiarity === "exploratory") {
+    choices.push("curious_first_turn");
   } else {
-    if (familiarity === "highly_familiar") {
-      choices.push("Wanted to start somewhere familiar.");
-      choices.push("Felt right to start somewhere familiar.");
-    } else if (familiarity === "exploratory") {
-      choices.push("Trust me on the first move.");
-      choices.push("Wanted the set to open with a little curiosity in it.");
-    } else {
-      choices.push("This opens the set without pushing too hard.");
-    }
-
-    if (energyProfile === "energetic") {
-      choices.push("No reason to ease in too slowly.");
-    } else if (energyProfile === "reflective") {
-      choices.push("Going with something that settles in fast.");
-    }
+    choices.push("clean_statement");
   }
+
+  if (energyProfile === "energetic") {
+    choices.push("direct_hit");
+  } else if (energyProfile === "reflective") {
+    choices.push("soft_entry", "patient_first_move");
+  } else {
+    choices.push("patient_first_move");
+  }
+
+  if (config.id === "jolene") choices.push("warm_welcome");
+  if (config.id === "robert") choices.push("exact_fit");
+  if (config.id === "casey") choices.push("patient_first_move", "clean_statement");
 
   const recentAngles = new Set((context.recentHistory.recentCurationAngles ?? []).map((value) => normalizedContainment(value)));
   const filteredChoices = choices.filter((choice) => !recentAngles.has(normalizedContainment(choice)));
@@ -1118,7 +1157,113 @@ function curationAngleForContext(
     choices = filteredChoices;
   }
 
-  return choices[stableHash(`${seed}|curation-angle`) % choices.length];
+  return choices[stableHash(`${seed}|curation-mode`) % choices.length];
+}
+
+function describeWelcomeMode(mode: IntroWelcomeMode, language: "en" | "es"): string {
+  if (language === "es") {
+    switch (mode) {
+      case "welcome_back": return "abre saludando y marcando que el show vuelve";
+      case "good_to_have_you": return "abre con una bienvenida sencilla y humana";
+      case "back_with_you": return "abre como si retomara la compañía del oyente";
+      case "open_door": return "abre invitando a entrar, sin sonar cursi";
+    }
+  }
+
+  switch (mode) {
+    case "welcome_back": return "open by welcoming the listener back and marking that the show is back on air";
+    case "good_to_have_you": return "open with a simple, human glad-you're-here feeling";
+    case "back_with_you": return "open like the DJ is back in the room with the listener already";
+    case "open_door": return "open by letting the listener in, warm but not corny";
+  }
+}
+
+function describePresenceMode(
+  mode: IntroPresenceMode,
+  stationStyle: IntroStationStyle,
+  onAirName: string,
+  language: "en" | "es"
+): string {
+  const stationName = stationStyle === "omit_station_once_in_awhile" ? "optional station mention" : stationStyle;
+  if (language === "es") {
+    switch (mode) {
+      case "name_first": return `identidad al aire con ${onAirName} primero y ${stationName} como apoyo`;
+      case "with_you": return `identidad al aire como compañía natural, con ${onAirName} y ${stationName}`;
+      case "station_first": return `identidad del show con ${stationName} primero y luego ${onAirName}`;
+      case "back_on_air": return `identidad del show como regreso al aire en ${stationName} con ${onAirName}`;
+    }
+  }
+
+  switch (mode) {
+    case "name_first": return `show identity with ${onAirName} first and ${stationName} as support`;
+    case "with_you": return `show identity as natural companionship, folding in ${onAirName} and ${stationName}`;
+    case "station_first": return `show identity with ${stationName} first and ${onAirName} right after`;
+    case "back_on_air": return `show identity as a return to air on ${stationName} with ${onAirName}`;
+  }
+}
+
+function describeTimeAnchorMode(mode: IntroTimeAnchorMode, language: "en" | "es"): string {
+  if (language === "es") {
+    switch (mode) {
+      case "slow_weeknight": return "noche de semana lenta, sin empujar nada";
+      case "night_softening": return "parte de la noche donde todo se afloja un poco";
+      case "midday_unrushed": return "media tarde sin apuro";
+      case "morning_unhurried": return "mañana tranquila, sin correr";
+      case "friday_voltage": return "viernes con algo de voltaje";
+      case "sunday_loose": return "domingo suelto y algo reflexivo";
+      case "quiet_room": return "cuarto callado, escucha cercana";
+      case "weekend_open": return "fin de semana más abierto y suelto";
+      case "precision_hour": return "hora que pide precisión y control";
+      case "night_in_motion": return "noche ya en movimiento";
+      case "soft_night": return "noche suave, entrada con calma";
+      case "steady_start": return "momento del día adecuado para entrar con intención";
+    }
+  }
+
+  switch (mode) {
+    case "slow_weeknight": return "slow weekday pace, nothing forced";
+    case "night_softening": return "the part of the night where things soften";
+    case "midday_unrushed": return "mid-afternoon, unhurried";
+    case "morning_unhurried": return "morning without a rush";
+    case "friday_voltage": return "Friday already carrying some voltage";
+    case "sunday_loose": return "Sunday feeling, loose and slightly reflective";
+    case "quiet_room": return "a quiet room and close listening";
+    case "weekend_open": return "weekend openness, more room to move";
+    case "precision_hour": return "an hour that rewards precision and control";
+    case "night_in_motion": return "night already in motion";
+    case "soft_night": return "a softer night, easy entry";
+    case "steady_start": return "the current hour feels right for a steady beginning";
+  }
+}
+
+function describeCurationMode(mode: IntroCurationMode, language: "en" | "es"): string {
+  if (language === "es") {
+    switch (mode) {
+      case "familiar_return": return "curaduría como regreso confiado a algo conocido";
+      case "known_record_first": return "curaduría apoyada en reconocimiento y confianza";
+      case "patient_first_move": return "curaduría con paciencia y buen pulso";
+      case "soft_entry": return "curaduría pensada para entrar suave";
+      case "clean_statement": return "curaduría como declaración limpia y segura";
+      case "curious_first_turn": return "curaduría con curiosidad y confianza";
+      case "direct_hit": return "curaduría que entra de frente sin rodeos";
+      case "warm_welcome": return "curaduría como gesto de bienvenida";
+      case "exact_fit": return "curaduría por ajuste preciso";
+      case "natural_bridge": return "curaduría como puente natural hacia el set";
+    }
+  }
+
+  switch (mode) {
+    case "familiar_return": return "curation as a confident return to something known";
+    case "known_record_first": return "curation leaning on recognition and trust";
+    case "patient_first_move": return "curation with patience and measured pacing";
+    case "soft_entry": return "curation designed for a gentle entry";
+    case "clean_statement": return "curation as a clean, sure opening statement";
+    case "curious_first_turn": return "curation with intrigue and trust";
+    case "direct_hit": return "curation that gets straight to the point";
+    case "warm_welcome": return "curation as a welcoming gesture";
+    case "exact_fit": return "curation based on precise fit";
+    case "natural_bridge": return "curation as the natural bridge into the set";
+  }
 }
 
 function buildIntroDecisionPlan(
@@ -1166,12 +1311,10 @@ function buildIntroDecisionPlan(
   let openingStyle = chooseWeighted(`${decisionSeed}|opening-style`, openingStyleWeights);
   const stationStyle = chooseWeighted(`${decisionSeed}|station-style`, stationStyleWeights);
   const handoffStyle = chooseWeighted(`${decisionSeed}|handoff-style`, handoffStyleWeights);
-  const sonicMomentCue =
-    config.sonicMomentExamples[stableHash(`${decisionSeed}|sonic-cue`) % config.sonicMomentExamples.length];
-  const stationPresenceExample =
-    config.stationPresenceExamples[stableHash(`${decisionSeed}|station-example`) % config.stationPresenceExamples.length];
-  const timeAnchor = timeAnchorForContext(config, context, decisionSeed);
-  const curationAngle = curationAngleForContext(config, context, familiarity, decisionSeed);
+  const welcomeMode = welcomeModeForContext(config, context, openingStyle, decisionSeed);
+  const presenceMode = presenceModeForContext(config, stationStyle, decisionSeed);
+  const timeAnchorMode = timeAnchorModeForContext(config, context, decisionSeed);
+  const curationMode = curationModeForContext(config, context, familiarity, decisionSeed);
   const moodAnchor = `${config.moodWords[stableHash(`${decisionSeed}|mood-word`) % config.moodWords.length]} ${inferEnergyProfile(context)}`;
 
   if (config.id === "marcus" && familiarity === "exploratory" && context.setContext.openingTrackEnergy >= 0.75) {
@@ -1191,12 +1334,12 @@ function buildIntroDecisionPlan(
     stationStyle,
     familiarity,
     handoffStyle,
-    timeAnchor,
+    welcomeMode,
+    presenceMode,
+    timeAnchorMode,
     moodAnchor,
-    curationAngle,
+    curationMode,
     linePattern: linePatternForLength(length, `${decisionSeed}|line-pattern`),
-    stationPresenceExample,
-    sonicMomentCue,
     energyProfile: inferEnergyProfile(context),
   };
 }
@@ -1336,6 +1479,9 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "Evita non sequiturs, slogans sueltos y frases que parezcan pegadas una al lado de la otra."
       : "Avoid non sequiturs, disconnected slogans, and lines that feel pasted together.",
+    config.language === "es"
+      ? "El plan siguiente es solo dirección interna. No copies ni parafrasees estas etiquetas literalmente; conviértelas en habla fresca y natural."
+      : "The plan below is internal direction only. Do not copy or paraphrase these labels literally; turn them into fresh, natural speech.",
     `Decision plan: ${JSON.stringify(plan)}.`,
     `Show context: ${JSON.stringify(context)}.`,
     `First track: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
@@ -1352,10 +1498,18 @@ function buildFrameworkPrompt(
         : config.language === "es"
           ? "La primera canción es de pulso medio. Mantén movimiento sin prisa."
           : "The opener is steady. Keep movement without rushing.",
-    `Presence cue example: ${plan.stationPresenceExample}`,
-    `Sonic cue example: ${plan.sonicMomentCue}`,
-    `Time-anchor cue: ${plan.timeAnchor}`,
-    `Curation cue: ${plan.curationAngle}`,
+    config.language === "es"
+      ? `Movimiento de bienvenida: ${describeWelcomeMode(plan.welcomeMode, config.language)}.`
+      : `Welcome move: ${describeWelcomeMode(plan.welcomeMode, config.language)}.`,
+    config.language === "es"
+      ? `Movimiento de presencia: ${describePresenceMode(plan.presenceMode, plan.stationStyle, config.onAirName, config.language)}.`
+      : `Presence move: ${describePresenceMode(plan.presenceMode, plan.stationStyle, config.onAirName, config.language)}.`,
+    config.language === "es"
+      ? `Ángulo temporal: ${describeTimeAnchorMode(plan.timeAnchorMode, config.language)}.`
+      : `Time-anchor mode: ${describeTimeAnchorMode(plan.timeAnchorMode, config.language)}.`,
+    config.language === "es"
+      ? `Ángulo de curaduría: ${describeCurationMode(plan.curationMode, config.language)}.`
+      : `Curation mode: ${describeCurationMode(plan.curationMode, config.language)}.`,
     stationRule,
     lineCountRule,
     config.language === "es"
@@ -1387,6 +1541,9 @@ function buildOutputPrompt(plan: IntroDecisionPlan, djID: string): string {
     config.language === "es"
       ? "intro debe ser un solo bloque de copy hablado, corto y natural. Nada de listas, explicaciones, markdown o comillas extra."
       : "intro must be a single block of short, natural spoken copy. No lists, no explanations, no markdown, no extra quotation marks.",
+    config.language === "es"
+      ? "Las etiquetas del plan no son copy. No las cites ni las calques; escribe frases nuevas."
+      : "The plan labels are not copy. Do not quote them or mirror them; write new sentences.",
     config.language === "es"
       ? "Haz que se sienta hablado de principio a fin: una mente, un momento, una lógica continua."
       : "Make it feel spoken all the way through: one mind, one moment, one continuous train of thought.",
@@ -1656,8 +1813,8 @@ function inferMetadata(
     openingStyle: metadata?.openingStyle || plan.openingStyle,
     length: metadata?.length || plan.length,
     stationStyle: metadata?.stationStyle || plan.stationStyle,
-    timeAnchor: metadata?.timeAnchor || plan.timeAnchor,
-    curationAngle: metadata?.curationAngle || plan.curationAngle,
+    timeAnchor: metadata?.timeAnchor || plan.timeAnchorMode,
+    curationAngle: metadata?.curationAngle || plan.curationMode,
   };
 }
 
