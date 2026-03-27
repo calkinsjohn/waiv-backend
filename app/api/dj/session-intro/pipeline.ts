@@ -819,8 +819,7 @@ function chooseWeighted<T extends string>(
   seed: string,
   weights: Record<T, number>
 ): T {
-  const entries = Object.entries(weights)
-    .map(([key, value]) => [key as T, value] as const)
+  const entries = (Object.entries(weights) as Array<[T, number]>)
     .filter(([, value]) => value > 0);
   if (!entries.length) {
     return Object.keys(weights)[0] as T;
