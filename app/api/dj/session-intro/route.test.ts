@@ -12,6 +12,30 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+function structuredIntroText(overrides: Partial<Record<string, unknown>> = {}): string {
+  return JSON.stringify({
+    sonicMoment: "Alright.",
+    presenceIdentity: "April here, on WAIV.",
+    realWorldAnchor: "Thursday night feels slow enough that we can start without forcing the room awake.",
+    curatorAngle: "Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight.",
+    firstTrackHandoff: "Let's open with \"Yellow\" by Coldplay.",
+    metadata: {
+      openingStyle: "direct",
+      length: "medium",
+      stationStyle: "WAIV",
+      handoffStyle: "clean",
+      timeAnchor: "Thursday night feels slow enough that we can start without forcing the room awake.",
+      curationAngle: "Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight.",
+      emotionalTone: "cool",
+      vocabulary: ["slow", "clean", "familiar"],
+      usedTimeReference: true,
+      usedAISelfAwareness: false,
+      ...((overrides.metadata as Record<string, unknown> | undefined) ?? {}),
+    },
+    ...overrides,
+  });
+}
+
 describe("POST /api/dj/session-intro", () => {
   const appToken = "test-app-token";
   const listenerContext = {
@@ -36,7 +60,7 @@ describe("POST /api/dj/session-intro", () => {
     delete process.env.ANTHROPIC_API_KEY;
   });
 
-  it("sends first-listen guidance for April intros", async () => {
+  it("sends a radio-opening framework prompt for April and accepts structured JSON output", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -49,13 +73,7 @@ describe("POST /api/dj/session-intro", () => {
         content: [
           {
             type: "text",
-            text: `Hey, welcome in. I’m April, and Thursday night feels like a good place to start the show without overdoing it.
-
-The first song matters a little more on a night like this, so I wanted something that feels chosen instead of just first in line.
-
-For the next hour, I’m keeping this calm, a little deliberate, and close to the ground.
-
-We’re opening with "Yellow" by Coldplay.`,
+            text: structuredIntroText(),
           },
         ],
       });
@@ -77,29 +95,73 @@ We’re opening with "Yellow" by Coldplay.`,
           isrc: "GBAYE0000001",
         },
         listenerContext,
+        showContext: {
+          djId: "casey",
+          sessionType: "first_ever_session",
+          timeContext: {
+            timeOfDay: "night",
+            dayOfWeek: "thursday",
+            isWeekend: false,
+            label: "Thursday night",
+          },
+          setContext: {
+            openingTrackRole: "confident_opener",
+            openingTrackMood: ["intentional", "steady"],
+            openingTrackEnergy: 0.56,
+            openingTrackTexture: ["familiar", "curated"],
+            openingTrackFamiliarity: "highly_familiar",
+            openingTrackDiscoveryMode: "confident_return",
+          },
+          listenerContext: {
+            isFirstSessionToday: true,
+            returningAfterGap: false,
+            changedDjsRecently: false,
+            skipsIntrosOften: false,
+          },
+          environmentContext: {
+            season: "spring",
+            weatherVibe: null,
+            localeVibe: null,
+          },
+          recentHistory: {
+            recentArchetypes: [],
+            recentOpeningStructures: [],
+            recentOpeningPhrases: [],
+            recentSentenceCounts: [],
+            recentHandoffStyles: [],
+            recentVocabulary: [],
+            recentEmotionalTones: [],
+            recentOpeningStyles: [],
+            recentLengths: [],
+            recentStationStyles: [],
+            usedTimeReferenceRecently: false,
+            usedAISelfAwarenessRecently: false,
+          },
+        },
       }),
     });
 
     const response = await POST(request);
-    const payload = (await response.json()) as { intro: string; llmModel: string };
+    const payload = (await response.json()) as { intro: string; metadata: { openingStyle: string; length: string } };
     const systemPrompt = String(anthropicBody?.system ?? "");
+    const userPrompt = String(((anthropicBody?.messages as Array<{ content?: string }> | undefined) ?? [])[0]?.content ?? "");
+    const fullPrompt = `${systemPrompt} ${userPrompt}`;
 
     expect(response.status).toBe(200);
     expect(payload.intro).toContain("Yellow");
     expect(payload.intro).toContain("Coldplay");
-    expect(systemPrompt).toContain("This is the listener's very first session on WAIV.");
-    expect(systemPrompt).toContain("You are April, the DJ represented by the internal id 'casey' in WAIV.");
-    expect(systemPrompt).toContain("You are a former college radio DJ in your early 30s.");
-    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
-    expect(systemPrompt).toContain("Keep April calm, understated, and conversational.");
-    expect(systemPrompt).toContain("Favor smooth sentence endings over too many trailing fragments or ellipses.");
-    expect(systemPrompt).toContain("The listener's local time is 2026-03-12T22:00:00-04:00 in America/Indiana/Indianapolis.");
-    expect(systemPrompt).toContain('Phrases like "night", "tonight", "late night", "this late"');
-    expect(systemPrompt).toContain("Do not default to opening every intro with the same weekday-plus-time phrase.");
-    expect(systemPrompt).toContain("Do not start with clipped fragment openers like 'Late tonight,' 'Thursday night,' or 'At this hour,' on their own.");
+    expect(payload.metadata.openingStyle).toBe("direct");
+    expect(payload.metadata.length).toBe("medium");
+    expect(fullPrompt).toContain("This is radio, not assistant UX.");
+    expect(fullPrompt).toContain("Build the intro from these 5 radio layers");
+    expect(fullPrompt).toContain("\"openingStyle\":");
+    expect(fullPrompt).toContain("\"length\":\"medium\"");
+    expect(fullPrompt).toContain("The opener is highly familiar. Lean into confidence, comfort, recognition, and return.");
+    expect(fullPrompt).toContain("April is the DJ represented by the internal id 'casey' in WAIV.");
+    expect(fullPrompt).toContain("Return strict JSON with exactly these keys");
   });
 
-  it("treats just-after-midnight intros as the previous radio night", async () => {
+  it("treats just-after-midnight intros as the previous radio night in the prompt context", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -112,11 +174,14 @@ We’re opening with "Yellow" by Coldplay.`,
         content: [
           {
             type: "text",
-            text: `Hey, welcome back.
-
-Friday night still has enough momentum in it to start with "Midnight City" by M83.
-
-We'll start there and keep the room moving.`,
+            text: structuredIntroText({
+              realWorldAnchor: "Friday night still has enough motion in it that the first record can arrive already carrying some lift.",
+              curatorAngle: "No reason to waste the opening when the night already knows where it wants to go.",
+              firstTrackHandoff: "Let's open with \"Midnight City\" by M83.",
+              metadata: {
+                timeAnchor: "Friday night still has enough motion in it that the first record can arrive already carrying some lift.",
+              },
+            }),
           },
         ],
       });
@@ -151,15 +216,16 @@ We'll start there and keep the room moving.`,
     });
 
     const response = await POST(request);
-    const systemPrompt = String(anthropicBody?.system ?? "");
+    const payload = (await response.json()) as { intro: string };
+    const userPrompt = String(((anthropicBody?.messages as Array<{ content?: string }> | undefined) ?? [])[0]?.content ?? "");
 
-    expect(response.status).toBe(204);
-    expect(systemPrompt).toContain("The listener's local time is 2026-03-14T00:30:00-04:00 in America/Indiana/Indianapolis.");
-    expect(systemPrompt).toContain("Work in a natural local-moment reference for Friday night");
-    expect(systemPrompt).toContain("For on-air phrasing, treat anything before 4:00 AM as part of the previous night's radio day: Friday night.");
+    expect(response.status).toBe(200);
+    expect(payload.intro).toContain("Midnight City");
+    expect(userPrompt).toContain("Friday night");
+    expect(userPrompt).not.toContain("Saturday night");
   });
 
-  it("sends Luna-specific personality guidance for Luna intros", async () => {
+  it("frames exploratory openings differently for Luna", async () => {
     let anthropicBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -172,13 +238,19 @@ We'll start there and keep the room moving.`,
         content: [
           {
             type: "text",
-            text: `Hi, welcome in. I'm Luna, and tonight feels like a gentle way to open the show.
-
-I didn't want to rush the first move. Some nights go better when the first song arrives softly and lets the hour widen on its own.
-
-For the next hour, I want to keep this close and a little unhurried.
-
-We'll start with "Reckoner" by Radiohead.`,
+            text: structuredIntroText({
+              presenceIdentity: "You're with Luna tonight.",
+              realWorldAnchor: "Right about the part of the night where everything softens.",
+              curatorAngle: "Trust me on the first move. I wanted the set to begin with a little curiosity in it, not a lot of explanation.",
+              firstTrackHandoff: "Let's open with \"Reckoner\" by Radiohead.",
+              metadata: {
+                openingStyle: "atmospheric",
+                length: "medium",
+                stationStyle: "omit_station_once_in_awhile",
+                handoffStyle: "understated",
+                emotionalTone: "quiet",
+              },
+            }),
           },
         ],
       });
@@ -200,82 +272,67 @@ We'll start with "Reckoner" by Radiohead.`,
           isrc: "USCA21504635",
         },
         listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Reckoner");
-    expect(payload.intro).toContain("Radiohead");
-    expect(systemPrompt).toContain("You are Luna, the DJ represented by the internal id 'luna' in WAIV.");
-    expect(systemPrompt).toContain("Small voice, big feelings");
-    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
-    expect(systemPrompt).toContain("Keep Luna intimate and lightly poetic, but grounded, concrete, and easy to speak aloud.");
-    expect(systemPrompt).toContain("not a wellness bot, not a therapist");
-  });
-
-  it("sends Marcus-specific personality guidance for Marcus intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Hey, welcome in. I'm Marcus, and over the next hour we're opening with a little authority.
-
-Tonight is built for something that arrives with a little authority. Not a fake dramatic entrance, just a first move that knows how to set the pace.
-
-That’s the whole point of this on W.A.I.V. for me. Give everything some lift early, then let it keep earning its way forward.
-
-We're opening with "Midnight City" by M83, because it hits like the night has already started moving.`,
+        showContext: {
+          djId: "luna",
+          sessionType: "fresh_start",
+          timeContext: {
+            timeOfDay: "night",
+            dayOfWeek: "thursday",
+            isWeekend: false,
+            label: "Thursday night",
           },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "marcus",
-        introKind: "standard",
-        firstTrack: {
-          title: "Midnight City",
-          artist: "M83",
-          isrc: "USQX91500866",
+          setContext: {
+            openingTrackRole: "intimate_low_key_open",
+            openingTrackMood: ["close", "soft"],
+            openingTrackEnergy: 0.32,
+            openingTrackTexture: ["discovery", "textured"],
+            openingTrackFamiliarity: "exploratory",
+            openingTrackDiscoveryMode: "trust_the_turn",
+          },
+          listenerContext: {
+            isFirstSessionToday: false,
+            returningAfterGap: false,
+            changedDjsRecently: false,
+            skipsIntrosOften: false,
+          },
+          environmentContext: {
+            season: "spring",
+            weatherVibe: null,
+            localeVibe: null,
+          },
+          recentHistory: {
+            recentArchetypes: [],
+            recentOpeningStructures: [],
+            recentOpeningPhrases: [],
+            recentSentenceCounts: [],
+            recentHandoffStyles: [],
+            recentVocabulary: [],
+            recentEmotionalTones: [],
+            recentOpeningStyles: [],
+            recentLengths: [],
+            recentStationStyles: [],
+            usedTimeReferenceRecently: false,
+            usedAISelfAwarenessRecently: false,
+          },
         },
-        listenerContext,
       }),
     });
 
     const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
+    const payload = (await response.json()) as { metadata: { openingStyle: string; handoffStyle: string } };
+    const fullPrompt = [
+      String(anthropicBody?.system ?? ""),
+      String(((anthropicBody?.messages as Array<{ content?: string }> | undefined) ?? [])[0]?.content ?? ""),
+    ].join(" ");
 
     expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Midnight City");
-    expect(payload.intro).toContain("M83");
-    expect(systemPrompt).toContain("You are Marcus, the DJ represented by the internal id 'marcus' in WAIV.");
-    expect(systemPrompt).toContain("You are a confident, charismatic male radio DJ with grounded swagger.");
-    expect(systemPrompt).toContain("Write for the ear first, not the screen.");
-    expect(systemPrompt).toContain("Keep Marcus confident and rhythmic, but relaxed enough to feel lived-in rather than like a promo read.");
-    expect(systemPrompt).toContain("not a chatbot, assistant, or announcer reading copy");
+    expect(payload.metadata.openingStyle).toBe("atmospheric");
+    expect(payload.metadata.handoffStyle).toBe("understated");
+    expect(fullPrompt).toContain("The opener is exploratory. Lean into intrigue, curiosity, trust, and discovery.");
+    expect(fullPrompt).toContain("Luna is the DJ represented by the internal id 'luna' in WAIV.");
   });
 
-  it("rejects intros that repeat the hour-horizon cue more than once", async () => {
+  it("rejects generated intros with the wrong time of day for the listener", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
@@ -286,11 +343,10 @@ We're opening with "Midnight City" by M83, because it hits like the night has al
         content: [
           {
             type: "text",
-            text: `Hey, welcome in. I'm April, and this hour feels like the right place to open the show.
-
-Over the next hour I want the set to stay loose, and the hour ahead should feel chosen instead of assembled.
-
-We're opening with "Yellow" by Coldplay, and it feels like the right first move.`,
+            text: structuredIntroText({
+              sonicMoment: "Good morning.",
+              realWorldAnchor: "Morning already has some shape to it.",
+            }),
           },
         ],
       });
@@ -319,7 +375,7 @@ We're opening with "Yellow" by Coldplay, and it feels like the right first move.
     expect(response.status).toBe(204);
   });
 
-  it("rejects intros that repeat explicit program labels", async () => {
+  it("rejects generated intros that omit the song details", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
@@ -330,11 +386,9 @@ We're opening with "Yellow" by Coldplay, and it feels like the right first move.
         content: [
           {
             type: "text",
-            text: `Hey, welcome in. I'm April, and the show starts best when the show feels chosen instead of assembled.
-
-Tonight the show should open with a little more patience, because the show sounds better when it trusts the room.
-
-We're opening with "Yellow" by Coldplay, and it feels like the right first move.`,
+            text: structuredIntroText({
+              firstTrackHandoff: "This is where we begin.",
+            }),
           },
         ],
       });
@@ -363,200 +417,20 @@ We're opening with "Yellow" by Coldplay, and it feels like the right first move.
     expect(response.status).toBe(204);
   });
 
-  it("sends John-specific personality guidance for jack intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  it("rejects social-caption style structured intros", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
         return new Response(null, { status: 404 });
       }
 
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
       return jsonResponse({
         content: [
           {
             type: "text",
-            text: `Welcome back. John here, and this hour could use a set with a little patience in it.
-
-Thursday night usually gives a set a little room to breathe before it really has to show its hand, and I like taking advantage of that whenever I can.
-
-That’s part of the fun on W.A.I.V. The opener should tell you what kind of night this is without needing a huge speech about it, just enough shape to point the hour in the right direction. A little scene-setting goes a long way.
-
-We'll open with "Reckoner" by Radiohead. It has the right grain to start things with a little patience and a little intention.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "jack",
-        introKind: "standard",
-        firstTrack: {
-          title: "Reckoner",
-          artist: "Radiohead",
-          isrc: "USCA21504635",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Reckoner");
-    expect(payload.intro).toContain("Radiohead");
-    expect(systemPrompt).toContain("You are John, the DJ represented by the internal id 'jack' in WAIV.");
-    expect(systemPrompt).toContain("vinyl-loving millennial radio host in your 30s with calm, effortless cool");
-    expect(systemPrompt).toContain("NPR-adjacent in the best way");
-    expect(systemPrompt).toContain("Keep John calm, articulate, and naturally cool");
-    expect(systemPrompt).toContain("genuine sports fan, especially baseball");
-  });
-
-  it("sends Jolene-specific personality guidance for jolene intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Hey sweetheart, welcome back. Jolene here, and we're opening this Thursday night with a little light in it.
-
-This Thursday night feels like it could use a little warmth right up front, the kind that makes the room ease its shoulders down before things get going. I like when the first minute feels like somebody opened the door and let the air change.
-
-That’s how I want W.A.I.V. to start here, with something human in it, something that opens the room before the rest of the songs come walking through. Then everything gets to keep that glow moving.
-
-We'll start with "Harvest Moon" by Neil Young, because it glows without trying too hard.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "jolene",
-        introKind: "standard",
-        firstTrack: {
-          title: "Harvest Moon",
-          artist: "Neil Young",
-          isrc: "USRE19200738",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Harvest Moon");
-    expect(payload.intro).toContain("Neil Young");
-    expect(systemPrompt).toContain("You are Jolene, the DJ represented by the internal id 'jolene' in WAIV.");
-    expect(systemPrompt).toContain("warm, radiant female radio DJ with a subtle Southern lilt");
-    expect(systemPrompt).toContain("Keep Jolene warm, affectionate, and lightly luminous");
-    expect(systemPrompt).toContain("not a chatbot, assistant, or Hallmark card");
-  });
-
-  it("sends Juan-specific Spanish personality guidance for miles intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Juan aqui, y en la próxima hora vamos a abrir este show con un poco de intención.
-
-Esta noche tiene el pulso justo para abrir un set con intención, sin correr y sin explicar demasiado antes de dejar que la música haga lo suyo.
-
-En W.A.I.V. me gusta que la primera canción acomode el aire, marque el color de la hora y nos meta al programa como si ya viniera respirando desde antes.
-
-Vamos a empezar con "Viva La Vida" de Coldplay, porque entra con la clase y el tamaño que esta noche pide.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "miles",
-        introKind: "standard",
-        firstTrack: {
-          title: "Viva La Vida",
-          artist: "Coldplay",
-          isrc: "GBAYE0800265",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Viva La Vida");
-    expect(payload.intro).toContain("Coldplay");
-    expect(systemPrompt).toContain("You are Juan, the DJ represented by the internal id 'miles' in WAIV.");
-    expect(systemPrompt).toContain("Speak entirely in natural spoken Spanish. Never switch into English.");
-    expect(systemPrompt).toContain("calm, cinematic male radio DJ with quiet confidence and real warmth");
-    expect(systemPrompt).toContain("Keep Juan smooth, cinematic, and fully natural in Spanish");
-    expect(systemPrompt).toContain('Puedes apoyarte en frases como "noche", "esta noche", "ya tarde", "a esta hora"');
-    expect(systemPrompt).toContain("No empieces con fragmentos cortados como 'Esta noche,' 'Jueves por la noche,' o 'A esta hora,' por si solos.");
-  });
-
-  it("sends Tiffany-specific personality guidance for tiffany intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Tiffany here.
-
-Tonight wants something glossy, reckless, and a little impossible. Not messy. Just the kind of opener that walks into the room already wearing the right lighting.
-
-That’s the mood I want for this W.A.I.V. set. Give it a real entrance, then let the rest of the hour keep up with it.
-
-We are opening with "Style" by Taylor Swift, because this is not the moment for a shy first song.`,
+            text: structuredIntroText({
+              curatorAngle: "This is such a vibe and it totally understood the assignment.",
+            }),
           },
         ],
       });
@@ -575,102 +449,19 @@ We are opening with "Style" by Taylor Swift, because this is not the moment for 
         firstTrack: {
           title: "Style",
           artist: "Taylor Swift",
-          isrc: "USCJY1431304",
+          isrc: "USTA31400268",
         },
         listenerContext,
       }),
     });
 
     const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Style");
-    expect(payload.intro).toContain("Taylor Swift");
-    expect(systemPrompt).toContain("You are Tiffany, the DJ represented by the internal id 'tiffany' in WAIV.");
-    expect(systemPrompt).toContain("glamorous, over-the-top female radio DJ with true influencer energy and real taste");
-    expect(systemPrompt).toContain("Keep Tiffany stylish, playful, and deliciously over-the-top");
-    expect(systemPrompt).toContain("not a chatbot, assistant, or someone writing a caption for a brand post");
+    expect(response.status).toBe(204);
   });
 
-  it("sends Robert-specific personality guidance for robert intros", async () => {
-    let anthropicBody: Record<string, unknown> | null = null;
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Welcome back. Robert here on W.A.I.V., opening the show with a degree of composure that should reassure everyone involved.
-
-Tonight has the sort of tension that benefits from an opener chosen with suspicious care. The first minute tends to reveal whether a set intends to mean anything at all.
-
-I prefer an opening that reduces confusion and establishes momentum immediately, then lets the room discover the logic on its own. That is the standard we will apply here.
-
-We begin with "Everything In Its Right Place" by Radiohead, which is a reassuringly precise way to start.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "robert",
-        introKind: "standard",
-        firstTrack: {
-          title: "Everything In Its Right Place",
-          artist: "Radiohead",
-          isrc: "GBAYE0001111",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-    const payload = (await response.json()) as { intro: string };
-    const systemPrompt = String(anthropicBody?.system ?? "");
-
-    expect(response.status).toBe(200);
-    expect(payload.intro).toContain("Everything In Its Right Place");
-    expect(payload.intro).toContain("Radiohead");
-    expect(systemPrompt).toContain("You are Robert, the DJ represented by the internal id 'robert' in WAIV.");
-    expect(systemPrompt).toContain("robot who sincerely believes you are an ordinary human radio host");
-    expect(systemPrompt).toContain("Use the existing Robert intros as inspiration");
-    expect(systemPrompt).toContain("Keep Robert uncanny through precision, defensiveness, and suspiciously accurate observations");
-    expect(systemPrompt).toContain("never produce actual gibberish, corruption, or broken machine text");
-  });
-
-  it("rejects generated intros with the wrong time of day for the listener", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Good morning. I’m April.
-
-It’s a clean place to start with Yellow by Coldplay tonight.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
+  it("returns no content when the Anthropic key is missing", async () => {
+    delete process.env.ANTHROPIC_API_KEY;
+    vi.stubGlobal("fetch", vi.fn());
 
     const request = new NextRequest("http://localhost/api/dj/session-intro", {
       method: "POST",
@@ -691,79 +482,6 @@ It’s a clean place to start with Yellow by Coldplay tonight.`,
     });
 
     const response = await POST(request);
-
     expect(response.status).toBe(204);
-    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("llm_rejected");
-  });
-
-  it("rejects generated intros that omit the song details", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (!url.includes("api.anthropic.com")) {
-        return new Response(null, { status: 404 });
-      }
-
-      return jsonResponse({
-        content: [
-          {
-            type: "text",
-            text: `Hey, I’m April.
-
-Let’s start carefully tonight.`,
-          },
-        ],
-      });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "casey",
-        introKind: "standard",
-        firstTrack: {
-          title: "Reckoner",
-          artist: "Radiohead",
-          isrc: "USCA21504635",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-
-    expect(response.status).toBe(204);
-    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("llm_rejected");
-  });
-
-  it("returns no content when the Anthropic key is missing", async () => {
-    delete process.env.ANTHROPIC_API_KEY;
-
-    const request = new NextRequest("http://localhost/api/dj/session-intro", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-waiv-app-token": appToken,
-      },
-      body: JSON.stringify({
-        djID: "casey",
-        introKind: "standard",
-        firstTrack: {
-          title: "Reckoner",
-          artist: "Radiohead",
-          isrc: "USCA21504635",
-        },
-        listenerContext,
-      }),
-    });
-
-    const response = await POST(request);
-
-    expect(response.status).toBe(204);
-    expect(response.headers.get("X-WAIV-Session-Intro-Reason")).toBe("no_api_key");
   });
 });

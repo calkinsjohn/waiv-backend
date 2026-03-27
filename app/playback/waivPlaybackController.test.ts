@@ -225,7 +225,7 @@ describe("WaivPlaybackController intro gating", () => {
     controller.dispose();
   });
 
-  it("treats Marcus as intro-enabled and builds a populated intro script", () => {
+  it("treats Marcus as intro-enabled and builds a populated intro script", async () => {
     const controller = new WaivPlaybackController({
       onToast: vi.fn(),
       onTelemetry: vi.fn(),
@@ -248,7 +248,7 @@ describe("WaivPlaybackController intro gating", () => {
 
     expect(anyController.hasSessionIntroLibrary("marcus")).toBe(true);
 
-    const intro = anyController.buildSessionIntroScript(
+    const intro = await anyController.buildSessionIntroScript(
       { id: "marcus", name: "Marcus, the neighborhood tastemaker" },
       {
         id: "track-1",
