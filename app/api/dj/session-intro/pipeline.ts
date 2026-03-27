@@ -133,11 +133,7 @@ type IntroLayerName =
   | "firstTrackHandoff";
 
 type GeneratedPayload = {
-  sonicMoment?: string;
-  presenceIdentity?: string;
-  realWorldAnchor?: string;
-  curatorAngle?: string;
-  firstTrackHandoff?: string;
+  intro?: string;
   metadata?: Partial<SessionIntroMetadata>;
 };
 
@@ -228,6 +224,18 @@ const maxParagraphCountByLength: Record<IntroLength, number> = {
   short: 3,
   medium: 5,
   long: 7,
+};
+
+const minSentenceCountByLength: Record<IntroLength, number> = {
+  short: 2,
+  medium: 3,
+  long: 4,
+};
+
+const maxSentenceCountByLength: Record<IntroLength, number> = {
+  short: 4,
+  medium: 6,
+  long: 8,
 };
 
 const djConfigs: Record<string, DJConfig> = {
@@ -1265,15 +1273,15 @@ function buildFrameworkPrompt(
   const lineCountRule =
     plan.length === "short"
       ? config.language === "es"
-        ? "Hazlo corto: 1 a 3 líneas de radio, sin perder identidad."
-        : "Keep it short: 1 to 3 radio lines, while still feeling like a real opening."
+        ? "Hazlo corto: normalmente 2 a 3 oraciones breves, sin perder identidad."
+        : "Keep it short: usually 2 to 3 brief sentences, while still feeling like a real opening."
       : plan.length === "medium"
         ? config.language === "es"
-          ? "Hazlo medio: 4 a 6 líneas, con aire pero sin sobreexplicar."
-          : "Make it medium: 4 to 6 lines, with room to breathe but no over-explaining."
+          ? "Hazlo medio: 3 a 5 oraciones, con aire pero sin sobreexplicar."
+          : "Make it medium: 3 to 5 sentences, with room to breathe but no over-explaining."
         : config.language === "es"
-          ? "Hazlo largo solo si se gana: 6 a 8 líneas, todavía controladas."
-          : "Make it long only if it earns it: 6 to 8 lines, still controlled.";
+          ? "Hazlo largo solo si se gana: 4 a 6 oraciones, todavía controladas."
+          : "Make it long only if it earns it: 4 to 6 sentences, still controlled.";
 
   return [
     config.language === "es"
@@ -1282,6 +1290,12 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "No escribas saludo genérico de IA. Tiene que sentirse como el arranque real de un show."
       : "Do not write a generic AI greeting. It must feel like a real show starting.",
+    config.language === "es"
+      ? "Las 5 capas son estructura interna, no frases aisladas. Escribe una sola apertura coherente donde cada línea siga lógicamente a la anterior."
+      : "The 5 layers are internal structure, not isolated fragments. Write one coherent opening where each line follows naturally from the one before it.",
+    config.language === "es"
+      ? "Evita non sequiturs, slogans sueltos y frases que parezcan pegadas una al lado de la otra."
+      : "Avoid non sequiturs, disconnected slogans, and lines that feel pasted together.",
     `Decision plan: ${JSON.stringify(plan)}.`,
     `Show context: ${JSON.stringify(context)}.`,
     `First track: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
@@ -1307,6 +1321,9 @@ function buildFrameworkPrompt(
       ? `Usa el momento local (${context.timeContext.label}) como sensación viva, no como frase robótica. Pistas útiles: ${timePhraseCues.join(", ")}.`
       : `Use the local moment (${context.timeContext.label}) as a live feeling, not a robotic time stamp. Helpful cues: ${timePhraseCues.join(", ")}.`,
     config.language === "es"
+      ? `Movimiento preferido entre capas: ${plan.linePattern.map((group) => group.join(" + ")).join(" -> ")}. Puedes combinar capas vecinas dentro de la misma oración si así suena más humano.`
+      : `Preferred movement between layers: ${plan.linePattern.map((group) => group.join(" + ")).join(" -> ")}. You may blend adjacent layers inside the same sentence if that sounds more human.`,
+    config.language === "es"
       ? "La capa final debe nombrar canción y artista con seguridad tranquila."
       : "The final layer must name song and artist with calm confidence.",
     config.language === "es"
@@ -1325,29 +1342,20 @@ function buildOutputPrompt(plan: IntroDecisionPlan, djID: string): string {
   const config = djConfigFor(djID);
   return [
     "Return strict JSON with exactly these keys:",
-    '{"sonicMoment":"","presenceIdentity":"","realWorldAnchor":"","curatorAngle":"","firstTrackHandoff":"","metadata":{"openingStyle":"","length":"","stationStyle":"","handoffStyle":"","timeAnchor":"","curationAngle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
+    '{"intro":"","metadata":{"openingStyle":"","length":"","stationStyle":"","handoffStyle":"","timeAnchor":"","curationAngle":"","emotionalTone":"","vocabulary":[],"usedTimeReference":false,"usedAISelfAwareness":false}}',
     config.language === "es"
-      ? "Cada valor debe ser texto hablado, corto y natural. Nada de listas, explicaciones, markdown o comillas extra."
-      : "Each value must be short, natural, spoken text. No lists, no explanations, no markdown, no extra quotation marks.",
+      ? "intro debe ser un solo bloque de copy hablado, corto y natural. Nada de listas, explicaciones, markdown o comillas extra."
+      : "intro must be a single block of short, natural spoken copy. No lists, no explanations, no markdown, no extra quotation marks.",
     config.language === "es"
-      ? "sonicMoment: una línea muy breve que ya tenga movimiento."
-      : "sonicMoment: one very short opening beat that already has momentum.",
+      ? "Haz que se sienta hablado de principio a fin: una mente, un momento, una lógica continua."
+      : "Make it feel spoken all the way through: one mind, one moment, one continuous train of thought.",
     config.language === "es"
-      ? "presenceIdentity: presenta al DJ y, según el plan, WAIV o W.A.I.V. sin sonar plantilla."
-      : "presenceIdentity: establish the DJ and, depending on the plan, WAIV or W.A.I.V. without sounding templated.",
+      ? "No saques una mini línea por cada capa. Las capas tienen que fundirse en 2 a 5 oraciones conectadas, según el largo pedido."
+      : "Do not output one mini-line per layer. The layers should fuse into 2 to 5 connected sentences, depending on the requested length.",
     config.language === "es"
-      ? "realWorldAnchor: ubica el momento real, atmosférico, vivo."
-      : "realWorldAnchor: ground the intro in a live-feeling real-world moment.",
-    config.language === "es"
-      ? "curatorAngle: muestra por qué esta canción abre el set sin sonar analítico."
-      : "curatorAngle: show why this song is opening the set without sounding analytical.",
-    config.language === "es"
-      ? "firstTrackHandoff: una línea final limpia, con canción y artista."
-      : "firstTrackHandoff: a clean final handoff line naming the song and artist.",
-    config.language === "es"
-      ? "No uses el mismo orden rígido cada vez. Sigue el plan de agrupación, pero deja que se sienta hablado."
-      : "Do not force the same rigid order every time. Follow the grouping plan, but keep it feeling spoken.",
-    `Line grouping plan: ${JSON.stringify(plan.linePattern)}.`,
+      ? "La última oración debe aterrizar en la canción y el artista con seguridad tranquila."
+      : "The final sentence should land on the song and artist with calm confidence.",
+    `Movement plan: ${JSON.stringify(plan.linePattern)}.`,
   ].join(" ");
 }
 
@@ -1369,11 +1377,7 @@ function parseGeneratedPayload(rawText: string): GeneratedPayload {
     const parsed = JSON.parse(jsonBlock) as Record<string, unknown>;
     const metadataPayload = (parsed.metadata ?? {}) as Partial<Record<keyof SessionIntroMetadata, unknown>>;
     return {
-      sonicMoment: typeof parsed.sonicMoment === "string" ? parsed.sonicMoment.trim() : undefined,
-      presenceIdentity: typeof parsed.presenceIdentity === "string" ? parsed.presenceIdentity.trim() : undefined,
-      realWorldAnchor: typeof parsed.realWorldAnchor === "string" ? parsed.realWorldAnchor.trim() : undefined,
-      curatorAngle: typeof parsed.curatorAngle === "string" ? parsed.curatorAngle.trim() : undefined,
-      firstTrackHandoff: typeof parsed.firstTrackHandoff === "string" ? parsed.firstTrackHandoff.trim() : undefined,
+      intro: typeof parsed.intro === "string" ? parsed.intro.trim() : undefined,
       metadata: {
         openingStyle:
           typeof metadataPayload.openingStyle === "string" ? metadataPayload.openingStyle.trim() : undefined,
@@ -1401,28 +1405,11 @@ function parseGeneratedPayload(rawText: string): GeneratedPayload {
   }
 }
 
-function buildParagraphsFromPayload(payload: GeneratedPayload, plan: IntroDecisionPlan): string[] {
-  const layers: Record<IntroLayerName, string> = {
-    sonicMoment: cleanSentence(payload.sonicMoment ?? ""),
-    presenceIdentity: cleanSentence(payload.presenceIdentity ?? ""),
-    realWorldAnchor: cleanSentence(payload.realWorldAnchor ?? ""),
-    curatorAngle: cleanSentence(payload.curatorAngle ?? ""),
-    firstTrackHandoff: cleanSentence(payload.firstTrackHandoff ?? ""),
-  };
-
-  if (!layers.sonicMoment || !layers.presenceIdentity || !layers.realWorldAnchor || !layers.curatorAngle || !layers.firstTrackHandoff) {
-    return [];
-  }
-
-  return plan.linePattern
-    .map((group) => group.map((layer) => layers[layer]).filter(Boolean).join(" ").trim())
-    .filter(Boolean);
-}
-
-function composeIntro(payload: GeneratedPayload, plan: IntroDecisionPlan): string | null {
-  const paragraphs = buildParagraphsFromPayload(payload, plan);
-  if (!paragraphs.length) return null;
-  return paragraphs.join("\n\n").trim();
+function cleanGeneratedIntro(text: string): string {
+  return splitParagraphs(text.replace(/^["“”'‘’]+|["“”'‘’]+$/g, ""))
+    .map((paragraph) => normalizeWhitespace(paragraph).replace(/\s+([,.!?;:])/g, "$1"))
+    .join("\n\n")
+    .trim();
 }
 
 function containsGenericIntroPlatitude(text: string): boolean {
@@ -1481,7 +1468,7 @@ function normalizeIntro(
   }
 
   const sentences = sentenceCount(intro);
-  if (sentences < 3 || sentences > 8) {
+  if (sentences < minSentenceCountByLength[plan.length] || sentences > maxSentenceCountByLength[plan.length]) {
     return null;
   }
 
@@ -1683,9 +1670,9 @@ async function generateStructuredIntro(
   }
 
   const payload = parseGeneratedPayload(raw);
-  const intro = composeIntro(payload, plan);
+  const intro = payload.intro ? cleanGeneratedIntro(payload.intro) : "";
   if (!intro) {
-    console.error(`[session-intro] composeIntro failed. raw=${raw.slice(0, 240)}`);
+    console.error(`[session-intro] intro extraction failed. raw=${raw.slice(0, 240)}`);
     return null;
   }
 

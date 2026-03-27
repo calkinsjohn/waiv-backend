@@ -14,11 +14,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function structuredIntroText(overrides: Partial<Record<string, unknown>> = {}): string {
   return JSON.stringify({
-    sonicMoment: "Alright.",
-    presenceIdentity: "April here, on WAIV.",
-    realWorldAnchor: "Thursday night feels slow enough that we can start without forcing the room awake.",
-    curatorAngle: "Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight.",
-    firstTrackHandoff: "Let's open with \"Yellow\" by Coldplay.",
+    intro: "Alright. April here, on WAIV. Thursday night feels slow enough that we can start without forcing the room awake. Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight. Let's open with \"Yellow\" by Coldplay.",
     metadata: {
       openingStyle: "direct",
       length: "medium",
@@ -158,6 +154,7 @@ describe("POST /api/dj/session-intro", () => {
     expect(fullPrompt).toContain("\"length\":\"medium\"");
     expect(fullPrompt).toContain("The opener is highly familiar. Lean into confidence, comfort, recognition, and return.");
     expect(fullPrompt).toContain("April is the DJ represented by the internal id 'casey' in WAIV.");
+    expect(fullPrompt).toContain("The 5 layers are internal structure, not isolated fragments.");
     expect(fullPrompt).toContain("Return strict JSON with exactly these keys");
   });
 
@@ -175,9 +172,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              realWorldAnchor: "Friday night still has enough motion in it that the first record can arrive already carrying some lift.",
-              curatorAngle: "No reason to waste the opening when the night already knows where it wants to go.",
-              firstTrackHandoff: "Let's open with \"Midnight City\" by M83.",
+              intro: "Alright. April here, on WAIV. Friday night still has enough motion in it that the first record can arrive already carrying some lift. No reason to waste the opening when the night already knows where it wants to go. Let's open with \"Midnight City\" by M83.",
               metadata: {
                 timeAnchor: "Friday night still has enough motion in it that the first record can arrive already carrying some lift.",
               },
@@ -239,10 +234,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              presenceIdentity: "You're with Luna tonight.",
-              realWorldAnchor: "Right about the part of the night where everything softens.",
-              curatorAngle: "Trust me on the first move. I wanted the set to begin with a little curiosity in it, not a lot of explanation.",
-              firstTrackHandoff: "Let's open with \"Reckoner\" by Radiohead.",
+              intro: "Late one tonight. You're with Luna tonight. Right about the part of the night where everything softens. Trust me on the first move. I wanted the set to begin with a little curiosity in it, not a lot of explanation. Let's open with \"Reckoner\" by Radiohead.",
               metadata: {
                 openingStyle: "atmospheric",
                 length: "medium",
@@ -344,8 +336,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              sonicMoment: "Good morning.",
-              realWorldAnchor: "Morning already has some shape to it.",
+              intro: "Good morning. April here, on WAIV. Morning already has some shape to it. Wanted to start somewhere familiar. Let's open with \"Yellow\" by Coldplay.",
             }),
           },
         ],
@@ -387,7 +378,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              firstTrackHandoff: "This is where we begin.",
+              intro: "Alright. April here, on WAIV. Thursday night feels slow enough that we can start without forcing the room awake. Wanted to start somewhere familiar. This is where we begin.",
             }),
           },
         ],
@@ -429,7 +420,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              curatorAngle: "This is such a vibe and it totally understood the assignment.",
+              intro: "Alright. Tiffany here, on W.A.I.V. Late enough to start with a little style. This is such a vibe and it totally understood the assignment. Let's open with \"Style\" by Taylor Swift.",
             }),
           },
         ],
