@@ -197,6 +197,9 @@ const genericIntroPlatitudePatterns = [
   /\bperfect opener\b/i,
   /\bmade just for you\b/i,
   /\bvapid\b/i,
+  /\bfeels like (it('| i)?s|this('?s)?) been here the whole time\b/i,
+  /\balways waiting for us\b/i,
+  /\bcould have been here the whole time\b/i,
 ] as const;
 
 const bannedStandaloneOpeners = [
@@ -251,15 +254,16 @@ const djConfigs: Record<string, DJConfig> = {
       "Her openings should move as one thought from setup to handoff; no detachable lines, no abrupt pivots, no extra sentence just because there is room for one.",
       "Avoid clipped station IDs like 'WAIV. April here.' or any cadence where the station name, DJ name, and greeting all land as separate sentence fragments.",
       "Her first line should greet the listener or acknowledge that the show is back, not just toss out a generic atmospheric fragment.",
+      "Her curation line has to name a real reason the opener belongs: familiarity, patience, contrast, sequencing, tempo, texture, or how the song enters. No fake profundity.",
     ],
-    doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy"],
+    doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy", "empty fake-insight lines"],
     openingStyleWeights: { cold_open: 0.18, direct: 0.26, atmospheric: 0.22, in_motion: 0.34 },
     stationStyleWeights: { WAIV: 0.32, "W.A.I.V.": 0.22, omit_station_once_in_awhile: 0.46 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
     stationPresenceExamples: ["April here with you on WAIV.", "Hey, we're back on W.A.I.V. April here.", "April with you tonight."],
     sonicMomentExamples: ["Hey, we're back.", "Good to have you here.", "Alright, we're back."],
-    curatorMoves: ["Wanted to start somewhere familiar.", "This felt like the right kind of opener.", "I wanted a first move with some patience."],
+    curatorMoves: ["Wanted to start somewhere familiar.", "I wanted a first move with some patience.", "This opens the set without pushing too hard."],
     anchorMoves: ["Feels like a slow Thursday.", "Right about the part of the night where everything softens.", "Middle of the afternoon, but we're not rushing it."],
   },
   marcus: {
@@ -1088,12 +1092,12 @@ function curationAngleForContext(
   } else {
     if (familiarity === "highly_familiar") {
       choices.push("Wanted to start somewhere familiar.");
-      choices.push("This felt like a good way back in.");
+      choices.push("This gets us back in without forcing the room.");
     } else if (familiarity === "exploratory") {
       choices.push("Trust me on the first move.");
       choices.push("Wanted the set to open with a little curiosity in it.");
     } else {
-      choices.push("This felt like the right kind of opener.");
+      choices.push("This opens the set without pushing too hard.");
     }
 
     if (energyProfile === "energetic") {
@@ -1232,7 +1236,8 @@ function buildListenerProfilePrompt(profile: ListenerProfile | null | undefined,
     `Listener context: ${parts.join(" ")}`,
     "Use this only as shaping context.",
     "If you reference listener familiarity, do it like a human DJ noticing a pattern, not a recommendation engine explaining itself.",
-    "Never say 'based on your listening' or 'I analyzed your patterns'.",
+    "Natural ways to express familiarity are things like 'one you know', 'something familiar', or 'a record that already feels lived-in'.",
+    "Never say 'based on your listening', 'from your library', or 'I analyzed your patterns'.",
   ].join(" ");
 }
 
@@ -1240,7 +1245,7 @@ function familiarityInstruction(familiarity: IntroFamiliarity, language: "en" | 
   if (language === "es") {
     switch (familiarity) {
       case "highly_familiar":
-        return "La primera canción es muy familiar para el oyente. Apóyate en confianza, regreso y reconocimiento.";
+        return "La primera canción es muy familiar para el oyente. Apóyate en confianza, regreso y reconocimiento. Si lo mencionas, hazlo en términos humanos como 'una que ya conoces' o 'algo familiar', nunca como datos o historial.";
       case "exploratory":
         return "La primera canción es más exploratoria. Apóyate en curiosidad, intriga y confianza.";
       default:
@@ -1250,7 +1255,7 @@ function familiarityInstruction(familiarity: IntroFamiliarity, language: "en" | 
 
   switch (familiarity) {
     case "highly_familiar":
-      return "The opener is highly familiar. Lean into confidence, comfort, recognition, and return.";
+      return "The opener is highly familiar. Lean into confidence, comfort, recognition, and return. If you mention that familiarity, do it in human terms like 'one you know' or 'something familiar', never like library data or listening history.";
     case "exploratory":
       return "The opener is exploratory. Lean into intrigue, curiosity, trust, and discovery.";
     default:
@@ -1308,6 +1313,12 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "La primera línea debe dar la bienvenida o marcar que el show vuelve al aire. No abras con una frase atmosférica suelta."
       : "The first line should welcome the listener or acknowledge that the show is back on air. Do not open with a detached atmospheric fragment.",
+    config.language === "es"
+      ? "La línea de curaduría debe decir algo real sobre por qué esta canción abre: familiaridad, paciencia, contraste, secuencia, tempo, textura o cómo entra el tema. Nada de frases que suenen profundas pero no signifiquen nada."
+      : "The curation line must say something real about why this song opens: familiarity, patience, contrast, sequencing, tempo, texture, or how the record enters. No lines that sound profound but mean nothing.",
+    config.language === "es"
+      ? "Si la canción de apertura es familiar, puedes nombrarlo de forma natural, como haría un DJ humano: 'una que ya conoces' o 'algo familiar'. Nunca menciones biblioteca, historial, patrones o recomendación."
+      : "If the opener is familiar, you may say that naturally the way a human DJ would: 'one you know' or 'something familiar'. Never mention library, listening history, patterns, or recommendation logic.",
     config.language === "es"
       ? "Las 5 capas son estructura interna, no frases aisladas. Escribe una sola apertura coherente donde cada línea siga lógicamente a la anterior."
       : "The 5 layers are internal structure, not isolated fragments. Write one coherent opening where each line follows naturally from the one before it.",
