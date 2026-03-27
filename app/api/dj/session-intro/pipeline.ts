@@ -59,6 +59,7 @@ export type SessionIntroRecentHistory = {
   recentHandoffStyles: string[];
   recentVocabulary: string[];
   recentEmotionalTones: string[];
+  recentCurationAngles?: string[];
   recentOpeningStyles?: string[];
   recentLengths?: string[];
   recentStationStyles?: string[];
@@ -621,6 +622,7 @@ function defaultShowContext(request: SessionIntroRequest): SessionIntroShowConte
       recentHandoffStyles: [],
       recentVocabulary: [],
       recentEmotionalTones: [],
+      recentCurationAngles: [],
       recentOpeningStyles: [],
       recentLengths: [],
       recentStationStyles: [],
@@ -737,6 +739,9 @@ function normalizeShowContext(input: unknown, request: SessionIntroRequest): Ses
       recentEmotionalTones: Array.isArray(recentHistory.recentEmotionalTones)
         ? recentHistory.recentEmotionalTones.filter((value): value is string => typeof value === "string").slice(0, 8)
         : fallback.recentHistory.recentEmotionalTones,
+      recentCurationAngles: Array.isArray(recentHistory.recentCurationAngles)
+        ? recentHistory.recentCurationAngles.filter((value): value is string => typeof value === "string").slice(0, 8)
+        : fallback.recentHistory.recentCurationAngles,
       recentOpeningStyles: Array.isArray(recentHistory.recentOpeningStyles)
         ? recentHistory.recentOpeningStyles.filter((value): value is string => typeof value === "string").slice(0, 8)
         : fallback.recentHistory.recentOpeningStyles,
@@ -1051,13 +1056,13 @@ function timeAnchorForContext(
     if (day === "sunday") candidates.push("Sunday energy. A little loose, a little reflective.");
     if (day === "friday") candidates.push("Friday has a little voltage in it already.");
   }
-  if (season && season !== "unknown") {
+  if (config.id !== "casey" && season && season !== "unknown") {
     candidates.push(config.language === "es" ? `Se siente muy ${season}.` : `Feels a little ${season}.`);
   }
-  if (weatherVibe) {
+  if (config.id !== "casey" && weatherVibe) {
     candidates.push(config.language === "es" ? `Hay algo de ${weatherVibe} en el aire.` : `There's a little ${weatherVibe} in the air.`);
   }
-  if (localeVibe) {
+  if (config.id !== "casey" && localeVibe) {
     candidates.push(config.language === "es" ? `${localeVibe} también entra en esto.` : `${localeVibe} gets to be part of this too.`);
   }
 
@@ -1071,7 +1076,7 @@ function curationAngleForContext(
   seed: string
 ): string {
   const energyProfile = inferEnergyProfile(context);
-  const choices = [...config.curatorMoves];
+  let choices = [...config.curatorMoves];
 
   if (config.language === "es") {
     if (familiarity === "highly_familiar") {
@@ -1092,7 +1097,7 @@ function curationAngleForContext(
   } else {
     if (familiarity === "highly_familiar") {
       choices.push("Wanted to start somewhere familiar.");
-      choices.push("This gets us back in without forcing the room.");
+      choices.push("Felt right to start somewhere familiar.");
     } else if (familiarity === "exploratory") {
       choices.push("Trust me on the first move.");
       choices.push("Wanted the set to open with a little curiosity in it.");
@@ -1105,6 +1110,12 @@ function curationAngleForContext(
     } else if (energyProfile === "reflective") {
       choices.push("Going with something that settles in fast.");
     }
+  }
+
+  const recentAngles = new Set((context.recentHistory.recentCurationAngles ?? []).map((value) => normalizedContainment(value)));
+  const filteredChoices = choices.filter((choice) => !recentAngles.has(normalizedContainment(choice)));
+  if (filteredChoices.length) {
+    choices = filteredChoices;
   }
 
   return choices[stableHash(`${seed}|curation-angle`) % choices.length];
