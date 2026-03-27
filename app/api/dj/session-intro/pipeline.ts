@@ -248,6 +248,7 @@ const djConfigs: Record<string, DJConfig> = {
       "Sound like a real host who has done this for years and doesn't need to force it.",
       "April is never peppy, never ad-copy polished, and never explaining the app.",
       "She values understatement, sequencing, and one precise reason a first record belongs.",
+      "Her openings should move as one thought from setup to handoff; no detachable lines, no abrupt pivots, no extra sentence just because there is room for one.",
     ],
     doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy"],
     openingStyleWeights: { cold_open: 0.18, direct: 0.26, atmospheric: 0.22, in_motion: 0.34 },
@@ -1255,6 +1256,18 @@ function familiarityInstruction(familiarity: IntroFamiliarity, language: "en" | 
   }
 }
 
+function coherenceInstructionForDJ(djID: string, language: "en" | "es"): string {
+  if (djID !== "casey") {
+    return language === "es"
+      ? "Cada oración debe empujar la misma idea hacia adelante. Si una frase suena injertada, no la uses."
+      : "Each sentence should push the same idea forward. If a line feels grafted on, do not use it.";
+  }
+
+  return language === "es"
+    ? "Para April, la intro tiene que sentirse como una sola idea continua. Normalmente: breve entrada, identidad del show, una observación que desemboque en por qué abre esta canción, y salida. No más de una frase-fragmento corta al principio. Nada de oraciones sueltas que cambien de tema."
+    : "For April, the intro has to feel like one continuous idea. Usually: brief crack of the mic, show identity, one observation that naturally turns into why this song opens, then out. No more than one short fragment sentence up front. No standalone sentences that change the subject.";
+}
+
 function buildFrameworkPrompt(
   request: SessionIntroRequest,
   context: SessionIntroShowContext,
@@ -1300,6 +1313,7 @@ function buildFrameworkPrompt(
     `Show context: ${JSON.stringify(context)}.`,
     `First track: "${request.firstTrack.title}" by ${request.firstTrack.artist}.`,
     familiarityInstruction(plan.familiarity, config.language),
+    coherenceInstructionForDJ(request.djID, config.language),
     plan.energyProfile === "energetic"
       ? config.language === "es"
         ? "La primera canción es energética. La intro puede ser más corta y con más impulso."
@@ -1355,6 +1369,11 @@ function buildOutputPrompt(plan: IntroDecisionPlan, djID: string): string {
     config.language === "es"
       ? "La última oración debe aterrizar en la canción y el artista con seguridad tranquila."
       : "The final sentence should land on the song and artist with calm confidence.",
+    djID === "casey"
+      ? config.language === "es"
+        ? "Para April, favorece 3 oraciones conectadas: entrada breve, observación+curaduría en el mismo flujo, luego handoff."
+        : "For April, prefer 3 connected sentences: brief opening, observation plus curation in one flow, then handoff."
+      : "",
     `Movement plan: ${JSON.stringify(plan.linePattern)}.`,
   ].join(" ");
 }
@@ -1543,6 +1562,15 @@ function extractVocabularyTokens(intro: string): string[] {
     .map(([token]) => token);
 }
 
+function shortSentenceCount(text: string, maxWords: number): number {
+  return text
+    .replace(/W\.\s*A\.\s*I\.\s*V\./gi, "WAIV")
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean)
+    .filter((sentence) => wordCount(sentence) <= maxWords).length;
+}
+
 function inferMetadata(
   intro: string,
   request: SessionIntroRequest,
@@ -1592,6 +1620,7 @@ function evaluateIntro(
   if (!containsPhrase(intro, allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID))) score -= 0.08;
   if (bannedStandaloneOpeners.some((phrase) => firstSentence.startsWith(phrase))) score -= 0.2;
   if (plan.stationStyle !== "omit_station_once_in_awhile" && !containsPhrase(intro, [plan.stationStyle])) score -= 0.08;
+  if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) score -= 0.18;
 
   return score;
 }
