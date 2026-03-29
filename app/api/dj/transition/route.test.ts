@@ -55,10 +55,17 @@ describe("POST /api/dj/transition", () => {
       body: JSON.stringify({
         djID: "casey",
         sessionPosition: 6,
+        showBeat: "midpoint_refocus",
+        currentShowState: "building",
         trigger: "auto",
         avoidRecentLines: [
           'That opens the door for "High and Dry" by Radiohead. This is W.A.I.V.',
         ],
+        showMemory: {
+          recentLines: ['This one slides in beautifully here, "Reckoner" by Radiohead. This is W.A.I.V.'],
+          recentShowStates: ["opening", "settling"],
+          recentArtists: ["Coldplay"],
+        },
         fromTrack: {
           title: "Yellow",
           artist: "Coldplay",
@@ -94,7 +101,18 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("Every bridge should include at least one concrete anchor");
     expect(systemPrompt).toContain("Do not use abstract taste-language as filler");
     expect(systemPrompt).toContain('Avoid empty approval language like "this feels right"');
+    expect(systemPrompt).toContain("Current show state: building");
+    expect(systemPrompt).toContain("Current semantic show beat: midpoint_refocus");
+    expect(systemPrompt).toContain("Semantic show beat: midpoint refocus.");
+    expect(systemPrompt).toContain("Semantic beat policy: midpoint refocus.");
+    expect(systemPrompt).toContain("Treat the semantic show beat as an editorial policy, not a vibe adjective.");
+    expect(systemPrompt).toContain("Required host move: re-center the show with quiet authority");
+    expect(systemPrompt).toContain("April beat policy for midpoint refocus:");
+    expect(systemPrompt).toContain("Show memory:");
+    expect(systemPrompt).toContain("Recent spoken lines to avoid echoing");
     expect(messageContent).toContain("Recently used bridge lines to avoid echoing");
+    expect(messageContent).toContain("Current semantic show beat: midpoint_refocus");
+    expect(messageContent).toContain("Current show state: building");
   });
 
   it("sends John-specific bridge guidance for jack transitions", async () => {
@@ -146,6 +164,268 @@ describe("POST /api/dj/transition", () => {
     expect(systemPrompt).toContain("You are John, an AI DJ host in WAIV.");
     expect(systemPrompt).toContain("Keep John calm, tasteful, and naturally cool");
     expect(systemPrompt).toContain("big sports fan, especially baseball");
+  });
+
+  it("adds persona beat policy for other DJs too, not just April", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'The last stretch points straight at "Reckoner" by Radiohead. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "robert",
+        sessionPosition: 12,
+        showBeat: "closing_reach",
+        currentShowState: "late_run",
+        trigger: "auto",
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const systemPrompt = String(anthropicBody?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(systemPrompt).toContain("Semantic beat policy: closing reach.");
+    expect(systemPrompt).toContain("Robert beat policy for closing reach:");
+    expect(systemPrompt).toContain("Allowed moves: a precise last-stretch cue, a controlled near-wrap signal, a final-shape handoff");
+  });
+
+  it("repairs April when the first attempt drifts into abstract filler", async () => {
+    const anthropicBodies: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      const parsed = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      anthropicBodies.push(parsed);
+
+      if (anthropicBodies.length === 1) {
+        return jsonResponse({
+          content: [
+            {
+              type: "text",
+              text: 'This leaves a little more space around the edges for "Reckoner" by Radiohead. This is W.A.I.V.',
+            },
+          ],
+        });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'After Coldplay left the room open, "Reckoner" by Radiohead is the right turn here. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        sessionPosition: 5,
+        showBeat: "connective_tissue",
+        currentShowState: "settling",
+        trigger: "auto",
+        fromTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+    const repairSystemPrompt = String(anthropicBodies[1]?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain('After Coldplay left the room open, "Reckoner" by Radiohead is the right turn here.');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(repairSystemPrompt).toContain("Rewrite April as one calm, continuous thought with a concrete reason the turn belongs.");
+    expect(repairSystemPrompt).toContain("It gives April abstract fake-depth language instead of a concrete reason the transition belongs.");
+  });
+
+  it("repairs Tiffany when the first attempt slips into caption language", async () => {
+    const anthropicBodies: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      const parsed = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      anthropicBodies.push(parsed);
+
+      if (anthropicBodies.length === 1) {
+        return jsonResponse({
+          content: [
+            {
+              type: "text",
+              text: 'Okay, it\'s giving main character energy with "Style" by Taylor Swift. This is W.A.I.V.',
+            },
+          ],
+        });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'After that turn, "Style" by Taylor Swift is the cleanest bright move in the room. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "tiffany",
+        sessionPosition: 7,
+        showBeat: "lane_reveal",
+        currentShowState: "building",
+        trigger: "auto",
+        fromTrack: {
+          title: "Cruel Summer",
+          artist: "Taylor Swift",
+          isrc: "USUG11901473",
+        },
+        toTrack: {
+          title: "Style",
+          artist: "Taylor Swift",
+          isrc: "USCJY1431349",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+    const repairSystemPrompt = String(anthropicBodies[1]?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain("Style");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(repairSystemPrompt).toContain("Rewrite Tiffany stylish and sharp, but make it sound like spoken radio rather than a social caption.");
+    expect(repairSystemPrompt).toContain("It slips into Tiffany caption-language instead of a real radio line.");
+  });
+
+  it("uses semantic move memory to repair repeated host-move logic", async () => {
+    const anthropicBodies: Array<Record<string, unknown>> = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      const parsed = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      anthropicBodies.push(parsed);
+
+      if (anthropicBodies.length === 1) {
+        return jsonResponse({
+          content: [
+            {
+              type: "text",
+              text: 'Wanted "Reckoner" by Radiohead here because it feels like the right move now. This is W.A.I.V.',
+            },
+          ],
+        });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: 'After Coldplay left the room open, "Reckoner" by Radiohead is the cleaner way forward here. This is W.A.I.V.',
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/transition", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        sessionPosition: 4,
+        showBeat: "connective_tissue",
+        currentShowState: "settling",
+        trigger: "auto",
+        showMemory: {
+          recentHostMoves: ["curation_choice"],
+          recentMoveSignatures: ["curation_choice|connective_tissue|settling"],
+        },
+        fromTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        toTrack: {
+          title: "Reckoner",
+          artist: "Radiohead",
+          isrc: "USCA21504635",
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = (await response.json()) as { djLine: string };
+    const firstPrompt = String(anthropicBodies[0]?.system ?? "");
+    const repairPrompt = String(anthropicBodies[1]?.system ?? "");
+
+    expect(response.status).toBe(200);
+    expect(payload.djLine).toContain("cleaner way forward");
+    expect(firstPrompt).toContain("Recent host moves already used: curation_choice");
+    expect(firstPrompt).toContain("Recent semantic move signatures to avoid repeating: curation_choice|connective_tissue|settling");
+    expect(repairPrompt).toContain("It repeats the same kind of host move the DJ used recently.");
+    expect(repairPrompt).toContain("It repeats a recent semantic transition pattern too closely.");
   });
 
   it("adds planned show-moment guidance for first handoffs", async () => {

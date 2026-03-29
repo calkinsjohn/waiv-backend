@@ -11,15 +11,30 @@ export type ListenerProfile = {
   listeningPattern?: string;
 };
 
+export type DJShowMemory = {
+  recentLines?: string[];
+  recentOpeningPhrases?: string[];
+  recentCurationAngles?: string[];
+  recentShowMomentTypes?: string[];
+  recentShowStates?: string[];
+  recentHostMoves?: string[];
+  recentMoveSignatures?: string[];
+  recentArtists?: string[];
+  recentTrackTitles?: string[];
+};
+
 export type TransitionRequest = {
   djID: string;
   toTrack: TransitionTrack;
   fromTrack?: TransitionTrack | null;
   sessionPosition: number;
   showMomentType?: string | null;
+  showBeat?: string | null;
+  currentShowState?: string | null;
   trigger: string;
   avoidRecentLines?: string[];
   listenerProfile?: ListenerProfile | null;
+  showMemory?: DJShowMemory | null;
 };
 
 export type TransitionResponse = {
@@ -106,6 +121,24 @@ function spokenWords(text: string): Array<{ value: string; index: number }> {
 
 function normalizeWord(word: string): string {
   return word.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function normalizedSemanticLabel(text: string): string {
+  return normalizeWhitespace(text)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9|]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function normalizedContainment(text: string): string {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function collapseRepeatedTrailingWordSequence(text: string): string {
@@ -237,6 +270,22 @@ function containsGenericPlatitude(line: string): boolean {
   return genericPlatitudePatterns.some((pattern) => pattern.test(normalized));
 }
 
+function sentenceSegments(text: string): string[] {
+  return text
+    .replace(/W\.\s*A\.\s*I\.\s*V\./gi, "WAIV")
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean);
+}
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+function shortSentenceCount(text: string, maxWords: number): number {
+  return sentenceSegments(text).filter((sentence) => wordCount(sentence) <= maxWords).length;
+}
+
 function deterministicIndex(seed: string, upperBound: number): number {
   if (upperBound <= 0) return 0;
   let hash = 2166136261;
@@ -366,6 +415,90 @@ function showMomentInstruction(showMomentType?: string | null): string {
   }
 }
 
+function showBeatInstruction(showBeat?: string | null): string {
+  switch ((showBeat ?? "").toLowerCase()) {
+    case "opening_widen":
+      return `Semantic show beat: opening widen.
+- The show has started, but this is where it opens its shoulders a little
+- The move should feel like the listener is being drawn further in, not just handed another track
+- Favor confidence, arrival, and shape`;
+    case "lane_reveal":
+      return `Semantic show beat: lane reveal.
+- The set is showing its lane more clearly now
+- Let the listener feel the DJ's taste and direction without announcing a thesis
+- This is a revealing move, not a reset`;
+    case "connective_tissue":
+      return `Semantic show beat: connective tissue.
+- This is the kind of move that keeps the show feeling continuous
+- Favor earned links, sequence logic, and smooth forward motion
+- The line should make the set feel coherent rather than dramatic`;
+    case "station_pulse":
+      return `Semantic show beat: station pulse.
+- This is a live-on-air continuity beat
+- Let the station feel present and ongoing without sounding like a brand read
+- The move should refresh the room, not interrupt it`;
+    case "midpoint_refocus":
+      return `Semantic show beat: midpoint refocus.
+- Re-center the hour
+- Make the show feel intentionally steered again
+- This is a host move with quiet authority, not a speech`;
+    case "late_run_glow":
+      return `Semantic show beat: late-run glow.
+- The listener is already inside the set
+- Let the line feel lived-in, earned, and slightly deeper without turning vague
+- Stay warm and forward-moving`;
+    case "closing_reach":
+      return `Semantic show beat: closing reach.
+- The show is reaching for its final shape
+- Let the line feel like it belongs to the last stretch of a real set
+- Keep closure in the bloodstream of the line, not as a formal signoff unless this is explicitly the final song`;
+    default:
+      return "";
+  }
+}
+
+function showBeatEditorialPolicy(showBeat?: string | null): string {
+  switch ((showBeat ?? "").toLowerCase()) {
+    case "opening_widen":
+      return `Semantic beat policy: opening widen.
+- Required host move: make the show feel newly underway and let the listener further in
+- Use arrival, welcome-back, or second-move logic rather than a detached observation
+- Do not sound like the DJ is already deep in the hour or making a late reflective aside`;
+    case "lane_reveal":
+      return `Semantic beat policy: lane reveal.
+- Required host move: make the set's direction more legible
+- Use one real sequencing reason, contrast, or taste cue that shows why this record belongs now
+- Do not fall back to generic reset language or a simple station ID with no curatorial point`;
+    case "connective_tissue":
+      return `Semantic beat policy: connective tissue.
+- Required host move: make the handoff feel earned and continuous
+- If a previous track exists, use something it actually did to justify the next turn
+- Do not treat this like a new beginning, a big reset, or a dramatic reveal`;
+    case "station_pulse":
+      return `Semantic beat policy: station pulse.
+- Required host move: refresh live-on-air continuity without breaking the musical spell
+- Let the station feel present, current, and in motion
+- Do not turn this into a slogan, promo, or full reset of the show`;
+    case "midpoint_refocus":
+      return `Semantic beat policy: midpoint refocus.
+- Required host move: re-center the show with quiet authority
+- Briefly make it audible that the hour is being steered again
+- Do not sound like a fresh welcome, a final wrap-up, or a generic song intro`;
+    case "late_run_glow":
+      return `Semantic beat policy: late-run glow.
+- Required host move: sound lived-in, earned, and slightly deeper while staying concrete
+- Let the line acknowledge that the listener is already inside the set
+- Do not restart the hour or drift into vague mood-writing`;
+    case "closing_reach":
+      return `Semantic beat policy: closing reach.
+- Required host move: let the listener feel the last stretch approaching
+- Make closure part of the line's logic, even if this is not the literal final song
+- Do not sound like the show is just beginning or resetting in the middle`;
+    default:
+      return "";
+  }
+}
+
 function djBridgeStyleGuidance(djID: string): string {
   switch (djID.toLowerCase()) {
     case "casey":
@@ -467,6 +600,334 @@ function djBridgeStyleGuidance(djID: string): string {
   "The opening move is complete. The show now reveals its logic with [song] by [artist]. This is W.A.I.V."
   "A reasonably controlled move into [song] by [artist]. You’re listening to W.A.I.V."
   "The previous track appears to have set this up. [Song] by [artist] was the correct next step. This is W.A.I.V."`;
+    default:
+      return "";
+  }
+}
+
+function djBeatProductionPolicy(djID: string, showBeat?: string | null): string {
+  const beat = (showBeat ?? "").toLowerCase();
+  switch (djID.toLowerCase()) {
+    case "casey":
+      switch (beat) {
+        case "opening_widen":
+          return `April beat policy for opening widen:
+- Allowed moves: a low-key welcome back, a second-move acknowledgment, one dry sequencing cue
+- Keep it like a real host easing the show open, not a detached mood fragment
+- Do not go abstract, lofty, or faux-poetic`;
+        case "lane_reveal":
+          return `April beat policy for lane reveal:
+- Allowed moves: one tasteful curation reason, a contrast that means something, a familiar-return cue
+- The line should sound chosen, not decorative
+- Do not oversell or sound impressed by your own taste`;
+        case "connective_tissue":
+          return `April beat policy for connective tissue:
+- Allowed moves: one earned connection from the previous track, one calm turn into the next
+- Keep the thought continuous and understated
+- Do not restart the show or drop into empty scene-setting`;
+        case "station_pulse":
+          return `April beat policy for station pulse:
+- Allowed moves: a brief live-on-air check-in, a subtle station tag, a dry little reset of presence
+- Keep it natural and musical
+- Do not sound branded, peppy, or announcer-ish`;
+        case "midpoint_refocus":
+          return `April beat policy for midpoint refocus:
+- Allowed moves: a calm steering note, a simple "here's where we are now" cue, one concrete reset
+- Keep authority quiet and human
+- Do not sound formal, motivational, or over-explanatory`;
+        case "late_run_glow":
+          return `April beat policy for late-run glow:
+- Allowed moves: one lived-in observation, one earned softening, one specific late-hour cue
+- Stay concrete and musically grounded
+- Do not drift into fake depth or lines that could fit any song`;
+        case "closing_reach":
+          return `April beat policy for closing reach:
+- Allowed moves: an understated last-stretch cue, a final-turn acknowledgment, one clean handoff
+- Let closure register without making a speech
+- Do not become sentimental or ceremonious`;
+        default:
+          return "";
+      }
+    case "marcus":
+      switch (beat) {
+        case "opening_widen":
+          return `Marcus beat policy for opening widen:
+- Allowed moves: a confident "we're moving now" cue, a strong second-step handoff, a quick welcome with momentum
+- Make the show feel like it just found its stride
+- Do not sound like a promo read or a sports intro`;
+        case "lane_reveal":
+          return `Marcus beat policy for lane reveal:
+- Allowed moves: a decisive curation call, a sharp contrast, a clean statement of direction
+- Let confidence carry the line
+- Do not get generic or overhyped`;
+        case "connective_tissue":
+          return `Marcus beat policy for connective tissue:
+- Allowed moves: a fast-earned link, a momentum handoff, a simple "off that, this" move with substance
+- Keep it moving and clear
+- Do not over-explain the bridge`;
+        case "station_pulse":
+          return `Marcus beat policy for station pulse:
+- Allowed moves: a live-room refresh, a confident station pulse, a quick "we're still rolling" cue
+- Keep it muscular but controlled
+- Do not turn it into slogan copy`;
+        case "midpoint_refocus":
+          return `Marcus beat policy for midpoint refocus:
+- Allowed moves: a reset with authority, a "back in the pocket" cue, a clear steering move
+- Let him sound in command of the hour
+- Do not become grand or speechy`;
+        case "late_run_glow":
+          return `Marcus beat policy for late-run glow:
+- Allowed moves: a lived-in confidence beat, a "we're deep in it now" cue, one grounded reflection with motion
+- Keep the pulse alive
+- Do not sound sleepy or vague`;
+        case "closing_reach":
+          return `Marcus beat policy for closing reach:
+- Allowed moves: a strong last-stretch signal, a final-push cue, a clean close-in handoff
+- Let the finish feel intentional
+- Do not turn soft or ceremonial`;
+        default:
+          return "";
+      }
+    case "luna":
+      switch (beat) {
+        case "opening_widen":
+          return `Luna beat policy for opening widen:
+- Allowed moves: a soft welcome, a gentle widening of the room, a quiet second-step invitation
+- Keep it intimate and minimal
+- Do not become abstract mist or greeting-card warm`;
+        case "lane_reveal":
+          return `Luna beat policy for lane reveal:
+- Allowed moves: one emotional thread, one careful contrast, one reason the mood wants this song now
+- Let her feel the shape without naming a thesis
+- Do not become vague or float away from the music`;
+        case "connective_tissue":
+          return `Luna beat policy for connective tissue:
+- Allowed moves: tracing the emotional thread, a soft continuation, a gentle turn that feels heard
+- Keep the bridge tender but real
+- Do not reset the room from scratch`;
+        case "station_pulse":
+          return `Luna beat policy for station pulse:
+- Allowed moves: a hushed live-on-air cue, a quiet "still here with you" signal, a station tag that breathes
+- Keep it intimate rather than branded
+- Do not sound chirpy or promotional`;
+        case "midpoint_refocus":
+          return `Luna beat policy for midpoint refocus:
+- Allowed moves: a soft re-centering, a gentle host steer, a calm "stay with me here" shift
+- Keep her emotionally tuned and concise
+- Do not sound formal or freshly welcoming`;
+        case "late_run_glow":
+          return `Luna beat policy for late-run glow:
+- Allowed moves: one lived-in feeling, one late-hour softening, one line that deepens the set without drifting
+- Keep it sparse and emotionally precise
+- Do not lapse into generic poetry`;
+        case "closing_reach":
+          return `Luna beat policy for closing reach:
+- Allowed moves: a quiet last-stretch cue, a gentle nearing-the-end acknowledgment, a soft handoff
+- Let the close feel tender but unsentimental
+- Do not overstate the ending`;
+        default:
+          return "";
+      }
+    case "miles":
+      switch (beat) {
+        case "opening_widen":
+          return `Rafa beat policy for opening widen:
+- Allowed moves: a warm on-air welcome, a fluid second-step cue, a smooth "we're in it now" turn
+- Let the room open with ease and charisma
+- Do not reduce him to slang or caricature`;
+        case "lane_reveal":
+          return `Rafa beat policy for lane reveal:
+- Allowed moves: a stylish sequencing reason, a groove-based direction cue, a natural bilingual flourish if it lands
+- Keep it cinematic and relaxed
+- Do not force code-switching or overplay coolness`;
+        case "connective_tissue":
+          return `Rafa beat policy for connective tissue:
+- Allowed moves: a scene-to-scene connection, a rhythmic continuation, a smooth turn out of what just played
+- Let him sound like he sees the sequence
+- Do not make it too ornate`;
+        case "station_pulse":
+          return `Rafa beat policy for station pulse:
+- Allowed moves: a late-night station pulse, a warm live-room check-in, a smooth presence cue
+- Keep it sleek and effortless
+- Do not sound like a branding spot`;
+        case "midpoint_refocus":
+          return `Rafa beat policy for midpoint refocus:
+- Allowed moves: a composed reset, a smooth steer, a confident "this is where we are" cue
+- Keep the authority calm and magnetic
+- Do not sound stiff or explanatory`;
+        case "late_run_glow":
+          return `Rafa beat policy for late-run glow:
+- Allowed moves: a lived-in late-night observation, a smooth deepening move, a warm continuation
+- Keep it adult and cinematic
+- Do not get hazy or overromantic`;
+        case "closing_reach":
+          return `Rafa beat policy for closing reach:
+- Allowed moves: a final-stretch cue, a graceful close-in move, a last-run handoff with poise
+- Let closure live in the rhythm of the line
+- Do not overstate the goodbye`;
+        default:
+          return "";
+      }
+    case "jack":
+      switch (beat) {
+        case "opening_widen":
+          return `John beat policy for opening widen:
+- Allowed moves: a measured welcome, a second-record selector cue, a quiet "now the set starts speaking" move
+- Keep him crisp and natural
+- Do not sound precious or self-consciously curated`;
+        case "lane_reveal":
+          return `John beat policy for lane reveal:
+- Allowed moves: a record-store sequencing point, a contrast that earns the turn, a smart but simple selector note
+- Make the direction legible without lecturing
+- Do not turn academic`;
+        case "connective_tissue":
+          return `John beat policy for connective tissue:
+- Allowed moves: an earned sequence explanation, a low-key continuation, a handoff rooted in feel or pacing
+- Keep it elegant and plainspoken
+- Do not oversell the craft`;
+        case "station_pulse":
+          return `John beat policy for station pulse:
+- Allowed moves: a calm station refresh, a subtle live-on-air reminder, a composed room check-in
+- Keep it public-radio natural
+- Do not make it too formal or branded`;
+        case "midpoint_refocus":
+          return `John beat policy for midpoint refocus:
+- Allowed moves: a composed course correction, a measured reset of the hour, a quiet host steer
+- Let him sound like someone who knows radio timing
+- Do not become clinical`;
+        case "late_run_glow":
+          return `John beat policy for late-run glow:
+- Allowed moves: one earned late-set observation, one selector's reflection, one line that sounds lived-in
+- Keep it grounded and specific
+- Do not become literary for its own sake`;
+        case "closing_reach":
+          return `John beat policy for closing reach:
+- Allowed moves: a last-stretch nod, a closing-lane cue, a tasteful near-signoff without overdoing it
+- Keep closure understated
+- Do not get sentimental or NPR-grand`;
+        default:
+          return "";
+      }
+    case "tiffany":
+      switch (beat) {
+        case "opening_widen":
+          return `Tiffany beat policy for opening widen:
+- Allowed moves: a stylish welcome, a playful "okay, now we're really in it" cue, a sharp second-move handoff
+- Let her sound alive and current
+- Do not let social-caption language take over`;
+        case "lane_reveal":
+          return `Tiffany beat policy for lane reveal:
+- Allowed moves: a witty curation reason, a lightly glamorous contrast, a quick "this is the move" selector cue
+- Keep the observation real underneath the style
+- Do not rely on aura, vibe, or main-character filler`;
+        case "connective_tissue":
+          return `Tiffany beat policy for connective tissue:
+- Allowed moves: a quick contrast, a knowing continuation, a stylish but concrete turn from one record into the next
+- Keep her cleverness in service of the sequence
+- Do not make the bridge sound like a caption`;
+        case "station_pulse":
+          return `Tiffany beat policy for station pulse:
+- Allowed moves: a bright station refresh, a playful live-on-air pulse, a confident "still with me?" cue
+- Keep it brisk and human
+- Do not sound like an influencer ad read`;
+        case "midpoint_refocus":
+          return `Tiffany beat policy for midpoint refocus:
+- Allowed moves: a stylish reset, a quick room-steer, a playful but controlled "here's the move now" line
+- Keep it grounded in the show
+- Do not turn glib or flippant`;
+        case "late_run_glow":
+          return `Tiffany beat policy for late-run glow:
+- Allowed moves: a lived-in late-set observation, a stylish deepening move, a slightly softer curatorial line
+- Keep her sharp, not mushy
+- Do not float into empty mood writing`;
+        case "closing_reach":
+          return `Tiffany beat policy for closing reach:
+- Allowed moves: a polished last-stretch cue, a final-run wink, a clean elegant handoff toward the end
+- Keep it stylish and concise
+- Do not make it dramatic for the sake of drama`;
+        default:
+          return "";
+      }
+    case "jolene":
+      switch (beat) {
+        case "opening_widen":
+          return `Jolene beat policy for opening widen:
+- Allowed moves: a warm welcome, a bright "good to have you here" cue, a gentle opening-up of the room
+- Let her sound inviting without corny sweetness
+- Do not overdo affection or pet names`;
+        case "lane_reveal":
+          return `Jolene beat policy for lane reveal:
+- Allowed moves: a warm reason this belongs, a human recognition cue, a soft directional turn
+- Keep the welcome feeling alive inside the curation
+- Do not sound generic or Hallmark-polished`;
+        case "connective_tissue":
+          return `Jolene beat policy for connective tissue:
+- Allowed moves: a warm bridge out of the previous track, a continuation that feels caring, a light hand on the wheel
+- Keep it believable and easy
+- Do not restart the show or get sentimental`;
+        case "station_pulse":
+          return `Jolene beat policy for station pulse:
+- Allowed moves: a warm live-room refresh, a station tag with welcome in it, a gentle "still here with you" cue
+- Keep it open and sunny
+- Do not sound like a formal station read`;
+        case "midpoint_refocus":
+          return `Jolene beat policy for midpoint refocus:
+- Allowed moves: a warm reset, a reassuring host steer, a simple "let's bring it back here" move
+- Keep the authority soft but real
+- Do not sound preachy or freshly introductory`;
+        case "late_run_glow":
+          return `Jolene beat policy for late-run glow:
+- Allowed moves: a lived-in warm observation, a softer late-set cue, a generous continuation
+- Keep it grounded and musical
+- Do not go syrupy or vague`;
+        case "closing_reach":
+          return `Jolene beat policy for closing reach:
+- Allowed moves: a warm last-stretch cue, a tender near-wrap acknowledgment, a gentle closing handoff
+- Let the ending feel human and welcoming
+- Do not over-sentimentalize`;
+        default:
+          return "";
+      }
+    case "robert":
+      switch (beat) {
+        case "opening_widen":
+          return `Robert beat policy for opening widen:
+- Allowed moves: a dry welcome-back, a precise second-step cue, an unnervingly calm opening expansion
+- Let him sound controlled and slightly odd, but still humanly intelligible
+- Do not break syntax or overdo the robot bit`;
+        case "lane_reveal":
+          return `Robert beat policy for lane reveal:
+- Allowed moves: a controlled statement of logic, an exacting sequence cue, a deadpan reveal of why this follows
+- Keep it sharp and specific
+- Do not become random, chaotic, or jargon-heavy`;
+        case "connective_tissue":
+          return `Robert beat policy for connective tissue:
+- Allowed moves: a precise handoff, a mildly uncanny observation about what the previous track set up, a procedural turn
+- Let the sequence feel inevitable in his hands
+- Do not make it sound like a reboot or a joke sketch`;
+        case "station_pulse":
+          return `Robert beat policy for station pulse:
+- Allowed moves: a controlled live-on-air pulse, a station tag with quiet command, a deadpan presence refresh
+- Keep the station present without sounding commercial
+- Do not turn into synthetic nonsense`;
+        case "midpoint_refocus":
+          return `Robert beat policy for midpoint refocus:
+- Allowed moves: a precise reset, a controlled course correction, a quiet "the show now returns here" type move
+- Let authority come from composure and specificity
+- Do not sound welcoming in a fresh-start way`;
+        case "late_run_glow":
+          return `Robert beat policy for late-run glow:
+- Allowed moves: a dry late-set observation, a deeper but still literal continuation, a calm line that sounds earned
+- Keep him grounded even when faintly uncanny
+- Do not drift into meaningless atmosphere`;
+        case "closing_reach":
+          return `Robert beat policy for closing reach:
+- Allowed moves: a precise last-stretch cue, a controlled near-wrap signal, a final-shape handoff
+- Let the end feel intentional and slightly unsettling in a good way
+- Do not become theatrical`;
+        default:
+          return "";
+      }
     default:
       return "";
   }
@@ -663,6 +1124,32 @@ function normalizeTrack(input: unknown): TransitionTrack | null {
   return { title, artist, isrc };
 }
 
+function normalizeShowMemory(input: unknown): DJShowMemory | null {
+  const payload = (input ?? {}) as Partial<Record<keyof DJShowMemory, unknown>>;
+  const normalizeStringList = (value: unknown, limit = 6): string[] | undefined => {
+    if (!Array.isArray(value)) return undefined;
+    const normalized = value
+      .map((entry) => (typeof entry === "string" ? normalizeWhitespace(entry) : ""))
+      .filter((entry) => entry.length > 0)
+      .slice(0, limit);
+    return normalized.length ? normalized : undefined;
+  };
+
+  const memory: DJShowMemory = {
+    recentLines: normalizeStringList(payload.recentLines),
+    recentOpeningPhrases: normalizeStringList(payload.recentOpeningPhrases),
+    recentCurationAngles: normalizeStringList(payload.recentCurationAngles),
+    recentShowMomentTypes: normalizeStringList(payload.recentShowMomentTypes),
+    recentShowStates: normalizeStringList(payload.recentShowStates),
+    recentHostMoves: normalizeStringList(payload.recentHostMoves),
+    recentMoveSignatures: normalizeStringList(payload.recentMoveSignatures),
+    recentArtists: normalizeStringList(payload.recentArtists),
+    recentTrackTitles: normalizeStringList(payload.recentTrackTitles),
+  };
+
+  return Object.values(memory).some((value) => (value?.length ?? 0) > 0) ? memory : null;
+}
+
 export function normalizeTransitionRequest(input: unknown): TransitionRequest | null {
   const payload = (input ?? {}) as Partial<Record<string, unknown>>;
   const toTrack = normalizeTrack(payload.toTrack);
@@ -675,6 +1162,14 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
   const showMomentType =
     typeof payload.showMomentType === "string" && payload.showMomentType.trim().length > 0
       ? payload.showMomentType.trim()
+      : null;
+  const showBeat =
+    typeof payload.showBeat === "string" && payload.showBeat.trim().length > 0
+      ? payload.showBeat.trim()
+      : null;
+  const currentShowState =
+    typeof payload.currentShowState === "string" && payload.currentShowState.trim().length > 0
+      ? payload.currentShowState.trim()
       : null;
   const trigger = typeof payload.trigger === "string" ? payload.trigger.trim() : "auto";
   const avoidRecentLines = Array.isArray(payload.avoidRecentLines)
@@ -702,11 +1197,290 @@ export function normalizeTransitionRequest(input: unknown): TransitionRequest | 
             : undefined,
       }
     : null;
+  const showMemory = normalizeShowMemory(payload.showMemory);
 
-  return { djID, toTrack, fromTrack, sessionPosition, showMomentType, trigger, avoidRecentLines, listenerProfile };
+  return {
+    djID,
+    toTrack,
+    fromTrack,
+    sessionPosition,
+    showMomentType,
+    showBeat,
+    currentShowState,
+    trigger,
+    avoidRecentLines,
+    listenerProfile,
+    showMemory,
+  };
 }
 
-async function generateWithAnthropic(request: TransitionRequest): Promise<{ line: string; model: string } | null> {
+function buildShowMemoryPrompt(memory?: DJShowMemory | null): string {
+  if (!memory) return "";
+
+  const parts: string[] = [];
+  if (memory.recentLines?.length) {
+    parts.push(`Recent spoken lines to avoid echoing: ${memory.recentLines.join(" | ")}`);
+  }
+  if (memory.recentShowStates?.length) {
+    parts.push(`Recent show states already used: ${memory.recentShowStates.join(", ")}`);
+  }
+  if (memory.recentShowMomentTypes?.length) {
+    parts.push(`Recent planned show moments already used: ${memory.recentShowMomentTypes.join(", ")}`);
+  }
+  if (memory.recentHostMoves?.length) {
+    parts.push(`Recent host moves already used: ${memory.recentHostMoves.join(", ")}`);
+  }
+  if (memory.recentMoveSignatures?.length) {
+    parts.push(`Recent semantic move signatures to avoid repeating: ${memory.recentMoveSignatures.join(", ")}`);
+  }
+  if (memory.recentArtists?.length) {
+    parts.push(`Recently referenced artists: ${memory.recentArtists.join(", ")}`);
+  }
+  if (memory.recentTrackTitles?.length) {
+    parts.push(`Recently framed tracks: ${memory.recentTrackTitles.join(", ")}`);
+  }
+
+  if (!parts.length) return "";
+  return [
+    "Show memory:",
+    parts.join(" "),
+    "Use this memory to avoid sounding repetitive or like you are rediscovering the same point twice.",
+  ].join(" ");
+}
+
+function inferredTransitionHostMove(line: string, request: TransitionRequest): string {
+  const lowered = line.toLowerCase();
+
+  if (request.showMomentType === "final_song_signoff" || /\b(final|last stretch|wrap|wrapping up|closing)\b/i.test(line)) {
+    return "closing_mark";
+  }
+  if (/\b(welcome back|good to have you|back with you|with you tonight|on the air)\b/i.test(line)) {
+    return "welcome_back";
+  }
+  if (/\b(after|out of that|off that|following|right after)\b/i.test(line)) {
+    return "bridge_from_previous";
+  }
+  if (/\b(wanted|going with|belongs|fits|right place|this move|this turn)\b/i.test(line)) {
+    return "curation_choice";
+  }
+  if (/\b(reset|back in|the show|the set|the hour)\b/i.test(line)) {
+    return "show_refocus";
+  }
+  if (request.showBeat?.trim()) {
+    return request.showBeat.trim();
+  }
+  if (request.currentShowState?.trim()) {
+    return request.currentShowState.trim();
+  }
+  return lowered.includes("tonight") ? "live_presence" : "transition_move";
+}
+
+function inferredTransitionMoveSignature(line: string, request: TransitionRequest): string {
+  return [
+    inferredTransitionHostMove(line, request),
+    request.showBeat ?? "",
+    request.showMomentType ?? request.currentShowState ?? "",
+  ]
+    .map((value) => normalizedSemanticLabel(value))
+    .filter(Boolean)
+    .join("|");
+}
+
+function personaTransitionCriticIssues(line: string, request: TransitionRequest): string[] {
+  const issues: string[] = [];
+  const normalized = normalizedContainment(line);
+
+  switch (request.djID.toLowerCase()) {
+    case "casey":
+      if (shortSentenceCount(line, 3) > 1) {
+        issues.push("It breaks April into too many clipped sentence fragments.");
+      }
+      if (/\bspace around the edges\b/i.test(line) || /\bwhole time\b/i.test(line) || /\balways waiting\b/i.test(line)) {
+        issues.push("It gives April abstract fake-depth language instead of a concrete reason the transition belongs.");
+      }
+      if (/\b(feels like|kind of|something about)\b/i.test(line) && !/\b(after|because|fits|opens|move|show|set|track|song|record|turn|right after)\b/i.test(line)) {
+        issues.push("It lets April drift into an abstract thought that is not anchored to a real host move.");
+      }
+      break;
+    case "marcus":
+      if (/!{2,}|\b(let'?s go|make some noise|turn it up|we outside)\b/i.test(line)) {
+        issues.push("It turns Marcus into promo-hype instead of a controlled live host.");
+      }
+      break;
+    case "luna":
+      if (/\b(healing|safe space|hold you|breathe into|gentle reminder|soft place to land)\b/i.test(line)) {
+        issues.push("It pushes Luna into wellness-speak instead of intimate radio language.");
+      }
+      if (/\b(ethereal|cosmic|moonlight)\b/i.test(line) && !/\b(song|track|record|show|night)\b/i.test(line)) {
+        issues.push("It makes Luna too gauzy and ungrounded.");
+      }
+      break;
+    case "miles":
+      if (/\b(oye|mira|dale)\b[.!?]/i.test(line) && !/\b(this is|you'?re listening|w\.a\.i\.v)\b/i.test(line)) {
+        issues.push("It makes Rafa's bilingual rhythm feel like a dropped slang token instead of natural speech.");
+      }
+      break;
+    case "jack":
+      if (/\b(vinyl crackle|needle drop|curatorial palette|fidelity of memory)\b/i.test(line)) {
+        issues.push("It makes John sound precious instead of naturally discerning.");
+      }
+      break;
+    case "tiffany":
+      if (/\b(it'?s giving|main character|iconic|obsessed|serving|very [a-z0-9' -]+ energy|aura)\b/i.test(line)) {
+        issues.push("It slips into Tiffany caption-language instead of a real radio line.");
+      }
+      break;
+    case "jolene": {
+      const petNameMatches = line.match(/\b(honey|darling|sweetheart)\b/gi) ?? [];
+      if (petNameMatches.length > 1 || /\bbless\b/i.test(line)) {
+        issues.push("It turns Jolene too syrupy or folksy instead of warmly human.");
+      }
+      break;
+    }
+    case "robert":
+      if (/\b(robot|algorithm|training data|tokens|system prompt|malfunction|beep)\b/i.test(line)) {
+        issues.push("It makes Robert too explicitly robotic instead of deadpan and controlled.");
+      }
+      break;
+    default:
+      break;
+  }
+
+  return issues;
+}
+
+function personaRepairInstruction(djID: string): string {
+  switch (djID.toLowerCase()) {
+    case "casey":
+      return "Rewrite April as one calm, continuous thought with a concrete reason the turn belongs. No abstract filler, no clipped fragments.";
+    case "marcus":
+      return "Rewrite Marcus with live momentum and control, not promo hype.";
+    case "luna":
+      return "Rewrite Luna intimate and grounded, not gauzy or therapeutic.";
+    case "miles":
+      return "Rewrite Rafa smooth and naturally bilingual only if it lands cleanly, never as a stereotype or slang drop.";
+    case "jack":
+      return "Rewrite John selector-sharp and understated, not precious or overly literary.";
+    case "tiffany":
+      return "Rewrite Tiffany stylish and sharp, but make it sound like spoken radio rather than a social caption.";
+    case "jolene":
+      return "Rewrite Jolene warm and open without syrup, cliche, or overdone pet names.";
+    case "robert":
+      return "Rewrite Robert precise, dry, and faintly uncanny without explicit robot jokes or tech jargon.";
+    default:
+      return "Rewrite the line so it sounds like a live host in character.";
+  }
+}
+
+function evaluateTransitionLine(line: string, request: TransitionRequest): string[] {
+  const issues: string[] = [];
+  const normalized = normalizedContainment(line);
+  const hostMove = normalizedSemanticLabel(inferredTransitionHostMove(line, request));
+  const moveSignature = inferredTransitionMoveSignature(line, request);
+
+  const repeatedRecentLine = (request.showMemory?.recentLines ?? request.avoidRecentLines ?? []).some((recent) => {
+    const normalizedRecent = normalizedContainment(recent);
+    return normalizedRecent.length > 0 && (normalized === normalizedRecent || normalized.includes(normalizedRecent) || normalizedRecent.includes(normalized));
+  });
+  if (repeatedRecentLine) {
+    issues.push("It echoes a recent line too closely.");
+  }
+  if ((request.showMemory?.recentHostMoves ?? []).map(normalizedSemanticLabel).includes(hostMove)) {
+    issues.push("It repeats the same kind of host move the DJ used recently.");
+  }
+  if ((request.showMemory?.recentMoveSignatures ?? []).map(normalizedSemanticLabel).includes(normalizedSemanticLabel(moveSignature))) {
+    issues.push("It repeats a recent semantic transition pattern too closely.");
+  }
+
+  const repeatedArtist = request.showMemory?.recentArtists?.filter(Boolean).slice(-2) ?? [];
+  if (repeatedArtist.includes(request.toTrack.artist)) {
+    issues.push("It leans on an artist the DJ just referenced, so it risks sounding stuck.");
+  }
+
+  if (containsGenericPlatitude(line)) {
+    issues.push("It relies on generic tasteful filler instead of a concrete host move.");
+  }
+
+  if (request.showMomentType === "final_song_signoff") {
+    const hasClosingCue = /\b(last|final|wrap|close|closing)\b/i.test(line);
+    if (!hasClosingCue) {
+      issues.push("It does not clearly mark the final-song moment.");
+    }
+  }
+
+  if (request.currentShowState === "opening" && !/\b(show|set|hour|back)\b/i.test(line)) {
+    issues.push("It does not sound enough like an opening-show beat.");
+  }
+
+  switch ((request.showBeat ?? "").toLowerCase()) {
+    case "opening_widen":
+      if (!/\b(show|set|back|welcome|open|opening|start|begins?|tonight|move)\b/i.test(line)) {
+        issues.push("It does not widen the opening or welcome the listener into the show.");
+      }
+      if (/\b(late|last stretch|closing|wrap|wrapping up|final song)\b/i.test(line)) {
+        issues.push("It sounds too late-hour for an opening-widen beat.");
+      }
+      break;
+    case "lane_reveal":
+      if (!/\b(wanted|going|taking|keeping|leaning|belongs|fits|turn|choice|right after|after that|direction)\b/i.test(line)) {
+        issues.push("It does not make the set's direction or sequencing feel legible enough.");
+      }
+      break;
+    case "connective_tissue":
+      if (request.fromTrack && !/\b(after|into|from there|off that|out of that|following|opens|carries|holds|right after)\b/i.test(line)) {
+        issues.push("It does not do enough connective work for a continuity beat.");
+      }
+      if (/\b(welcome|back with you|show starts|starting out|opening up)\b/i.test(line)) {
+        issues.push("It sounds too much like a fresh opening for a connective beat.");
+      }
+      break;
+    case "station_pulse":
+      if (!/\b(here|air|radio|with you|back|tonight|right now)\b/i.test(line)) {
+        issues.push("It does not make the station feel live and present enough.");
+      }
+      if (/\b(slogan|brand|experience|curated for you)\b/i.test(line)) {
+        issues.push("It drifts toward promo language instead of station continuity.");
+      }
+      break;
+    case "midpoint_refocus":
+      if (!/\b(show|set|hour|room|reset|back)\b/i.test(line)) {
+        issues.push("It does not sound enough like a midpoint refocus.");
+      }
+      if (/\b(welcome|good to have you|starting out|opening up)\b/i.test(line)) {
+        issues.push("It sounds too much like a fresh welcome for a midpoint refocus.");
+      }
+      break;
+    case "late_run_glow":
+      if (/\b(welcome|back on|show starts|starting out|opening up)\b/i.test(line)) {
+        issues.push("It restarts the hour instead of sounding lived-in.");
+      }
+      if (!/\b(still|now|already|this part|tonight|deep|late|after)\b/i.test(line)) {
+        issues.push("It does not sound lived-in enough for a late-run glow.");
+      }
+      break;
+    case "closing_reach":
+      if (!/\b(last|late|final|stretch|close|closing|end|wrap)\b/i.test(line)) {
+        issues.push("It does not let the last stretch of the show register clearly enough.");
+      }
+      if (/\b(welcome|good to have you|show starts|starting out|opening up)\b/i.test(line)) {
+        issues.push("It sounds like a beginning instead of the late stretch.");
+      }
+      break;
+  }
+
+  return [...issues, ...personaTransitionCriticIssues(line, request)];
+}
+
+type TransitionAttempt = {
+  line: string | null;
+  model: string;
+  issues: string[];
+};
+
+async function generateWithAnthropic(
+  request: TransitionRequest,
+  repairPrompt?: string
+): Promise<TransitionAttempt | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) return null;
 
@@ -718,16 +1492,21 @@ async function generateWithAnthropic(request: TransitionRequest): Promise<{ line
   const personality = djPersonalityPrompt(request.djID);
   const depthContext = sessionDepthLabel(request.sessionPosition);
   const bridgeStyleGuidance = djBridgeStyleGuidance(request.djID);
+  const personaBeatPolicy = djBeatProductionPolicy(request.djID, request.showBeat);
   const showMomentPrompt = showMomentInstruction(request.showMomentType);
+  const showBeatPrompt = showBeatInstruction(request.showBeat);
+  const showBeatPolicyPrompt = showBeatEditorialPolicy(request.showBeat);
   const listenerProfilePrompt = request.listenerProfile
     ? buildListenerProfilePrompt(request.listenerProfile, request.djID)
     : "";
+  const showMemoryPrompt = buildShowMemoryPrompt(request.showMemory);
   const maxWords = request.showMomentType ? 75 : 60;
 
   const systemPrompt = `${personality}
 
 ${spokenDeliveryDisciplinePrompt(request.djID)}
 ${listenerProfilePrompt ? `\n${listenerProfilePrompt}\n` : ""}
+${showMemoryPrompt ? `\n${showMemoryPrompt}\n` : ""}
 Write a single track introduction for radio broadcast.
 
 Rules:
@@ -738,6 +1517,9 @@ Rules:
 - Keep it conversational and natural for spoken audio
 - Write like a real live DJ moment inside an unfolding show, not like isolated generated copy
 - The listener should be able to feel the hour taking shape across these lines; when useful, lightly name the show/start/reset/final stretch instead of hiding everything behind generic cool-sounding language
+- Treat the semantic show beat as an editorial policy, not a vibe adjective. Let it decide what kind of host move this line is allowed to make
+- Current semantic show beat: ${request.showBeat ?? "unspecified"}
+- Current show state: ${request.currentShowState ?? "unspecified"}
 - Make the line do one actual host job: welcome, react, choose, reset, tease, back-announce, or wrap
 - Use one concrete anchor in the line: what just played, why this one is here now, what point in the show this is, a listener pattern, or the current local moment
 - If a planned show moment is provided, write to that exact moment instead of falling back to a generic bridge
@@ -782,7 +1564,11 @@ Rules:
 - ${depthContext}
 
 ${showMomentPrompt ? `${showMomentPrompt}\n` : ""}
-${bridgeStyleGuidance}`.trim();
+${showBeatPrompt ? `${showBeatPrompt}\n` : ""}
+${showBeatPolicyPrompt ? `${showBeatPolicyPrompt}\n` : ""}
+${personaBeatPolicy ? `${personaBeatPolicy}\n` : ""}
+${bridgeStyleGuidance}
+${repairPrompt ? `\nRepair guidance: ${repairPrompt}` : ""}`.trim();
 
   const parts: string[] = [];
   if (request.fromTrack) {
@@ -791,6 +1577,12 @@ ${bridgeStyleGuidance}`.trim();
   parts.push(`Next track: "${request.toTrack.title}" by ${request.toTrack.artist}`);
   if (request.showMomentType) {
     parts.push(`Planned show moment: ${request.showMomentType}`);
+  }
+  if (request.showBeat) {
+    parts.push(`Current semantic show beat: ${request.showBeat}`);
+  }
+  if (request.currentShowState) {
+    parts.push(`Current show state: ${request.currentShowState}`);
   }
   if (request.avoidRecentLines && request.avoidRecentLines.length > 0) {
     parts.push(
@@ -827,14 +1619,14 @@ ${bridgeStyleGuidance}`.trim();
   if (!normalized) return null;
 
   const line = sanitizeGeneratedTransitionLine(normalized);
-  if (!line) return null;
-  if (hasOverusedOpening(line)) return null;
-  if (containsGenericPlatitude(line)) return null;
+  if (!line) return { line: null, model, issues: ["The line did not survive basic speech sanitization."] };
+  if (hasOverusedOpening(line)) return { line: null, model, issues: ["The line opens with an overused bridge stem."] };
+  if (containsGenericPlatitude(line)) return { line: null, model, issues: ["The line relies on generic tasteful filler."] };
 
   const enforcedLine = enforceStationTagEnding(line, request);
-  if (!enforcedLine) return null;
+  if (!enforcedLine) return { line: null, model, issues: ["The line could not be repaired into a clean station-tag ending."] };
 
-  return { line: enforcedLine, model };
+  return { line: enforcedLine, model, issues: evaluateTransitionLine(enforcedLine, request) };
 }
 
 export async function generateTransitionCommentary(request: TransitionRequest): Promise<TransitionResult> {
@@ -843,8 +1635,22 @@ export async function generateTransitionCommentary(request: TransitionRequest): 
     return { kind: "no_content", reason: "no_api_key" };
   }
 
-  const result = await generateWithAnthropic(request).catch(() => null);
-  if (!result) {
+  const firstAttempt = await generateWithAnthropic(request).catch(() => null);
+  const result =
+    firstAttempt?.line && firstAttempt.issues.length == 0
+      ? firstAttempt
+      : await generateWithAnthropic(
+        request,
+        [
+          "Rewrite it so it sounds more like a live host inside a continuing show.",
+          personaRepairInstruction(request.djID),
+          ...(firstAttempt?.issues ?? ["The previous attempt failed validation."]),
+          "Do not repeat recent phrasing or curation logic.",
+          "Make the line more concrete, more human, and more structurally specific to this show moment.",
+        ].join(" ")
+      ).catch(() => null);
+
+  if (!result?.line || result.issues.length > 0) {
     return { kind: "no_content", reason: "llm_rejected" };
   }
 

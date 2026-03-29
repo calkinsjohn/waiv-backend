@@ -11,6 +11,18 @@ export type ListenerProfile = {
   listeningPattern?: string;
 };
 
+export type DJShowMemory = {
+  recentLines?: string[];
+  recentOpeningPhrases?: string[];
+  recentCurationAngles?: string[];
+  recentShowMomentTypes?: string[];
+  recentShowStates?: string[];
+  recentHostMoves?: string[];
+  recentMoveSignatures?: string[];
+  recentArtists?: string[];
+  recentTrackTitles?: string[];
+};
+
 export type SessionIntroListenerContext = {
   localTimestamp: string;
   timeZoneIdentifier: string;
@@ -83,6 +95,7 @@ export type SessionIntroRequest = {
   introKind: string;
   listenerContext?: SessionIntroListenerContext;
   showContext?: SessionIntroShowContext;
+  showMemory?: DJShowMemory | null;
   personaHint?: string;
   toneGuardrails?: string;
   listenerProfile?: ListenerProfile | null;
@@ -469,6 +482,15 @@ function normalizedContainment(text: string): string {
     .trim();
 }
 
+function normalizedSemanticLabel(text: string): string {
+  return normalizeWhitespace(text)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9|]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 function cleanSentence(text: string): string {
   let cleaned = normalizeWhitespace(text.replace(/^[-*•]+/, "").replace(/^["“”'‘’]+|["“”'‘’]+$/g, ""));
   if (!cleaned) return "";
@@ -565,6 +587,32 @@ function normalizeTrack(input: unknown): SessionIntroTrack | null {
     return null;
   }
   return { title, artist, isrc };
+}
+
+function normalizeShowMemory(input: unknown): DJShowMemory | null {
+  const payload = (input ?? {}) as Partial<Record<keyof DJShowMemory, unknown>>;
+  const normalizeStringList = (value: unknown, limit = 6): string[] | undefined => {
+    if (!Array.isArray(value)) return undefined;
+    const normalized = value
+      .map((entry) => (typeof entry === "string" ? normalizeWhitespace(entry) : ""))
+      .filter((entry) => entry.length > 0)
+      .slice(0, limit);
+    return normalized.length ? normalized : undefined;
+  };
+
+  const memory: DJShowMemory = {
+    recentLines: normalizeStringList(payload.recentLines),
+    recentOpeningPhrases: normalizeStringList(payload.recentOpeningPhrases),
+    recentCurationAngles: normalizeStringList(payload.recentCurationAngles),
+    recentShowMomentTypes: normalizeStringList(payload.recentShowMomentTypes),
+    recentShowStates: normalizeStringList(payload.recentShowStates),
+    recentHostMoves: normalizeStringList(payload.recentHostMoves),
+    recentMoveSignatures: normalizeStringList(payload.recentMoveSignatures),
+    recentArtists: normalizeStringList(payload.recentArtists),
+    recentTrackTitles: normalizeStringList(payload.recentTrackTitles),
+  };
+
+  return Object.values(memory).some((value) => (value?.length ?? 0) > 0) ? memory : null;
 }
 
 function normalizeListenerContext(input: unknown, djID: string): SessionIntroListenerContext | null {
@@ -1429,12 +1477,144 @@ function coherenceInstructionForDJ(djID: string, language: "en" | "es"): string 
     : "For April, the intro has to feel like one continuous idea. Usually: brief welcome or 'we're back' crack of the mic, show identity, one observation that naturally turns into why this song opens, then out. No more than one short fragment sentence up front. No standalone sentences that change the subject. Keep station identification inside a natural spoken phrase, not as clipped sentence pieces.";
 }
 
+function introProductionPolicyPrompt(config: DJConfig, plan: IntroDecisionPlan): string {
+  const introShape = [
+    `Welcome move: ${describeWelcomeMode(plan.welcomeMode, config.language)}.`,
+    `Presence move: ${describePresenceMode(plan.presenceMode, plan.stationStyle, config.onAirName, config.language)}.`,
+    `Curation move: ${describeCurationMode(plan.curationMode, config.language)}.`,
+    `Handoff style: ${plan.handoffStyle}.`,
+  ].join(" ");
+
+  switch (config.id) {
+    case "casey":
+      return config.language === "es"
+        ? `Política de apertura para April. Movimientos permitidos: saludo seco y humano, señal ligera de que el show vuelve, una razón curatorial concreta que sostenga toda la intro, y salida limpia. Todo debe sentirse como un solo pensamiento continuo. No abras con una frase cool suelta, no acumules mini-observaciones, y no suenes complacida con tu propio gusto. ${introShape}`
+        : `Opening production policy for April. Allowed moves: a dry human welcome, a light "we're back" cue, one concrete curation reason that carries the whole intro, and a clean handoff. Everything should feel like one continuous thought. Do not open with a detached cool-sounding fragment, stack mini-observations, or sound impressed by your own taste. ${introShape}`;
+    case "marcus":
+      return config.language === "es"
+        ? `Política de apertura para Marcus. Movimientos permitidos: bienvenida con impulso, sensación clara de que el show ya está en marcha, una elección curatorial decidida, y handoff con autoridad. Debe sentirse como evento y movimiento, no como promo gritona. No uses swagger vacío ni copy genérico de "bienvenidos de vuelta". ${introShape}`
+        : `Opening production policy for Marcus. Allowed moves: a welcome with momentum, a clear sense that the show is already underway, a decisive curatorial choice, and an authoritative handoff. It should feel like an event with motion, not a hype promo. Do not use empty swagger or generic welcome-back copy. ${introShape}`;
+    case "luna":
+      return config.language === "es"
+        ? `Política de apertura para Luna. Movimientos permitidos: bienvenida íntima, presencia suave, una razón emocional o secuencial muy precisa, y handoff mínimo. La intro puede respirar, pero no flotar. No te vayas a la poesía nebulosa ni a lenguaje terapéutico. ${introShape}`
+        : `Opening production policy for Luna. Allowed moves: an intimate welcome, soft presence, one emotionally or sequentially precise reason, and a minimal handoff. The intro may breathe, but it cannot float away. Do not drift into gauzy poetry or wellness language. ${introShape}`;
+    case "jolene":
+      return config.language === "es"
+        ? `Política de apertura para Jolene. Movimientos permitidos: bienvenida cálida, puerta abierta al show, una razón de apertura que suene generosa y humana, y handoff luminoso. La calidez tiene que ser real, no azucarada. No la conviertas en copy cursi ni en personaje. ${introShape}`
+        : `Opening production policy for Jolene. Allowed moves: a warm welcome, an open-door show start, a human opening reason that feels generous, and a bright handoff. The warmth has to feel real, not syrupy. Do not turn her into corny copy or a character. ${introShape}`;
+    case "robert":
+      return config.language === "es"
+        ? `Política de apertura para Robert. Movimientos permitidos: señal de regreso al aire con precisión, identidad del show con control, una razón curatorial exacta, y handoff seco. La rareza puede estar en el enfoque, no en romper la sintaxis. No hagas chistes de robot ni texto averiado. ${introShape}`
+        : `Opening production policy for Robert. Allowed moves: a precise back-on-air cue, controlled show identity, an exact curatorial reason, and a dry handoff. The strangeness can live in his point of view, not in broken syntax. Do not make robot jokes or machine-gibberish copy. ${introShape}`;
+    case "miles":
+      return config.language === "es"
+        ? `Política de apertura para Mateo. Movimientos permitidos: bienvenida cálida con ritmo, identidad al aire fluida, una razón curatorial natural y con pulso, y handoff con carisma tranquilo. Si aparece español o code-switching, que caiga natural. No fuerces estereotipos ni slang. ${introShape}`
+        : `Opening production policy for Mateo. Allowed moves: a warm rhythmic welcome, fluid on-air identity, a natural curation reason with pulse, and a calm charismatic handoff. If Spanish or code-switching appears, it has to land naturally. Do not force slang or stereotypes. ${introShape}`;
+    case "jack":
+      return config.language === "es"
+        ? `Política de apertura para John. Movimientos permitidos: bienvenida medida, identidad de show sobria, una razón de selector que de verdad explique por qué esta abre, y handoff limpio. Debe sentirse como criterio real de radio musical. No suenes precioso, académico ni demasiado escrito. ${introShape}`
+        : `Opening production policy for John. Allowed moves: a measured welcome, understated show identity, a selector's reason that really explains why this opens, and a clean handoff. It should feel like genuine music-radio judgment. Do not sound precious, academic, or overly written. ${introShape}`;
+    case "tiffany":
+      return config.language === "es"
+        ? `Política de apertura para Tiffany. Movimientos permitidos: bienvenida brillante, identidad con estilo, una razón curatorial aguda y concreta, y handoff con chispa. Puede ser juguetona, pero siempre anclada en una elección real. No uses lenguaje de caption ni observaciones vacías sobre vibe o aura. ${introShape}`
+        : `Opening production policy for Tiffany. Allowed moves: a bright welcome, stylish identity, a sharp concrete curation reason, and a sparkling handoff. She can be playful, but it has to stay anchored in a real choice. Do not use caption language or empty vibe-and-aura observations. ${introShape}`;
+    default:
+      return "";
+  }
+}
+
+function buildShowMemoryPrompt(memory: DJShowMemory | null | undefined, language: "en" | "es"): string {
+  if (!memory) return "";
+
+  const parts: string[] = [];
+  if (memory.recentLines?.length) {
+    parts.push(
+      language === "es"
+        ? `Líneas recientes para no repetir: ${memory.recentLines.join(" | ")}`
+        : `Recent spoken lines to avoid echoing: ${memory.recentLines.join(" | ")}`
+    );
+  }
+  if (memory.recentOpeningPhrases?.length) {
+    parts.push(
+      language === "es"
+        ? `Arranques recientes ya usados: ${memory.recentOpeningPhrases.join(" | ")}`
+        : `Recent opening phrases already used: ${memory.recentOpeningPhrases.join(" | ")}`
+    );
+  }
+  if (memory.recentCurationAngles?.length) {
+    parts.push(
+      language === "es"
+        ? `Ángulos de curaduría recientes: ${memory.recentCurationAngles.join(", ")}`
+        : `Recent curation angles: ${memory.recentCurationAngles.join(", ")}`
+    );
+  }
+  if (memory.recentShowStates?.length) {
+    parts.push(
+      language === "es"
+        ? `Estados recientes del show: ${memory.recentShowStates.join(", ")}`
+        : `Recent show states: ${memory.recentShowStates.join(", ")}`
+    );
+  }
+  if (memory.recentHostMoves?.length) {
+    parts.push(
+      language === "es"
+        ? `Movimientos recientes del host ya usados: ${memory.recentHostMoves.join(", ")}`
+        : `Recent host moves already used: ${memory.recentHostMoves.join(", ")}`
+    );
+  }
+  if (memory.recentMoveSignatures?.length) {
+    parts.push(
+      language === "es"
+        ? `Firmas semánticas recientes para no repetir: ${memory.recentMoveSignatures.join(", ")}`
+        : `Recent semantic move signatures to avoid repeating: ${memory.recentMoveSignatures.join(", ")}`
+    );
+  }
+
+  if (!parts.length) return "";
+  return [
+    language === "es" ? "Memoria del show:" : "Show memory:",
+    parts.join(" "),
+    language === "es"
+      ? "Usa esta memoria para no repetir fraseo, el mismo giro de curaduría o la misma lógica del show."
+      : "Use this memory to avoid repeating phrasing, the same curation turn, or the same show logic.",
+  ].join(" ");
+}
+
+function introHostMove(plan: IntroDecisionPlan): string {
+  switch (plan.curationMode) {
+    case "familiar_return":
+    case "known_record_first":
+      return "familiar_return";
+    case "curious_first_turn":
+      return "discovery_turn";
+    case "direct_hit":
+      return "immediate_launch";
+    case "warm_welcome":
+      return "warm_welcome";
+    default:
+      return plan.welcomeMode;
+  }
+}
+
+function introMoveSignature(plan: IntroDecisionPlan, context: SessionIntroShowContext): string {
+  return [
+    introHostMove(plan),
+    plan.curationMode,
+    context.sessionType,
+  ]
+    .map((value) => normalizedSemanticLabel(value))
+    .filter(Boolean)
+    .join("|");
+}
+
 function buildFrameworkPrompt(
   request: SessionIntroRequest,
   context: SessionIntroShowContext,
   plan: IntroDecisionPlan
 ): string {
   const config = djConfigFor(request.djID);
+  const introProductionPolicy = introProductionPolicyPrompt(config, plan);
+  const showMemoryPrompt = buildShowMemoryPrompt(request.showMemory, config.language);
   const stationRule =
     plan.stationStyle === "omit_station_once_in_awhile"
       ? config.language === "es"
@@ -1479,9 +1659,11 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "Las 5 capas son estructura interna, no frases aisladas. Escribe una sola apertura coherente donde cada línea siga lógicamente a la anterior."
       : "The 5 layers are internal structure, not isolated fragments. Write one coherent opening where each line follows naturally from the one before it.",
+    introProductionPolicy,
     config.language === "es"
       ? "Evita non sequiturs, slogans sueltos y frases que parezcan pegadas una al lado de la otra."
       : "Avoid non sequiturs, disconnected slogans, and lines that feel pasted together.",
+    showMemoryPrompt,
     config.language === "es"
       ? "El plan siguiente es solo dirección interna. No copies ni parafrasees estas etiquetas literalmente; conviértelas en habla fresca y natural."
       : "The plan below is internal direction only. Do not copy or paraphrase these labels literally; turn them into fresh, natural speech.",
@@ -1848,6 +2030,60 @@ function evaluateIntro(
   return score;
 }
 
+function introCriticIssues(
+  intro: string,
+  request: SessionIntroRequest,
+  context: SessionIntroShowContext,
+  plan: IntroDecisionPlan
+): string[] {
+  const issues: string[] = [];
+  const normalized = normalizedContainment(intro);
+  const firstSentence = normalizeWhitespace(intro.split(/(?<=[.!?])\s+/)[0] ?? "");
+  const openingWindow = intro
+    .split(/(?<=[.!?])\s+/)
+    .slice(0, 2)
+    .join(" ")
+    .trim();
+  const hostMove = normalizedSemanticLabel(introHostMove(plan));
+  const moveSignature = normalizedSemanticLabel(introMoveSignature(plan, context));
+
+  if (containsGenericIntroPlatitude(intro)) {
+    issues.push("It relies on generic tasteful filler instead of a concrete reason the opener belongs.");
+  }
+  if (genericIntroPhrases.some((phrase) => normalized.includes(phrase))) {
+    issues.push("It sounds like assistant or onboarding copy.");
+  }
+  if (containsRepeatedOpening(intro, [...context.recentHistory.recentOpeningPhrases, ...(request.showMemory?.recentOpeningPhrases ?? [])])) {
+    issues.push("The opening phrase is too close to a recent intro.");
+  }
+  if ((request.showMemory?.recentCurationAngles ?? []).some((angle) => normalizedContainment(angle) === normalizedContainment(plan.curationMode))) {
+    issues.push("It repeats a recent curation angle instead of finding a fresh one.");
+  }
+  if ((request.showMemory?.recentHostMoves ?? []).map(normalizedSemanticLabel).includes(hostMove)) {
+    issues.push("It repeats the same kind of host move the DJ used recently.");
+  }
+  if ((request.showMemory?.recentMoveSignatures ?? []).map(normalizedSemanticLabel).includes(moveSignature)) {
+    issues.push("It repeats a recent semantic opening pattern too closely.");
+  }
+  if ((request.showMemory?.recentLines ?? []).some((line) => {
+    const recent = normalizedContainment(line);
+    return recent.length > 0 && (normalized === recent || normalized.includes(recent));
+  })) {
+    issues.push("It echoes a recent line too closely.");
+  }
+  if (!openingWindow || !/\b(welcome|glad|good to have|back|here on|with you|you'?re with|[a-z]+\s+here|bienvenido|hola|de vuelta)\b/i.test(openingWindow)) {
+    issues.push("The first line does not clearly feel like a host welcoming the listener or bringing the show back on air.");
+  }
+  if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) {
+    issues.push("For April, the cadence still breaks into too many clipped fragments.");
+  }
+  if (request.showMemory?.recentShowStates?.includes(context.sessionType)) {
+    issues.push("It is leaning on the same recent show-state framing instead of giving this opening a fresh angle.");
+  }
+
+  return issues;
+}
+
 async function requestAnthropicText(
   apiKey: string,
   model: string,
@@ -1882,7 +2118,8 @@ async function requestAnthropicText(
 }
 
 async function generateStructuredIntro(
-  request: SessionIntroRequest
+  request: SessionIntroRequest,
+  repairPrompt?: string
 ): Promise<{ intro: string; model: string; metadata: SessionIntroMetadata } | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
@@ -1903,6 +2140,7 @@ async function generateStructuredIntro(
     djPersonalityPrompt(config),
     request.personaHint ? `Additional persona guidance: ${request.personaHint}` : "",
     request.toneGuardrails ? `Tone guardrails: ${request.toneGuardrails}` : "",
+    repairPrompt ? `Repair guidance: ${repairPrompt}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -1935,7 +2173,8 @@ async function generateStructuredIntro(
   }
 
   const score = evaluateIntro(normalized, request, context, plan);
-  if (score < 0.62) {
+  const criticIssues = introCriticIssues(normalized, request, context, plan);
+  if (score < 0.62 || criticIssues.length > 0) {
     console.error(`[session-intro] score below threshold: ${score.toFixed(2)} intro="${normalized.slice(0, 240)}"`);
     return null;
   }
@@ -1984,6 +2223,7 @@ export function normalizeSessionIntroRequest(input: unknown): SessionIntroReques
     firstTrack,
     introKind: introKind || "standard",
     listenerContext: listenerContext ?? undefined,
+    showMemory: normalizeShowMemory(payload.showMemory) ?? undefined,
     personaHint: personaHint || undefined,
     toneGuardrails: toneGuardrails || undefined,
     listenerProfile: listenerProfile ?? undefined,
@@ -2001,7 +2241,18 @@ export async function generateSessionIntro(request: SessionIntroRequest): Promis
     return { kind: "no_content", reason: "no_api_key" };
   }
 
-  const result = await generateStructuredIntro(request).catch(() => null);
+  const firstAttempt = await generateStructuredIntro(request).catch(() => null);
+  const result =
+    firstAttempt
+      ?? await generateStructuredIntro(
+        request,
+        [
+          "Rewrite the intro so it sounds more like a real live host opening a show.",
+          "Do not repeat recent opening phrases, recent curation logic, or recent show framing.",
+          "Keep the first line welcoming or clearly back-on-air.",
+          "Make the curation sentence concrete, human, and specific to why this song opens.",
+        ].join(" ")
+      ).catch(() => null);
   if (!result) {
     return { kind: "no_content", reason: "llm_rejected" };
   }

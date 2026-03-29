@@ -155,6 +155,8 @@ describe("POST /api/dj/session-intro", () => {
     expect(fullPrompt).toContain("The opener is highly familiar. Lean into confidence, comfort, recognition, and return.");
     expect(fullPrompt).toContain("April is the DJ represented by the internal id 'casey' in WAIV.");
     expect(fullPrompt).toContain("The 5 layers are internal structure, not isolated fragments.");
+    expect(fullPrompt).toContain("Opening production policy for April.");
+    expect(fullPrompt).toContain("Allowed moves: a dry human welcome, a light \"we're back\" cue, one concrete curation reason that carries the whole intro, and a clean handoff.");
     expect(fullPrompt).toContain("Return strict JSON with exactly these keys");
   });
 
@@ -322,6 +324,61 @@ describe("POST /api/dj/session-intro", () => {
     expect(payload.metadata.handoffStyle).toBe("understated");
     expect(fullPrompt).toContain("The opener is exploratory. Lean into intrigue, curiosity, trust, and discovery.");
     expect(fullPrompt).toContain("Luna is the DJ represented by the internal id 'luna' in WAIV.");
+    expect(fullPrompt).toContain("Opening production policy for Luna.");
+    expect(fullPrompt).toContain("Allowed moves: an intimate welcome, soft presence, one emotionally or sequentially precise reason, and a minimal handoff.");
+  });
+
+  it("threads semantic move memory into the intro prompt", async () => {
+    let anthropicBody: Record<string, unknown> | null = null;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      anthropicBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: structuredIntroText(),
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        listenerContext,
+        showMemory: {
+          recentHostMoves: ["discovery_turn", "warm_welcome"],
+          recentMoveSignatures: ["discovery_turn|curious_first_turn|opening"],
+        },
+      }),
+    });
+
+    const response = await POST(request);
+    const fullPrompt = [
+      String(anthropicBody?.system ?? ""),
+      String(((anthropicBody?.messages as Array<{ content?: string }> | undefined) ?? [])[0]?.content ?? ""),
+    ].join(" ");
+
+    expect(response.status).toBe(200);
+    expect(fullPrompt).toContain("Recent host moves already used: discovery_turn, warm_welcome");
+    expect(fullPrompt).toContain("Recent semantic move signatures to avoid repeating: discovery_turn|curious_first_turn|opening");
   });
 
   it("rejects generated intros with the wrong time of day for the listener", async () => {
