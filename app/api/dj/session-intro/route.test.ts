@@ -14,14 +14,14 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function structuredIntroText(overrides: Partial<Record<string, unknown>> = {}): string {
   return JSON.stringify({
-    intro: "Alright. April here, on WAIV. Thursday night feels slow enough that we can start without forcing the room awake. Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight. Let's open with \"Yellow\" by Coldplay.",
+    intro: "Alright. April with you on WAIV. Thursday night feels slow enough that we can come in without forcing the room awake. Wanted to open somewhere familiar, but still with enough shape to tell you the set means something tonight. Here's \"Yellow\" by Coldplay.",
     metadata: {
       openingStyle: "direct",
       length: "medium",
       stationStyle: "WAIV",
       handoffStyle: "clean",
-      timeAnchor: "Thursday night feels slow enough that we can start without forcing the room awake.",
-      curationAngle: "Wanted to start somewhere familiar, but still with enough shape to tell you the set means something tonight.",
+      timeAnchor: "Thursday night feels slow enough that we can come in without forcing the room awake.",
+      curationAngle: "Wanted to open somewhere familiar, but still with enough shape to tell you the set means something tonight.",
       emotionalTone: "cool",
       vocabulary: ["slow", "clean", "familiar"],
       usedTimeReference: true,

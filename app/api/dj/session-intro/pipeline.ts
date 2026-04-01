@@ -301,8 +301,8 @@ const djConfigs: Record<string, DJConfig> = {
     stationStyleWeights: { WAIV: 0.32, "W.A.I.V.": 0.22, omit_station_once_in_awhile: 0.46 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
-    stationPresenceExamples: ["April here with you on WAIV.", "Hey, we're back on W.A.I.V. April here.", "April with you tonight."],
-    sonicMomentExamples: ["Hey, we're back.", "Good to have you here.", "Alright, we're back."],
+    stationPresenceExamples: ["I'm April on WAIV.", "Hey, we're back on W.A.I.V. with April.", "April with you tonight."],
+    sonicMomentExamples: ["Hey, we're back.", "Good to have you back.", "Alright, we're back."],
     curatorMoves: ["Wanted to start somewhere familiar.", "I wanted a first move with some patience.", "This opens the set without pushing too hard."],
     anchorMoves: ["Feels like a slow Thursday.", "Right about the part of the night where everything softens.", "Middle of the afternoon, but we're not rushing it."],
   },
@@ -382,8 +382,8 @@ const djConfigs: Record<string, DJConfig> = {
     handoffStyleWeights: { clean: 0.36, dramatic: 0.1, understated: 0.24, conversational: 0.3 },
     moodWords: ["controlled", "precise", "dry", "night-facing"],
     stationPresenceExamples: ["WAIV, after dark. Robert with you.", "Robert here, on W.A.I.V.", "Robert with you tonight."],
-    sonicMomentExamples: ["We're back on the line.", "Good to have you here.", "Alright, back at it."],
-    curatorMoves: ["This was the cleanest place to begin.", "I wanted something that settles the system quickly.", "The opener needed to be exact enough."],
+    sonicMomentExamples: ["We're back on the line.", "Good to have you back.", "Alright, back at it."],
+    curatorMoves: ["This was the cleanest way in.", "I wanted something that settles the system quickly.", "The opener needed to be exact enough."],
     anchorMoves: ["At this hour, precision helps.", "The night is already doing half the work.", "This part of the evening usually rewards restraint."],
   },
   miles: {
@@ -422,7 +422,7 @@ const djConfigs: Record<string, DJConfig> = {
     handoffStyleWeights: { clean: 0.28, dramatic: 0.08, understated: 0.32, conversational: 0.32 },
     moodWords: ["grounded", "calm", "intentional", "textured"],
     stationPresenceExamples: ["John here, on WAIV.", "John with you tonight.", "WAIV. John here."],
-    sonicMomentExamples: ["Alright, we're back.", "Good to have you here.", "Let's start clean."],
+    sonicMomentExamples: ["Alright, we're back.", "Good to have you back.", "Let's start clean."],
     curatorMoves: ["Wanted to start with something that earns the space.", "I've been sitting with this one.", "This felt like the right kind of first move."],
     anchorMoves: ["The night has a little room in it.", "This part of the afternoon can take something patient.", "Feels like the right point in the day to start clean."],
   },
@@ -442,7 +442,7 @@ const djConfigs: Record<string, DJConfig> = {
     handoffStyleWeights: { clean: 0.22, dramatic: 0.26, understated: 0.1, conversational: 0.42 },
     moodWords: ["sharp", "bright", "sleek", "alive"],
     stationPresenceExamples: ["Tiffany here, on W.A.I.V.", "WAIV tonight. Tiffany with you.", "Tiffany with you tonight."],
-    sonicMomentExamples: ["Alright, we're back.", "Good to have you here.", "Let's do this right."],
+    sonicMomentExamples: ["Alright, we're back.", "Good to have you back.", "Let's do this right."],
     curatorMoves: ["Wanted something with a clean entrance.", "This felt like the right statement record.", "No reason to open shy tonight."],
     anchorMoves: ["This part of the night wants something with shape.", "The room feels ready for a sharper entrance.", "Late enough to start with a little style."],
   },
@@ -851,7 +851,7 @@ function djConfigFor(djID: string): DJConfig {
     moodWords: ["steady", "present"],
     stationPresenceExamples: ["WAIV. With you now.", "On WAIV right now.", "Here on WAIV."],
     sonicMomentExamples: ["Alright.", "Okay.", "Let's start here."],
-    curatorMoves: ["This felt like the right place to begin.", "Wanted to start somewhere that lands clean."],
+    curatorMoves: ["This felt like the right way in.", "Wanted to start somewhere that lands clean."],
     anchorMoves: ["Feels like the right part of the day for this.", "This is a good hour to start with some intention."],
   };
 }
@@ -1651,6 +1651,12 @@ function buildFrameworkPrompt(
       ? "La primera línea debe dar la bienvenida o marcar que el show vuelve al aire. No abras con una frase atmosférica suelta."
       : "The first line should welcome the listener or acknowledge that the show is back on air. Do not open with a detached atmospheric fragment.",
     config.language === "es"
+      ? "No repitas la misma palabra-ancla en frases seguidas. Si ya dijiste volver, abrir, empezar o arrancar, cambia el siguiente movimiento."
+      : "Do not repeat the same anchor word across adjacent lines. If you already used back, start, open, begin, or welcome, vary the next move.",
+    config.language === "es"
+      ? "No hagas una línea de saludo terminada en 'aquí' y luego otra de identidad tipo '[NOMBRE] aquí'. Ese ritmo suena robótico."
+      : "Do not do a greeting line that lands on 'here' and then follow it with a self-ID like '[NAME] here.' That cadence sounds robotic.",
+    config.language === "es"
       ? "La línea de curaduría debe decir algo real sobre por qué esta canción abre: familiaridad, paciencia, contraste, secuencia, tempo, textura o cómo entra el tema. Nada de frases que suenen profundas pero no signifiquen nada."
       : "The curation line must say something real about why this song opens: familiarity, patience, contrast, sequencing, tempo, texture, or how the record enters. No lines that sound profound but mean nothing.",
     config.language === "es"
@@ -1847,6 +1853,40 @@ function containsRepeatedOpening(text: string, recentOpenings: string[]): boolea
   return Boolean(normalized && recentOpenings.some((opening) => normalizedContainment(opening) === normalized));
 }
 
+function repeatedIntroAnchorVerbCount(text: string): number {
+  const normalized = normalizedContainment(text);
+  const patterns = [
+    /\bbegin\b/g,
+    /\bbegins\b/g,
+    /\bbeginning\b/g,
+    /\bstart\b/g,
+    /\bstarting\b/g,
+    /\bopen\b/g,
+    /\bopening\b/g,
+    /\bkick(?:ing)? it off\b/g,
+  ];
+
+  return patterns.reduce((total, pattern) => total + (normalized.match(pattern)?.length ?? 0), 0);
+}
+
+function containsGreetingIdentityClash(text: string): boolean {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean)
+    .slice(0, 2);
+
+  if (sentences.length < 2) {
+    return false;
+  }
+
+  const greetingPattern = /\b(good to have you here|good to have you back|glad you're here|glad you made it|welcome back|welcome in)\b/i;
+  const identityPattern = /\b(april|marcus|luna|mateo|john|tiffany|jolene|robert)\s+here\b/i;
+
+  return sentences.some((sentence) => greetingPattern.test(sentence))
+    && sentences.some((sentence) => identityPattern.test(sentence));
+}
+
 function containsWrongTimeCue(intro: string, context: SessionIntroShowContext, djID: string): boolean {
   const allowed = allowedTimeOfDayPhrases(context.timeContext.timeOfDay, djID);
   if (!allowed.length) return false;
@@ -2026,6 +2066,8 @@ function evaluateIntro(
   if (bannedStandaloneOpeners.some((phrase) => firstSentence.startsWith(phrase))) score -= 0.2;
   if (plan.stationStyle !== "omit_station_once_in_awhile" && !containsPhrase(intro, [plan.stationStyle])) score -= 0.08;
   if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) score -= 0.18;
+  if (repeatedIntroAnchorVerbCount(intro) > 2) score -= 0.16;
+  if (containsGreetingIdentityClash(intro)) score -= 0.2;
 
   return score;
 }
@@ -2073,6 +2115,12 @@ function introCriticIssues(
   }
   if (!openingWindow || !/\b(welcome|glad|good to have|back|here on|with you|you'?re with|[a-z]+\s+here|bienvenido|hola|de vuelta)\b/i.test(openingWindow)) {
     issues.push("The first line does not clearly feel like a host welcoming the listener or bringing the show back on air.");
+  }
+  if (repeatedIntroAnchorVerbCount(intro) > 2) {
+    issues.push("It repeats opening verbs like start, open, or begin too many times, so the intro sounds written instead of spoken.");
+  }
+  if (containsGreetingIdentityClash(intro)) {
+    issues.push("It pairs a greeting like 'good to have you here' with a clipped self-ID like 'April here,' which sounds robotic.");
   }
   if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) {
     issues.push("For April, the cadence still breaks into too many clipped fragments.");
@@ -2250,6 +2298,8 @@ export async function generateSessionIntro(request: SessionIntroRequest): Promis
           "Rewrite the intro so it sounds more like a real live host opening a show.",
           "Do not repeat recent opening phrases, recent curation logic, or recent show framing.",
           "Keep the first line welcoming or clearly back-on-air.",
+          "Do not reuse opening verbs like begin, start, open, or kick off more than once unless the wording truly needs it.",
+          "Do not pair a greeting that ends on 'here' with a clipped self-identification line like 'April here.'",
           "Make the curation sentence concrete, human, and specific to why this song opens.",
         ].join(" ")
       ).catch(() => null);
