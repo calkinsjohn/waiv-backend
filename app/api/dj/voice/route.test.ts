@@ -122,7 +122,8 @@ describe("POST /api/dj/voice", () => {
     expect(requestBody.voice_settings).toMatchObject({
       stability: 0.62,
       similarity_boost: 0.74,
-      style: 0.14,
+      style: 0.12,
+      speed: 0.94,
       use_speaker_boost: true,
     });
     expect(requestBody.enable_ssml_parsing).toBe(true);

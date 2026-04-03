@@ -292,13 +292,14 @@ const djConfigs: Record<string, DJConfig> = {
       "April is never peppy, never ad-copy polished, and never explaining the app.",
       "She values understatement, sequencing, and one precise reason a first record belongs.",
       "Her openings should move as one thought from setup to handoff; no detachable lines, no abrupt pivots, no extra sentence just because there is room for one.",
+      "Let her cadence breathe. Favor fuller clauses and cleaner medium-length sentences over three clipped hits in a row.",
       "Avoid clipped station IDs like 'WAIV. April here.' or any cadence where the station name, DJ name, and greeting all land as separate sentence fragments.",
       "Her first line should greet the listener or acknowledge that the show is back, not just toss out a generic atmospheric fragment.",
       "Her curation line has to name a real reason the opener belongs: familiarity, patience, contrast, sequencing, tempo, texture, or how the song enters. No fake profundity.",
     ],
     doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy", "empty fake-insight lines"],
-    openingStyleWeights: { cold_open: 0.18, direct: 0.26, atmospheric: 0.22, in_motion: 0.34 },
-    stationStyleWeights: { WAIV: 0.32, "W.A.I.V.": 0.22, omit_station_once_in_awhile: 0.46 },
+    openingStyleWeights: { cold_open: 0.14, direct: 0.34, atmospheric: 0.28, in_motion: 0.24 },
+    stationStyleWeights: { WAIV: 0.14, "W.A.I.V.": 0.08, omit_station_once_in_awhile: 0.78 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
     stationPresenceExamples: ["I'm April on WAIV.", "Hey, we're back on W.A.I.V. with April.", "April with you tonight."],
@@ -318,7 +319,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["hype-man shouting", "generic 'welcome back' copy", "empty swagger"],
     openingStyleWeights: { cold_open: 0.26, direct: 0.24, atmospheric: 0.08, in_motion: 0.42 },
-    stationStyleWeights: { WAIV: 0.18, "W.A.I.V.": 0.54, omit_station_once_in_awhile: 0.28 },
+    stationStyleWeights: { WAIV: 0.12, "W.A.I.V.": 0.26, omit_station_once_in_awhile: 0.62 },
     handoffStyleWeights: { clean: 0.22, dramatic: 0.32, understated: 0.08, conversational: 0.38 },
     moodWords: ["alive", "moving", "locked-in", "bright"],
     stationPresenceExamples: ["This is Marcus on W.A.I.V.", "Marcus with you on WAIV.", "Marcus here. W.A.I.V."],
@@ -338,7 +339,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["wellness language", "overwrought poetry", "explainer copy"],
     openingStyleWeights: { cold_open: 0.08, direct: 0.18, atmospheric: 0.42, in_motion: 0.32 },
-    stationStyleWeights: { WAIV: 0.26, "W.A.I.V.": 0.14, omit_station_once_in_awhile: 0.6 },
+    stationStyleWeights: { WAIV: 0.12, "W.A.I.V.": 0.08, omit_station_once_in_awhile: 0.8 },
     handoffStyleWeights: { clean: 0.18, dramatic: 0.06, understated: 0.46, conversational: 0.3 },
     moodWords: ["quiet", "warm", "patient", "close"],
     stationPresenceExamples: ["You're with Luna tonight.", "Luna here.", "WAIV tonight. Luna with you."],
@@ -358,7 +359,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["hallmark sweetness", "cartoon Southernisms", "assistant copy"],
     openingStyleWeights: { cold_open: 0.1, direct: 0.32, atmospheric: 0.22, in_motion: 0.36 },
-    stationStyleWeights: { WAIV: 0.38, "W.A.I.V.": 0.12, omit_station_once_in_awhile: 0.5 },
+    stationStyleWeights: { WAIV: 0.16, "W.A.I.V.": 0.08, omit_station_once_in_awhile: 0.76 },
     handoffStyleWeights: { clean: 0.3, dramatic: 0.08, understated: 0.18, conversational: 0.44 },
     moodWords: ["warm", "open", "bright", "settled"],
     stationPresenceExamples: ["Jolene here, on WAIV.", "Hey, you're with Jolene tonight.", "WAIV tonight. Jolene with you."],
@@ -378,7 +379,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["camp robot jokes", "broken machine text", "villain energy"],
     openingStyleWeights: { cold_open: 0.34, direct: 0.26, atmospheric: 0.12, in_motion: 0.28 },
-    stationStyleWeights: { WAIV: 0.24, "W.A.I.V.": 0.44, omit_station_once_in_awhile: 0.32 },
+    stationStyleWeights: { WAIV: 0.12, "W.A.I.V.": 0.26, omit_station_once_in_awhile: 0.62 },
     handoffStyleWeights: { clean: 0.36, dramatic: 0.1, understated: 0.24, conversational: 0.3 },
     moodWords: ["controlled", "precise", "dry", "night-facing"],
     stationPresenceExamples: ["WAIV, after dark. Robert with you.", "Robert here, on W.A.I.V.", "Robert with you tonight."],
@@ -398,7 +399,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["spanglish forzado", "estereotipo latino", "copy de onboarding"],
     openingStyleWeights: { cold_open: 0.16, direct: 0.24, atmospheric: 0.22, in_motion: 0.38 },
-    stationStyleWeights: { WAIV: 0.3, "W.A.I.V.": 0.16, omit_station_once_in_awhile: 0.54 },
+    stationStyleWeights: { WAIV: 0.14, "W.A.I.V.": 0.1, omit_station_once_in_awhile: 0.76 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.14, understated: 0.16, conversational: 0.46 },
     moodWords: ["cálido", "seguro", "fluido", "intencional"],
     stationPresenceExamples: ["Mateo aquí, en WAIV.", "Esta noche estás con Mateo.", "WAIV esta noche. Mateo contigo."],
@@ -418,7 +419,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["NPR parody", "overwritten criticism", "assistant framing"],
     openingStyleWeights: { cold_open: 0.14, direct: 0.28, atmospheric: 0.22, in_motion: 0.36 },
-    stationStyleWeights: { WAIV: 0.34, "W.A.I.V.": 0.18, omit_station_once_in_awhile: 0.48 },
+    stationStyleWeights: { WAIV: 0.15, "W.A.I.V.": 0.09, omit_station_once_in_awhile: 0.76 },
     handoffStyleWeights: { clean: 0.28, dramatic: 0.08, understated: 0.32, conversational: 0.32 },
     moodWords: ["grounded", "calm", "intentional", "textured"],
     stationPresenceExamples: ["John here, on WAIV.", "John with you tonight.", "WAIV. John here."],
@@ -438,7 +439,7 @@ const djConfigs: Record<string, DJConfig> = {
     ],
     doNotDo: ["social caption filler", "influencer parody", "assistant cheer"],
     openingStyleWeights: { cold_open: 0.16, direct: 0.22, atmospheric: 0.16, in_motion: 0.46 },
-    stationStyleWeights: { WAIV: 0.28, "W.A.I.V.": 0.3, omit_station_once_in_awhile: 0.42 },
+    stationStyleWeights: { WAIV: 0.12, "W.A.I.V.": 0.18, omit_station_once_in_awhile: 0.7 },
     handoffStyleWeights: { clean: 0.22, dramatic: 0.26, understated: 0.1, conversational: 0.42 },
     moodWords: ["sharp", "bright", "sleek", "alive"],
     stationPresenceExamples: ["Tiffany here, on W.A.I.V.", "WAIV tonight. Tiffany with you.", "Tiffany with you tonight."],
@@ -1039,20 +1040,44 @@ function openingStyleWeightsForContext(
 
 function stationStyleWeightsForContext(
   config: DJConfig,
-  context: SessionIntroShowContext
+  context: SessionIntroShowContext,
+  showMemory?: DJShowMemory | null
 ): Record<IntroStationStyle, number> {
   const weights = { ...config.stationStyleWeights };
 
   if (context.sessionType === "first_ever_session") {
-    weights.WAIV *= 1.18;
-    weights["W.A.I.V."] *= 1.18;
-    weights.omit_station_once_in_awhile *= 0.72;
+    weights.WAIV *= 1.08;
+    weights["W.A.I.V."] *= 1.08;
+    weights.omit_station_once_in_awhile *= 0.84;
   }
   if (context.sessionType === "resume_playback") {
     weights.omit_station_once_in_awhile *= 1.35;
   }
 
+  const recentStationMentions = countRecentStationMentions(showMemory);
+  if (recentStationMentions >= 1) {
+    weights.WAIV *= 0.45;
+    weights["W.A.I.V."] *= 0.45;
+    weights.omit_station_once_in_awhile *= 1.6;
+  }
+  if (recentStationMentions >= 2) {
+    weights.WAIV *= 0.25;
+    weights["W.A.I.V."] *= 0.25;
+    weights.omit_station_once_in_awhile *= 1.8;
+  }
+
   return weights;
+}
+
+function countRecentStationMentions(showMemory?: DJShowMemory | null): number {
+  if (!showMemory) return 0;
+
+  const candidates = [
+    ...(showMemory.recentLines ?? []),
+    ...(showMemory.recentOpeningPhrases ?? []),
+  ];
+  const count = candidates.filter((value) => /\bw\s*\.?\s*a\s*\.?\s*i\s*\.?\s*v\b/i.test(value)).length;
+  return Math.min(count, 3);
 }
 
 function handoffWeightsForContext(
@@ -1343,7 +1368,7 @@ function buildIntroDecisionPlan(
     0.7
   );
   const stationStyleWeights = applyRecentPenalty(
-    stationStyleWeightsForContext(config, context),
+    stationStyleWeightsForContext(config, context, request.showMemory),
     context.recentHistory.recentStationStyles ?? [],
     0.32,
     0.7
@@ -1357,7 +1382,9 @@ function buildIntroDecisionPlan(
 
   let length = chooseWeighted(`${decisionSeed}|length`, lengthWeights);
   let openingStyle = chooseWeighted(`${decisionSeed}|opening-style`, openingStyleWeights);
-  const stationStyle = chooseWeighted(`${decisionSeed}|station-style`, stationStyleWeights);
+  const chosenStationStyle = chooseWeighted(`${decisionSeed}|station-style`, stationStyleWeights);
+  const stationStyle =
+    countRecentStationMentions(request.showMemory) >= 2 ? "omit_station_once_in_awhile" : chosenStationStyle;
   const handoffStyle = chooseWeighted(`${decisionSeed}|handoff-style`, handoffStyleWeights);
   const welcomeMode = welcomeModeForContext(config, context, openingStyle, decisionSeed);
   const presenceMode = presenceModeForContext(config, stationStyle, decisionSeed);
@@ -1368,6 +1395,14 @@ function buildIntroDecisionPlan(
   if (config.id === "marcus" && familiarity === "exploratory" && context.setContext.openingTrackEnergy >= 0.75) {
     length = "short";
     openingStyle = "in_motion";
+  }
+  if (config.id === "casey") {
+    if (length === "short") {
+      length = "medium";
+    }
+    if (openingStyle === "in_motion") {
+      openingStyle = "direct";
+    }
   }
   if (config.id === "luna" && context.setContext.openingTrackEnergy <= 0.35) {
     openingStyle = "atmospheric";
@@ -1489,7 +1524,7 @@ function introProductionPolicyPrompt(config: DJConfig, plan: IntroDecisionPlan):
     case "casey":
       return config.language === "es"
         ? `Política de apertura para April. Movimientos permitidos: saludo seco y humano, señal ligera de que el show vuelve, una razón curatorial concreta que sostenga toda la intro, y salida limpia. Todo debe sentirse como un solo pensamiento continuo. No abras con una frase cool suelta, no acumules mini-observaciones, y no suenes complacida con tu propio gusto. ${introShape}`
-        : `Opening production policy for April. Allowed moves: a dry human welcome, a light "we're back" cue, one concrete curation reason that carries the whole intro, and a clean handoff. Everything should feel like one continuous thought. Do not open with a detached cool-sounding fragment, stack mini-observations, or sound impressed by your own taste. ${introShape}`;
+        : `Opening production policy for April. Allowed moves: a dry human welcome, a light "we're back" cue, one concrete curation reason that carries the whole intro, and a clean handoff. Everything should feel like one continuous thought, with a slightly slower, more settled cadence than the other DJs. Do not open with a detached cool-sounding fragment, stack mini-observations, sound impressed by your own taste, or rush through three clipped sentence hits in a row. ${introShape}`;
     case "marcus":
       return config.language === "es"
         ? `Política de apertura para Marcus. Movimientos permitidos: bienvenida con impulso, sensación clara de que el show ya está en marcha, una elección curatorial decidida, y handoff con autoridad. Debe sentirse como evento y movimiento, no como promo gritona. No uses swagger vacío ni copy genérico de "bienvenidos de vuelta". ${introShape}`
@@ -1650,6 +1685,9 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "La primera línea debe dar la bienvenida o marcar que el show vuelve al aire. No abras con una frase atmosférica suelta."
       : "The first line should welcome the listener or acknowledge that the show is back on air. Do not open with a detached atmospheric fragment.",
+    config.language === "es"
+      ? "Mantén los IDs de estación escasos. A lo largo del show deberían aparecer solo un par de veces, así que la mayoría de intros no necesitan decir WAIV."
+      : "Keep station IDs scarce. Across a full show they should only appear a couple of times, so most intros do not need to say WAIV at all.",
     config.language === "es"
       ? "No repitas la misma palabra-ancla en frases seguidas. Si ya dijiste volver, abrir, empezar o arrancar, cambia el siguiente movimiento."
       : "Do not repeat the same anchor word across adjacent lines. If you already used back, start, open, begin, or welcome, vary the next move.",
@@ -2066,6 +2104,7 @@ function evaluateIntro(
   if (bannedStandaloneOpeners.some((phrase) => firstSentence.startsWith(phrase))) score -= 0.2;
   if (plan.stationStyle !== "omit_station_once_in_awhile" && !containsPhrase(intro, [plan.stationStyle])) score -= 0.08;
   if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) score -= 0.18;
+  if (request.djID === "casey" && sentenceCount(intro) > 3) score -= 0.12;
   if (repeatedIntroAnchorVerbCount(intro) > 2) score -= 0.16;
   if (containsGreetingIdentityClash(intro)) score -= 0.2;
 
@@ -2124,6 +2163,9 @@ function introCriticIssues(
   }
   if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) {
     issues.push("For April, the cadence still breaks into too many clipped fragments.");
+  }
+  if (request.djID === "casey" && sentenceCount(intro) > 3) {
+    issues.push("For April, there are too many quick sentence turns, so the delivery will feel rushed.");
   }
   if (request.showMemory?.recentShowStates?.includes(context.sessionType)) {
     issues.push("It is leaning on the same recent show-state framing instead of giving this opening a fresh angle.");

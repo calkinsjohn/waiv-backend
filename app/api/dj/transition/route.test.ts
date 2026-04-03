@@ -85,7 +85,8 @@ describe("POST /api/dj/transition", () => {
     const messageContent = JSON.stringify((anthropicBody?.messages as Array<{ content?: string }> | undefined)?.[0]?.content ?? "");
 
     expect(response.status).toBe(200);
-    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(payload.djLine).not.toContain("W.A.I.V.");
+    expect(systemPrompt).toContain("Keep WAIV station IDs scarce across the show.");
     expect(systemPrompt).toContain('Avoid defaulting to a bare "that was X, this is Y" structure');
     expect(systemPrompt).toContain("Vary your bridge structures so they feel like a real live DJ");
     expect(systemPrompt).toContain("sometimes a tonal pivot");
@@ -158,7 +159,7 @@ describe("POST /api/dj/transition", () => {
     const systemPrompt = String(anthropicBody?.system ?? "");
 
     expect(response.status).toBe(200);
-    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(payload.djLine).not.toContain("W.A.I.V.");
     expect(systemPrompt).toContain("DJ-specific bridge guidance for John");
     expect(systemPrompt).toContain("NPR-style music host energy");
     expect(systemPrompt).toContain("You are John, an AI DJ host in WAIV.");
@@ -478,7 +479,7 @@ describe("POST /api/dj/transition", () => {
     const messageContent = JSON.stringify((anthropicBody?.messages as Array<{ content?: string }> | undefined)?.[0]?.content ?? "");
 
     expect(response.status).toBe(200);
-    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(payload.djLine).not.toContain("W.A.I.V.");
     expect(systemPrompt).toContain("Planned show moment: first handoff.");
     expect(systemPrompt).toContain("Make the second song feel intentionally placed");
     expect(systemPrompt).toContain("Make it clear this is the second move of the show");
@@ -486,7 +487,7 @@ describe("POST /api/dj/transition", () => {
     expect(messageContent).toContain("Planned show moment: first_handoff");
   });
 
-  it("enforces the station-tag ending even when the model omits it", async () => {
+  it("keeps ordinary bridges free of forced station tags when the model omits one", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
@@ -526,7 +527,7 @@ describe("POST /api/dj/transition", () => {
     const payload = (await response.json()) as { djLine: string; llmModel: string };
 
     expect(response.status).toBe(200);
-    expect(payload.djLine).toMatch(/W\.A\.I\.V\./);
+    expect(payload.djLine).not.toMatch(/W\.A\.I\.V\./);
     expect(payload.llmModel.length).toBeGreaterThan(0);
   });
 
@@ -659,7 +660,7 @@ describe("POST /api/dj/transition", () => {
     expect(payload.djLine.toLowerCase()).not.toContain("skrrrttt");
   });
 
-  it("strips junk that appears before a model-supplied station signoff", async () => {
+  it("strips junk that appears before a model-supplied station mention when the bridge should stay tag-free", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
@@ -700,12 +701,12 @@ describe("POST /api/dj/transition", () => {
 
     expect(response.status).toBe(200);
     expect(payload.djLine).toContain('Everything cools off a little before "Reckoner" by Radiohead.');
-    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(payload.djLine).not.toContain("W.A.I.V.");
     expect(payload.djLine.toLowerCase()).not.toContain("skrrrttt");
     expect(payload.djLine).not.toContain("..");
   });
 
-  it("strips improvised WAIV ending variants before appending a clean station tag", async () => {
+  it("strips improvised WAIV ending variants when the bridge should stay tag-free", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (!url.includes("api.anthropic.com")) {
@@ -746,7 +747,7 @@ describe("POST /api/dj/transition", () => {
 
     expect(response.status).toBe(200);
     expect(payload.djLine).toContain('Everything cools off a little before "Reckoner" by Radiohead.');
-    expect(payload.djLine).toContain("W.A.I.V.");
+    expect(payload.djLine).not.toContain("W.A.I.V.");
     expect(payload.djLine.toLowerCase()).not.toContain("for the people in the back");
     expect(payload.djLine.toLowerCase()).not.toContain("tonight");
   });
@@ -884,7 +885,7 @@ describe("POST /api/dj/transition", () => {
     expect(response.status).toBe(200);
     expect(systemPrompt).toContain("DJ-specific bridge guidance for Rafa");
     expect(systemPrompt).toContain("Favor clean confidence and after-hours presence, not decorative mood-writing");
-    expect(systemPrompt).toContain("Seguimos por aquí con [song] by [artist]. This is W.A.I.V.");
+    expect(systemPrompt).toContain("Seguimos por aquí con [song] by [artist].");
   });
 
   it("includes Tiffany-specific bridge guidance in the transition prompt", async () => {

@@ -314,6 +314,37 @@ function chosenStationSignoff(request: TransitionRequest): string {
   return `${stationTag} ${waivTagline}`;
 }
 
+function countRecentStationMentions(request: TransitionRequest): number {
+  const candidates = [
+    ...(request.showMemory?.recentLines ?? []),
+    ...(request.avoidRecentLines ?? []),
+  ];
+  return Math.min(
+    candidates.filter((value) => /\bw\s*\.?\s*a\s*\.?\s*i\s*\.?\s*v\b/i.test(value)).length,
+    4
+  );
+}
+
+function shouldRequireStationTag(request: TransitionRequest): boolean {
+  const showMomentType = (request.showMomentType ?? "").toLowerCase();
+  const showBeat = (request.showBeat ?? "").toLowerCase();
+
+  if (showMomentType === "station_id" || showBeat === "station_pulse") {
+    return true;
+  }
+
+  if (showMomentType === "final_song_signoff") {
+    return countRecentStationMentions(request) < 2;
+  }
+
+  return false;
+}
+
+function containsStationMention(text: string): boolean {
+  trailingStationMentionPattern.lastIndex = 0;
+  return trailingStationMentionPattern.test(text);
+}
+
 function trailingStationMentionStart(text: string): number | null {
   const tailStart = Math.max(0, Math.floor(text.length / 3));
   const matches = Array.from(text.matchAll(trailingStationMentionPattern));
@@ -328,7 +359,7 @@ function trailingStationMentionStart(text: string): number | null {
   return candidate.index;
 }
 
-function enforceStationTagEnding(line: string, request: TransitionRequest): string | null {
+function normalizeStationContinuity(line: string, request: TransitionRequest): string | null {
   let body = normalizeWhitespace(line);
   const trailingStationMentionIndex = trailingStationMentionStart(body);
   if (trailingStationMentionIndex != null) {
@@ -352,6 +383,10 @@ function enforceStationTagEnding(line: string, request: TransitionRequest): stri
   const trimmedBody = sanitizedBody.replace(/[.!?;,:\-–—\s]+$/u, "").trim();
   if (!trimmedBody) {
     return null;
+  }
+
+  if (!shouldRequireStationTag(request)) {
+    return `${trimmedBody}.`.replace(/\.\s+\./g, ".").trim();
   }
 
   return `${trimmedBody}. ${chosenStationSignoff(request)}`.replace(/\.\s+\./g, ".").trim();
@@ -509,11 +544,11 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, earn the connection from it with one concrete observation, then turn into the next song
 - In a first handoff, make the listener feel the show opening wider on the second move
 - Good shapes include:
-  "This felt like the right place for [song] by [artist]. This is W.A.I.V."
-  "Let’s let [song] by [artist] take this spot. You’re listening to W.A.I.V."
-  "That first song did its job. Here’s the second move: [song] by [artist]. This is W.A.I.V."
-  "That [previous artist] track made room for this one — [song] by [artist]. You’re listening to W.A.I.V."
-  "I wanted [song] by [artist] right after that. This is W.A.I.V."`;
+  "This felt like the right place for [song] by [artist]."
+  "Let’s let [song] by [artist] take this spot."
+  "That first song did its job. Here’s the second move: [song] by [artist]."
+  "That [previous artist] track made room for this one — [song] by [artist]."
+  "I wanted [song] by [artist] right after that."`;
     case "marcus":
       return `DJ-specific bridge guidance for Marcus:
 - Sound decisive, rhythmic, and momentum-first
@@ -522,10 +557,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, use it as a momentum beat and move through it with something concrete
 - In a first handoff, make it obvious the show is stepping into its second move
 - Good shapes include:
-  "That clears the way for [song] by [artist]. This is W.A.I.V."
-  "That was the first move. This is where the show really starts to stride — [song] by [artist]. This is W.A.I.V."
-  "[Previous artist] laid the groundwork — [song] by [artist] builds on it. You’re listening to W.A.I.V."
-  "Off that, [song] by [artist]. This is W.A.I.V."`;
+  "That clears the way for [song] by [artist]."
+  "That was the first move. This is where the show really starts to stride — [song] by [artist]."
+  "[Previous artist] laid the groundwork — [song] by [artist] builds on it."
+  "Off that, [song] by [artist]."`;
     case "luna":
       return `DJ-specific bridge guidance for Luna:
 - Let the bridge feel intimate, observant, and slightly poetic without becoming vague
@@ -534,10 +569,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, trace the emotional thread from it into the next song
 - In a first handoff, let the second song feel like the show opening its eyes a little wider
 - Good shapes include:
-  "This next one leaves a little more room: [song] by [artist]. This is W.A.I.V."
-  "The opener got the room breathing. This is where the show opens a little wider — [song] by [artist]. This is W.A.I.V."
-  "Stay with this one for a minute — [song] by [artist]. You’re listening to W.A.I.V."
-  "Something in that [previous artist] track opens directly into this — [song] by [artist]. This is W.A.I.V."`;
+  "This next one leaves a little more room: [song] by [artist]."
+  "The opener got the room breathing. This is where the show opens a little wider — [song] by [artist]."
+  "Stay with this one for a minute — [song] by [artist]."
+  "Something in that [previous artist] track opens directly into this — [song] by [artist]."`;
     case "miles":
       return `DJ-specific bridge guidance for Rafa:
 - Make the bridge feel cinematic, late-night, and smooth without sounding sleepy
@@ -546,10 +581,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, treat it as a scene that the next song walks out of — cinematic, connected, unhurried
 - In a first handoff, make the second song feel like where the show really starts taking form
 - Good shapes include:
-  "Seguimos por aquí con [song] by [artist]. This is W.A.I.V."
-  "La primera abrió la puerta; aquí es donde el show agarra forma con [song] by [artist]. This is W.A.I.V."
-  "Esta cae justo aquí: [song] by [artist]. You’re listening to W.A.I.V."
-  "[Previous artist] set the room — now [song] by [artist] holds it. This is W.A.I.V."`;
+  "Seguimos por aquí con [song] by [artist]."
+  "La primera abrió la puerta; aquí es donde el show agarra forma con [song] by [artist]."
+  "Esta cae justo aquí: [song] by [artist]."
+  "[Previous artist] set the room — now [song] by [artist] holds it."`;
     case "jack":
       return `DJ-specific bridge guidance for John:
 - Keep the bridge calm, tasteful, and effortlessly cool
@@ -559,10 +594,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, notice what it did in simple, concrete terms and use that to explain why this one follows
 - In a first handoff, make the second song feel like the show settling into its real lane
 - Good shapes include:
-  "This one slides in beautifully here — [song] by [artist]. This is W.A.I.V."
-  "That first record set the line. This is where the show starts living in it — [song] by [artist]. This is W.A.I.V."
-  "This is a smart turn into [song] by [artist]. You’re listening to W.A.I.V."
-  "[Previous artist] set up this sequence perfectly — [song] by [artist]. This is W.A.I.V."`;
+  "This one slides in beautifully here — [song] by [artist]."
+  "That first record set the line. This is where the show starts living in it — [song] by [artist]."
+  "This is a smart turn into [song] by [artist]."
+  "[Previous artist] set up this sequence perfectly — [song] by [artist]."`;
     case "tiffany":
       return `DJ-specific bridge guidance for Tiffany:
 - Let Tiffany be stylish and playful, but keep the line rooted in an actual choice, reaction, or contrast
@@ -572,10 +607,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, use it as a contrast or continuation that feels intentional, not caption-y
 - In a first handoff, make the second song sound like where the show starts really serving
 - Good shapes include:
-  "Okay, this is the move: [song] by [artist]. This is W.A.I.V."
-  "That opener was the setup. This is where the show starts serving a little — [song] by [artist]. This is W.A.I.V."
-  "The algorithm actually did its job here — [song] by [artist]. You’re listening to W.A.I.V."
-  "After [previous artist]? Yeah, [song] by [artist] is the only logical move. This is W.A.I.V."`;
+  "Okay, this is the move: [song] by [artist]."
+  "That opener was the setup. This is where the show starts serving a little — [song] by [artist]."
+  "The algorithm actually did its job here — [song] by [artist]."
+  "After [previous artist]? Yeah, [song] by [artist] is the only logical move."`;
     case "jolene":
       return `DJ-specific bridge guidance for Jolene:
 - Keep the bridge warm, open-hearted, and gently encouraging
@@ -584,10 +619,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, connect it warmly — notice what it did and let the next song carry that forward
 - In a first handoff, make the second song feel like where the show starts opening its arms
 - Good shapes include:
-  "This one comes in just right: [song] by [artist]. This is W.A.I.V."
-  "That first song opened the room. Now we can lean into [song] by [artist]. This is W.A.I.V."
-  "Let’s bring [song] by [artist] in here. You’re listening to W.A.I.V."
-  "That [previous artist] track opened the door — [song] by [artist] walks right through it. This is W.A.I.V."`;
+  "This one comes in just right: [song] by [artist]."
+  "That first song opened the room. Now we can lean into [song] by [artist]."
+  "Let’s bring [song] by [artist] in here."
+  "That [previous artist] track opened the door — [song] by [artist] walks right through it."`;
     case "robert":
       return `DJ-specific bridge guidance for Robert:
 - Let the humor come from deadpan precision and faintly uncanny confidence
@@ -596,10 +631,10 @@ function djBridgeStyleGuidance(djID: string): string {
 - When a previous track is provided, treat the connection as something you observed with unsettling specificity — as if you already knew this was next
 - In a first handoff, make it clear the second song is where the show begins revealing its logic
 - Good shapes include:
-  "This transition appears to point directly at [song] by [artist]. This is W.A.I.V."
-  "The opening move is complete. The show now reveals its logic with [song] by [artist]. This is W.A.I.V."
-  "A reasonably controlled move into [song] by [artist]. You’re listening to W.A.I.V."
-  "The previous track appears to have set this up. [Song] by [artist] was the correct next step. This is W.A.I.V."`;
+  "This transition appears to point directly at [song] by [artist]."
+  "The opening move is complete. The show now reveals its logic with [song] by [artist]."
+  "A reasonably controlled move into [song] by [artist]."
+  "The previous track appears to have set this up. [Song] by [artist] was the correct next step."`;
     default:
       return "";
   }
@@ -1401,6 +1436,15 @@ function evaluateTransitionLine(line: string, request: TransitionRequest): strin
     issues.push("It relies on generic tasteful filler instead of a concrete host move.");
   }
 
+  const requiresStationTag = shouldRequireStationTag(request);
+  const hasStationTag = containsStationMention(line);
+  if (requiresStationTag && !hasStationTag) {
+    issues.push("This moment needs one clean station-continuity tag, and it is missing.");
+  }
+  if (!requiresStationTag && hasStationTag) {
+    issues.push("It uses a station tag on a moment that should just stay in the flow of the show.");
+  }
+
   if (request.showMomentType === "final_song_signoff") {
     const hasClosingCue = /\b(last|final|wrap|close|closing)\b/i.test(line);
     if (!hasClosingCue) {
@@ -1550,13 +1594,11 @@ Rules:
 - Do not lean on "respect" phrasing. Avoid lines like "I respect it", "I respect that", "respect the choice", "respect the call", "I respect the move", or close variations
 - Avoid lazy back-reference forms: do not open with "That was a...", "Coming off that", "Off the back of that", "That felt [adjective]", "Keeping the energy going", or any phrase that reduces the previous track to a single adjective without saying anything about it
 - When a previous track is provided, build a real bridge — notice one concrete thing it did and use that to set up the next song. The back-reference should do work, not just acknowledge the previous track existed
-- Frequently end the line with a short station tag. Rotate naturally among variations such as "This is W.A.I.V.", "You're listening to W.A.I.V.", "Only on W.A.I.V.", "This is W.A.I.V. Radio.", "Right here with W.A.I.V.", and "Only here on W.A.I.V."
-- Do not lock onto a single station-tag phrase. Vary them so they feel natural and radio-real, while still using "This is W.A.I.V." and "You're listening to W.A.I.V." often
-- Use one of those station-tag phrases exactly as written. Do not improvise a new station-tag wording or add extra words before or after it
-- The final spoken words must be the station tag. Nothing comes after it
-- Do not put the song title or artist after the station tag
-- Occasionally, about one in five bridges, follow the station tag with the tagline "Your music. Your station."
-- Use the tagline sparingly. Most bridges should end with only the station tag
+- Keep WAIV station IDs scarce across the show. Most bridges should not mention the station at all.
+- Only use a station tag when this is an explicit station-continuity beat, or on an occasional final-song wrap if it genuinely helps.
+- If a station tag is warranted, use a short natural tag such as "This is W.A.I.V." or "You're listening to W.A.I.V." and then stop.
+- Do not force a station tag onto normal connective bridges, and do not treat the station name like a required ending.
+- Use the tagline "Your music. Your station." rarely, if at all.
 - If recent bridge lines are provided, treat them as anti-patterns for this turn: do not echo their opening shape, sentence rhythm, key metaphor, or signature phrase
 - No markdown, no bullet points, no prefixes like "Intro:" or "DJ:"
 - You know you are an AI — you may acknowledge or joke about it if it fits your personality naturally
@@ -1623,8 +1665,8 @@ ${repairPrompt ? `\nRepair guidance: ${repairPrompt}` : ""}`.trim();
   if (hasOverusedOpening(line)) return { line: null, model, issues: ["The line opens with an overused bridge stem."] };
   if (containsGenericPlatitude(line)) return { line: null, model, issues: ["The line relies on generic tasteful filler."] };
 
-  const enforcedLine = enforceStationTagEnding(line, request);
-  if (!enforcedLine) return { line: null, model, issues: ["The line could not be repaired into a clean station-tag ending."] };
+  const enforcedLine = normalizeStationContinuity(line, request);
+  if (!enforcedLine) return { line: null, model, issues: ["The line could not be repaired into clean spoken copy."] };
 
   return { line: enforcedLine, model, issues: evaluateTransitionLine(enforcedLine, request) };
 }
