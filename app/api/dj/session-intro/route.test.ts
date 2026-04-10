@@ -14,7 +14,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function structuredIntroText(overrides: Partial<Record<string, unknown>> = {}): string {
   return JSON.stringify({
-    intro: "Good to have you back. April with you tonight, and Thursday night is moving slow enough that I wanted to start with one you know. Here's \"Yellow\" by Coldplay.",
+    intro: "Welcome back, it's April on WAIV. Thursday night is moving slow enough that I wanted to start with one you know instead of pushing too hard this early in the set. Here's \"Yellow\" by Coldplay.",
     metadata: {
       openingStyle: "direct",
       length: "medium",
@@ -70,7 +70,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              intro: "Good to have you back. April with you tonight, and Thursday night is moving slow enough that I wanted to start with one you know. Here's \"Yellow\" by Coldplay.",
+              intro: "Welcome back, it's April on WAIV. Thursday night is moving slow enough that I wanted to start with one you know instead of pushing too hard this early in the set. Here's \"Yellow\" by Coldplay.",
               metadata: {
                 curationAngle: "Wanted to start with one you know.",
               },
@@ -162,6 +162,8 @@ describe("POST /api/dj/session-intro", () => {
     expect(fullPrompt).toContain("The 5 layers are internal structure, not isolated fragments.");
     expect(fullPrompt).toContain("Opening production policy for April.");
     expect(fullPrompt).toContain("Allowed moves: a dry human welcome, a light \"we're back\" cue, one concrete curation reason that carries the whole intro, and a clean handoff.");
+    expect(fullPrompt).toContain("WAIV is a one-hour show. Never talk about multiple hours, the next few hours, or a couple of hours.");
+    expect(fullPrompt).toContain("Name the song and artist exactly once, in the final sentence.");
     expect(fullPrompt).toContain("Return strict JSON with exactly these keys");
   });
 
@@ -179,7 +181,7 @@ describe("POST /api/dj/session-intro", () => {
           {
             type: "text",
             text: structuredIntroText({
-              intro: "Good to have you back. April with you tonight, and Friday night still has enough motion in it that the first record can arrive carrying some lift. Here's \"Midnight City\" by M83.",
+              intro: "Welcome back, it's April on WAIV. Friday night still has enough motion in it that the first record can arrive carrying some lift without feeling like a hard sell. Here's \"Midnight City\" by M83.",
               metadata: {
                 timeAnchor: "Friday night still has enough motion in it that the first record can arrive already carrying some lift.",
               },
@@ -503,6 +505,90 @@ describe("POST /api/dj/session-intro", () => {
           title: "Style",
           artist: "Taylor Swift",
           isrc: "USTA31400268",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(204);
+  });
+
+  it("rejects generated intros that drift into multi-hour framing", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: structuredIntroText({
+              intro: "Welcome back. April with you tonight, and this first record should carry the next few hours. Here's \"Yellow\" by Coldplay.",
+            }),
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
+        },
+        listenerContext,
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(204);
+  });
+
+  it("rejects generated intros that mention the opener before the final handoff", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("api.anthropic.com")) {
+        return new Response(null, { status: 404 });
+      }
+
+      return jsonResponse({
+        content: [
+          {
+            type: "text",
+            text: structuredIntroText({
+              intro: "Welcome back. April with you tonight, and Yellow already felt like the right place to land. Here's \"Yellow\" by Coldplay.",
+            }),
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const request = new NextRequest("http://localhost/api/dj/session-intro", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-waiv-app-token": appToken,
+      },
+      body: JSON.stringify({
+        djID: "casey",
+        introKind: "standard",
+        firstTrack: {
+          title: "Yellow",
+          artist: "Coldplay",
+          isrc: "GBAYE0000001",
         },
         listenerContext,
       }),

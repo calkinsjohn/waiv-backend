@@ -851,7 +851,7 @@ function djConfigFor(djID: string): DJConfig {
     handoffStyleWeights: { clean: 0.3, dramatic: 0.1, understated: 0.25, conversational: 0.35 },
     moodWords: ["steady", "present"],
     stationPresenceExamples: ["WAIV. With you now.", "On WAIV right now.", "Here on WAIV."],
-    sonicMomentExamples: ["Alright.", "Okay.", "Let's start here."],
+    sonicMomentExamples: ["Hey, welcome back.", "Good to have you here.", "Alright, we're back."],
     curatorMoves: ["This felt like the right way in.", "Wanted to start somewhere that lands clean."],
     anchorMoves: ["Feels like the right part of the day for this.", "This is a good hour to start with some intention."],
   };
@@ -1680,11 +1680,14 @@ function buildFrameworkPrompt(
       ? "No escribas saludo genérico de IA. Tiene que sentirse como el arranque real de un show."
       : "Do not write a generic AI greeting. It must feel like a real show starting.",
     config.language === "es"
-      ? "Haz sentir que el show empieza ahora mismo, no solo que va a sonar una canción. Una referencia natural a abrir la hora, arrancar el set, poner el show en marcha o volver al aire suma mucho si cae limpia."
-      : "Make it feel like the show is beginning right now, not just that a song is being introduced. A natural reference to opening the hour, starting the set, getting the show underway, or being back on air is strong when it lands cleanly.",
+      ? "Haz sentir que el show empieza ahora mismo, no solo que va a sonar una canción. Una referencia natural a abrir el show, arrancar el set, poner el show en marcha o volver al aire suma mucho si cae limpia."
+      : "Make it feel like the show is beginning right now, not just that a song is being introduced. A natural reference to opening the show, starting the set, getting the show underway, or being back on air is strong when it lands cleanly.",
     config.language === "es"
       ? "La primera línea debe dar la bienvenida o marcar que el show vuelve al aire. No abras con una frase atmosférica suelta."
       : "The first line should welcome the listener or acknowledge that the show is back on air. Do not open with a detached atmospheric fragment.",
+    config.language === "es"
+      ? "WAIV es un show de una hora. Nunca hables de varias horas, de las próximas horas ni de 'unas cuantas horas'."
+      : "WAIV is a one-hour show. Never talk about multiple hours, the next few hours, or a couple of hours.",
     config.language === "es"
       ? "Mantén los IDs de estación escasos. A lo largo del show deberían aparecer solo un par de veces, así que la mayoría de intros no necesitan decir WAIV."
       : "Keep station IDs scarce. Across a full show they should only appear a couple of times, so most intros do not need to say WAIV at all.",
@@ -1694,6 +1697,9 @@ function buildFrameworkPrompt(
     config.language === "es"
       ? "No hagas una línea de saludo terminada en 'aquí' y luego otra de identidad tipo '[NOMBRE] aquí'. Ese ritmo suena robótico."
       : "Do not do a greeting line that lands on 'here' and then follow it with a self-ID like '[NAME] here.' That cadence sounds robotic.",
+    config.language === "es"
+      ? "Nombra canción y artista una sola vez, en la última oración. No menciones el título antes del handoff final y no dupliques el cierre."
+      : "Name the song and artist exactly once, in the final sentence. Do not mention the title before the final handoff and do not duplicate the closing.",
     config.language === "es"
       ? "La línea de curaduría debe decir algo real sobre por qué esta canción abre: familiaridad, paciencia, contraste, secuencia, tempo, textura o cómo entra el tema. Nada de frases que suenen profundas pero no signifiquen nada."
       : "The curation line must say something real about why this song opens: familiarity, patience, contrast, sequencing, tempo, texture, or how the record enters. No lines that sound profound but mean nothing.",
@@ -1919,10 +1925,85 @@ function containsGreetingIdentityClash(text: string): boolean {
   }
 
   const greetingPattern = /\b(good to have you here|good to have you back|glad you're here|glad you made it|welcome back|welcome in)\b/i;
-  const identityPattern = /\b(april|marcus|luna|mateo|john|tiffany|jolene|robert)\s+here\b/i;
+  const identityPattern = /\b(april|marcus|luna|mateo|john|tiffany|jolene|robert)\s+(?:here|with you)\b|\bit'?s\s+(april|marcus|luna|mateo|john|tiffany|jolene|robert)\b/i;
 
-  return sentences.some((sentence) => greetingPattern.test(sentence))
-    && sentences.some((sentence) => identityPattern.test(sentence));
+  const greetingIndex = sentences.findIndex((sentence) => greetingPattern.test(sentence));
+  const identityIndex = sentences.findIndex((sentence) => identityPattern.test(sentence));
+
+  return greetingIndex >= 0 && identityIndex >= 0 && greetingIndex !== identityIndex;
+}
+
+function containsRepetitiveOpeningBeat(text: string): boolean {
+  const openingWindow = text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((sentence) => normalizedContainment(sentence));
+
+  if (openingWindow.length < 2) {
+    return false;
+  }
+
+  const fillerLeadPattern = /^(hey|okay|alright|right|so)\b/i;
+  if (openingWindow.every((sentence) => fillerLeadPattern.test(sentence))) {
+    return true;
+  }
+
+  const [first, second] = openingWindow;
+  if (first.startsWith("hey ") && second.startsWith("hey ")) {
+    return true;
+  }
+
+  const greetingPattern = /\b(welcome back|welcome in|good to have you here|good to have you back|glad you're here)\b/i;
+  const identityPattern = /\b(april|marcus|luna|mateo|john|tiffany|jolene|robert)\b/i;
+  return greetingPattern.test(first) && identityPattern.test(second) && /^(hey|it'?s)\b/i.test(second);
+}
+
+function containsMultiHourShowLanguage(text: string): boolean {
+  const patterns = [
+    /\bfew hours\b/i,
+    /\bcouple of hours\b/i,
+    /\bnext few hours\b/i,
+    /\bnext couple of hours\b/i,
+    /\bfor hours\b/i,
+    /\bhours ahead\b/i,
+    /\bfor the next hours\b/i,
+  ];
+
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function introSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => normalizeWhitespace(sentence))
+    .filter(Boolean);
+}
+
+function finalSentenceContainsTrackHandoff(
+  intro: string,
+  request: SessionIntroRequest
+): boolean {
+  const sentences = introSentences(intro);
+  const finalSentence = sentences[sentences.length - 1] ?? "";
+  const normalizedFinalSentence = normalizedContainment(finalSentence);
+  return normalizedFinalSentence.includes(normalizedContainment(request.firstTrack.title))
+    && normalizedFinalSentence.includes(normalizedContainment(request.firstTrack.artist));
+}
+
+function mentionsTrackBeforeFinalSentence(
+  intro: string,
+  request: SessionIntroRequest
+): boolean {
+  const sentences = introSentences(intro);
+  if (sentences.length < 2) {
+    return false;
+  }
+
+  const priorText = normalizedContainment(sentences.slice(0, -1).join(" "));
+  return priorText.includes(normalizedContainment(request.firstTrack.title))
+    || priorText.includes(normalizedContainment(request.firstTrack.artist));
 }
 
 function containsWrongTimeCue(intro: string, context: SessionIntroShowContext, djID: string): boolean {
@@ -1989,6 +2070,9 @@ function normalizeIntro(
   if (containsWrongTimeCue(intro, context, request.djID)) {
     return null;
   }
+  if (containsMultiHourShowLanguage(intro)) {
+    return null;
+  }
 
   const normalized = normalizedContainment(intro);
   if (!normalized.includes(normalizedContainment(request.firstTrack.title))) {
@@ -2004,6 +2088,15 @@ function normalizeIntro(
   }
 
   if (!/[.!?]$/.test(intro)) {
+    return null;
+  }
+  if (!finalSentenceContainsTrackHandoff(intro, request)) {
+    return null;
+  }
+  if (mentionsTrackBeforeFinalSentence(intro, request)) {
+    return null;
+  }
+  if (containsRepetitiveOpeningBeat(intro)) {
     return null;
   }
 
@@ -2100,6 +2193,7 @@ function evaluateIntro(
   if (genericIntroPhrases.some((phrase) => normalized.includes(phrase))) score -= 0.34;
   if (containsRepeatedOpening(intro, context.recentHistory.recentOpeningPhrases)) score -= 0.2;
   if (containsWrongTimeCue(intro, context, request.djID)) score -= 0.28;
+  if (containsMultiHourShowLanguage(intro)) score -= 0.34;
   if (!containsPhrase(intro, allowedTimeOfDayPhrases(context.timeContext.timeOfDay, request.djID))) score -= 0.08;
   if (bannedStandaloneOpeners.some((phrase) => firstSentence.startsWith(phrase))) score -= 0.2;
   if (plan.stationStyle !== "omit_station_once_in_awhile" && !containsPhrase(intro, [plan.stationStyle])) score -= 0.08;
@@ -2107,6 +2201,9 @@ function evaluateIntro(
   if (request.djID === "casey" && sentenceCount(intro) > 3) score -= 0.12;
   if (repeatedIntroAnchorVerbCount(intro) > 2) score -= 0.16;
   if (containsGreetingIdentityClash(intro)) score -= 0.2;
+  if (containsRepetitiveOpeningBeat(intro)) score -= 0.2;
+  if (!finalSentenceContainsTrackHandoff(intro, request)) score -= 0.5;
+  if (mentionsTrackBeforeFinalSentence(intro, request)) score -= 0.3;
 
   return score;
 }
@@ -2137,6 +2234,9 @@ function introCriticIssues(
   if (containsRepeatedOpening(intro, [...context.recentHistory.recentOpeningPhrases, ...(request.showMemory?.recentOpeningPhrases ?? [])])) {
     issues.push("The opening phrase is too close to a recent intro.");
   }
+  if (containsMultiHourShowLanguage(intro)) {
+    issues.push("It refers to multiple hours even though WAIV is a one-hour show.");
+  }
   if ((request.showMemory?.recentCurationAngles ?? []).some((angle) => normalizedContainment(angle) === normalizedContainment(plan.curationMode))) {
     issues.push("It repeats a recent curation angle instead of finding a fresh one.");
   }
@@ -2160,6 +2260,15 @@ function introCriticIssues(
   }
   if (containsGreetingIdentityClash(intro)) {
     issues.push("It pairs a greeting like 'good to have you here' with a clipped self-ID like 'April here,' which sounds robotic.");
+  }
+  if (containsRepetitiveOpeningBeat(intro)) {
+    issues.push("The first two beats repeat the same filler opening instead of sounding like one natural welcome.");
+  }
+  if (!finalSentenceContainsTrackHandoff(intro, request)) {
+    issues.push("The final sentence does not cleanly land on the song and artist.");
+  }
+  if (mentionsTrackBeforeFinalSentence(intro, request)) {
+    issues.push("It mentions the opening song or artist before the final handoff, which makes the intro feel repetitive.");
   }
   if (request.djID === "casey" && shortSentenceCount(intro, 3) > 1) {
     issues.push("For April, the cadence still breaks into too many clipped fragments.");
