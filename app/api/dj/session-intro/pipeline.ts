@@ -240,6 +240,20 @@ const genericIntroPlatitudePatterns = [
   /\bfeels like (it('| i)?s|this('?s)?) been here the whole time\b/i,
   /\balways waiting for us\b/i,
   /\bcould have been here the whole time\b/i,
+  /\bgets? us back in\b/i,
+  /\bwithout forcing (?:the )?room\b/i,
+  /\bforcing the room\b/i,
+  /\bspring in the air\b/i,
+] as const;
+
+const aprilAbstractFillerPatterns = [
+  /\b(this|that|something|it) felt (like )?(right|natural|the right way|the right place|the cleanest way|the way in)\b/i,
+  /\bgets? us back in\b/i,
+  /\bwithout forcing\b/i,
+  /\bforcing the room\b/i,
+  /\bspring in the air\b/i,
+  /\bthe room\b.*\b(softens|awake|forcing|overplaying)\b/i,
+  /\bsettles? in\b/i,
 ] as const;
 
 const bannedStandaloneOpeners = [
@@ -296,15 +310,17 @@ const djConfigs: Record<string, DJConfig> = {
       "Avoid clipped station IDs like 'WAIV. April here.' or any cadence where the station name, DJ name, and greeting all land as separate sentence fragments.",
       "Her first line should greet the listener or acknowledge that the show is back, not just toss out a generic atmospheric fragment.",
       "Her curation line has to name a real reason the opener belongs: familiarity, patience, contrast, sequencing, tempo, texture, or how the song enters. No fake profundity.",
+      "Do not give April lines like 'this gets us back in without forcing the room,' 'there's a spring in the air,' or 'this felt like the natural way in.' Those sound empty and stitched together.",
+      "For April, do not surface the hidden radio layers as separate sentences. Fold them into one spoken thought.",
     ],
     doNotDo: ["peppy banter", "assistant language", "vapid moodboard copy", "empty fake-insight lines"],
     openingStyleWeights: { cold_open: 0.14, direct: 0.34, atmospheric: 0.28, in_motion: 0.24 },
     stationStyleWeights: { WAIV: 0.14, "W.A.I.V.": 0.08, omit_station_once_in_awhile: 0.78 },
     handoffStyleWeights: { clean: 0.24, dramatic: 0.08, understated: 0.48, conversational: 0.2 },
     moodWords: ["dry", "steady", "intentional", "cool"],
-    stationPresenceExamples: ["I'm April on WAIV.", "Hey, we're back on W.A.I.V. with April.", "April with you tonight."],
-    sonicMomentExamples: ["Hey, we're back.", "Good to have you back.", "Alright, we're back."],
-    curatorMoves: ["Wanted to start somewhere familiar.", "I wanted a first move with some patience.", "This opens the set without pushing too hard."],
+    stationPresenceExamples: ["Welcome back, it's April.", "Hey, we're back on W.A.I.V. with April.", "Good to have you back, April with you."],
+    sonicMomentExamples: ["Welcome back, it's April.", "Hey, we're back; April with you.", "Good to have you back, it's April."],
+    curatorMoves: ["I wanted to start the show with one you know.", "I wanted a first song with some patience.", "The opener has enough shape without needing a speech."],
     anchorMoves: ["Feels like a slow Thursday.", "Right about the part of the night where everything softens.", "Middle of the afternoon, but we're not rushing it."],
   },
   marcus: {
@@ -1524,7 +1540,7 @@ function introProductionPolicyPrompt(config: DJConfig, plan: IntroDecisionPlan):
     case "casey":
       return config.language === "es"
         ? `Política de apertura para April. Movimientos permitidos: saludo seco y humano, señal ligera de que el show vuelve, una razón curatorial concreta que sostenga toda la intro, y salida limpia. Todo debe sentirse como un solo pensamiento continuo. No abras con una frase cool suelta, no acumules mini-observaciones, y no suenes complacida con tu propio gusto. ${introShape}`
-        : `Opening production policy for April. Allowed moves: a dry human welcome, a light "we're back" cue, one concrete curation reason that carries the whole intro, and a clean handoff. Everything should feel like one continuous thought, with a slightly slower, more settled cadence than the other DJs. Do not open with a detached cool-sounding fragment, stack mini-observations, sound impressed by your own taste, or rush through three clipped sentence hits in a row. ${introShape}`;
+        : `Opening production policy for April. Allowed moves: a dry human welcome, a light "we're back" cue, one concrete curation reason that carries the whole intro, and a clean handoff. Everything should feel like one continuous thought, with a slightly slower, more settled cadence than the other DJs. Do not open with a detached cool-sounding fragment, stack mini-observations, sound impressed by your own taste, or rush through three clipped sentence hits in a row. Do not use abstract room-language like "gets us back in," "without forcing the room," "spring in the air," "settles in," or "this felt like..." for April. Do not give April a separate day/season/vibe sentence; if time context matters, it must be naturally folded into the curation sentence. Prefer natural clause-level identity like "Welcome back, it's April" or "Hey, we're back; April with you" over "Welcome back. April here." Better April shape: "Welcome back, it's April. I wanted to start the show with one you know and not make a speech out of it. Here's SONG by ARTIST." Do not copy that example; use it as rhythm and logic. ${introShape}`;
     case "marcus":
       return config.language === "es"
         ? `Política de apertura para Marcus. Movimientos permitidos: bienvenida con impulso, sensación clara de que el show ya está en marcha, una elección curatorial decidida, y handoff con autoridad. Debe sentirse como evento y movimiento, no como promo gritona. No uses swagger vacío ni copy genérico de "bienvenidos de vuelta". ${introShape}`
@@ -1794,7 +1810,7 @@ function buildOutputPrompt(plan: IntroDecisionPlan, djID: string): string {
     djID === "casey"
       ? config.language === "es"
         ? "Para April, favorece 3 oraciones conectadas: entrada breve, observación+curaduría en el mismo flujo, luego handoff."
-        : "For April, prefer 3 connected sentences: brief opening, observation plus curation in one flow, then handoff."
+        : "For April, prefer exactly 3 connected sentences: natural welcome plus identity in one sentence, one concrete curation reason in plain human language, then handoff. Do not write separate time-anchor, day-of-week, season, or vibe sentences."
       : "",
     `Movement plan: ${JSON.stringify(plan.linePattern)}.`,
   ].join(" ");
@@ -1889,6 +1905,11 @@ function areNearDuplicateSentences(first: string, second: string): boolean {
 function containsGenericIntroPlatitude(text: string): boolean {
   const normalized = normalizeWhitespace(text);
   return genericIntroPlatitudePatterns.some((pattern) => pattern.test(normalized));
+}
+
+function containsAprilAbstractFiller(text: string): boolean {
+  const normalized = normalizeWhitespace(text);
+  return aprilAbstractFillerPatterns.some((pattern) => pattern.test(normalized));
 }
 
 function containsRepeatedOpening(text: string, recentOpenings: string[]): boolean {
@@ -2064,6 +2085,9 @@ function normalizeIntro(
   if (containsGenericIntroPlatitude(intro)) {
     return null;
   }
+  if (request.djID === "casey" && containsAprilAbstractFiller(intro)) {
+    return null;
+  }
   if (containsRepeatedOpening(intro, context.recentHistory.recentOpeningPhrases)) {
     return null;
   }
@@ -2190,6 +2214,7 @@ function evaluateIntro(
   if (!normalized.includes(normalizedContainment(request.firstTrack.title))) score -= 0.4;
   if (!normalized.includes(normalizedContainment(request.firstTrack.artist))) score -= 0.4;
   if (containsGenericIntroPlatitude(intro)) score -= 0.28;
+  if (request.djID === "casey" && containsAprilAbstractFiller(intro)) score -= 0.4;
   if (genericIntroPhrases.some((phrase) => normalized.includes(phrase))) score -= 0.34;
   if (containsRepeatedOpening(intro, context.recentHistory.recentOpeningPhrases)) score -= 0.2;
   if (containsWrongTimeCue(intro, context, request.djID)) score -= 0.28;
@@ -2227,6 +2252,9 @@ function introCriticIssues(
 
   if (containsGenericIntroPlatitude(intro)) {
     issues.push("It relies on generic tasteful filler instead of a concrete reason the opener belongs.");
+  }
+  if (request.djID === "casey" && containsAprilAbstractFiller(intro)) {
+    issues.push("April is using abstract filler or room-language instead of one concrete reason the opener belongs.");
   }
   if (genericIntroPhrases.some((phrase) => normalized.includes(phrase))) {
     issues.push("It sounds like assistant or onboarding copy.");
